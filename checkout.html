@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — O'luhle Scents</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+</head>
+<body>
+
+  <div class="page-loader"><div class="loader-spinner"></div></div>
+
+  <!-- Simplified Header -->
+  <header class="header">
+    <nav class="navbar">
+      <div class="navbar__left">
+        <a href="cart.html" style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-text-light);">← Back to Cart</a>
+      </div>
+      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <div class="navbar__right">
+        <div class="nav-icons">
+          <a href="#" class="nav-icon" style="pointer-events:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </a>
+          <span style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-text-light);">Secure Checkout</span>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Checkout Content -->
+  <section class="section" style="padding-top:120px;">
+    <div class="container">
+      <div class="text-center" style="margin-bottom:48px;">
+        <h2>Checkout</h2>
+      </div>
+
+      <div class="checkout-grid">
+        <!-- Checkout Form -->
+        <div>
+          <!-- Contact Info -->
+          <h3 style="margin-bottom:20px;font-size:1.3rem;">Contact Information</h3>
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" placeholder="076 111 2096">
+          </div>
+
+          <!-- Shipping -->
+          <h3 style="margin:32px 0 20px;font-size:1.3rem;">Shipping Address</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="first-name">First Name</label>
+              <input type="text" id="first-name" placeholder="First name">
+            </div>
+            <div class="form-group">
+              <label for="last-name">Last Name</label>
+              <input type="text" id="last-name" placeholder="Last name">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="address">Street Address</label>
+            <input type="text" id="address" placeholder="123 Main Street">
+          </div>
+          <div class="form-group">
+            <label for="address2">Apartment, suite, etc. (optional)</label>
+            <input type="text" id="address2" placeholder="Apt 4B">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="city">City</label>
+              <input type="text" id="city" placeholder="Johannesburg">
+            </div>
+            <div class="form-group">
+              <label for="province">Province</label>
+              <select id="province">
+                <option value="">Select province</option>
+                <option>Eastern Cape</option>
+                <option>Free State</option>
+                <option selected>Gauteng</option>
+                <option>KwaZulu-Natal</option>
+                <option>Limpopo</option>
+                <option>Mpumalanga</option>
+                <option>North West</option>
+                <option>Northern Cape</option>
+                <option>Western Cape</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="postal">Postal Code</label>
+            <input type="text" id="postal" placeholder="2000" style="max-width:200px;">
+          </div>
+
+          <!-- Shipping Method -->
+          <h3 style="margin:32px 0 20px;font-size:1.3rem;">Shipping Method</h3>
+          <div style="border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;">
+            <label style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer;border-bottom:1px solid var(--color-border-light);background:var(--color-bg-alt);">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <input type="radio" name="shipping" checked style="accent-color:var(--color-gold);">
+                <div>
+                  <div style="font-weight:500;font-size:0.9rem;">Standard Delivery</div>
+                  <div style="font-size:0.75rem;color:var(--color-text-light);">3–5 business days</div>
+                </div>
+              </div>
+              <span style="font-weight:500;">R99</span>
+            </label>
+            <label style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <input type="radio" name="shipping" style="accent-color:var(--color-gold);">
+                <div>
+                  <div style="font-weight:500;font-size:0.9rem;">Express Delivery</div>
+                  <div style="font-size:0.75rem;color:var(--color-text-light);">1–2 business days</div>
+                </div>
+              </div>
+              <span style="font-weight:500;">R199</span>
+            </label>
+          </div>
+
+          <!-- Payment placeholder -->
+          <h3 style="margin:32px 0 20px;font-size:1.3rem;">Payment</h3>
+          <div style="padding:32px;background:var(--color-bg-alt);border-radius:var(--radius-lg);text-align:center;border:1px dashed var(--color-border);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-light)" stroke-width="1.5" style="margin-bottom:12px;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <p style="color:var(--color-text-light);font-size:0.85rem;margin-bottom:4px;">Payment gateway integration ready</p>
+            <p style="color:var(--color-text-light);font-size:0.75rem;">Supports PayFast, Yoco, or Stripe</p>
+          </div>
+
+          <button class="btn btn--primary btn--full btn--lg mt-md" id="place-order-btn" type="button">
+            Place Order
+          </button>
+          <p id="checkout-error" style="display:none;color:#c0392b;font-size:0.82rem;margin-top:12px;text-align:center;"></p>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div>
+          <div class="cart-summary">
+            <h3>Order Summary</h3>
+            <div class="checkout-items" id="checkout-items"></div>
+            <div class="cart-summary__row" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--color-border-light);">
+              <span>Subtotal</span>
+              <span class="checkout-subtotal">R0</span>
+            </div>
+            <div class="cart-summary__row">
+              <span>Shipping</span>
+              <span>R99</span>
+            </div>
+            <div class="cart-summary__row cart-summary__row--total">
+              <span>Total</span>
+              <span class="checkout-total">R0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Minimal Footer -->
+  <footer style="padding:32px 0;text-align:center;color:var(--color-text-light);font-size:0.75rem;border-top:1px solid var(--color-border-light);">
+    <div class="container">
+      <p>&copy; 2026 O'luhle Scents · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a></p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    const API_URL = 'http://localhost:3000';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const cart = JSON.parse(localStorage.getItem('oluhle_cart') || '[]');
+      const itemsContainer = document.getElementById('checkout-items');
+
+      // --- Render order summary ---
+      if (itemsContainer) {
+        if (cart.length === 0) {
+          itemsContainer.innerHTML = '<p style="color:var(--color-text-light);font-size:0.85rem;">Your cart is empty.</p>';
+        } else {
+          itemsContainer.innerHTML = cart.map(item => `
+            <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border-light);">
+              <div style="width:56px;height:70px;border-radius:var(--radius);overflow:hidden;background:var(--color-bg-alt);flex-shrink:0;position:relative;">
+                <img src="images/${item.image}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='${getPlaceholderImage(item.name)}'">
+                <span style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--color-gold);color:#fff;border-radius:50%;font-size:0.6rem;display:flex;align-items:center;justify-content:center;font-weight:600;">${item.qty}</span>
+              </div>
+              <div style="flex:1;">
+                <div style="font-family:var(--font-display);font-weight:500;">${item.name}</div>
+                <div style="font-size:0.72rem;color:var(--color-text-light);">${item.size}</div>
+              </div>
+              <div style="font-weight:500;font-size:0.85rem;">R${(item.price * item.qty).toLocaleString()}</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // --- Shipping method: update total on radio change ---
+      function getSelectedShipping() {
+        const radios = document.querySelectorAll('input[name="shipping"]');
+        for (const r of radios) {
+          if (r.checked) return r.closest('label').querySelector('span').textContent === 'R99' ? 99 : 199;
+        }
+        return 99;
+      }
+
+      function updateSummaryTotals() {
+        const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+        const shippingCost = getSelectedShipping();
+        const subtotalEl = document.querySelector('.checkout-subtotal');
+        const totalEl    = document.querySelector('.checkout-total');
+        if (subtotalEl) subtotalEl.textContent = `R${subtotal.toLocaleString()}`;
+        if (totalEl)    totalEl.textContent    = `R${(subtotal + shippingCost).toLocaleString()}`;
+      }
+
+      document.querySelectorAll('input[name="shipping"]').forEach(r => r.addEventListener('change', updateSummaryTotals));
+      updateSummaryTotals();
+
+      // --- Place Order ---
+      document.getElementById('place-order-btn').addEventListener('click', async () => {
+        const errorEl = document.getElementById('checkout-error');
+        const btn     = document.getElementById('place-order-btn');
+        errorEl.style.display = 'none';
+
+        if (cart.length === 0) {
+          errorEl.textContent = 'Your cart is empty.';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        const email    = document.getElementById('email').value.trim();
+        const phone    = document.getElementById('phone').value.trim();
+        const firstName = document.getElementById('first-name').value.trim();
+        const lastName  = document.getElementById('last-name').value.trim();
+        const street    = document.getElementById('address').value.trim();
+        const apartment = document.getElementById('address2').value.trim();
+        const city      = document.getElementById('city').value.trim();
+        const province  = document.getElementById('province').value;
+        const postalCode = document.getElementById('postal').value.trim();
+
+        if (!email || !phone || !firstName || !lastName || !street || !city || !province || !postalCode) {
+          errorEl.textContent = 'Please fill in all required fields.';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        const shippingCost = getSelectedShipping();
+        const shippingMethod = shippingCost === 99 ? 'standard' : 'express';
+
+        btn.disabled = true;
+        btn.textContent = 'Processing…';
+
+        try {
+          const response = await fetch(`${API_URL}/api/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: cart.map(i => ({ productId: i.id, size: i.size, qty: i.qty })),
+              contact: { email, phone },
+              shipping: { firstName, lastName, street, apartment, city, province, postalCode },
+              shippingMethod,
+            }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Order creation failed');
+
+          // Clear the cart
+          localStorage.removeItem('oluhle_cart');
+
+          // Submit to PayFast via a hidden auto-submitting form
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = data.payfastUrl;
+          for (const [key, value] of Object.entries(data.payfastData)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+          }
+          document.body.appendChild(form);
+          form.submit();
+
+        } catch (err) {
+          errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+          errorEl.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Place Order';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

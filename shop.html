@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop — O'luhle Scents</title>
+  <meta name="description" content="Browse our complete collection of luxury extrait de parfum fragrances.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+</head>
+<body>
+
+  <div class="page-loader"><div class="loader-spinner"></div></div>
+
+  <!-- Header -->
+  <header class="header">
+    <nav class="navbar">
+      <div class="navbar__left">
+        <div class="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="shop.html" class="active">Shop</a>
+          <a href="shop.html?cat=premium">Collections</a>
+          <a href="index.html#about">About</a>
+        </div>
+      </div>
+      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <div class="navbar__right">
+        <div class="nav-icons">
+          <a href="#" class="nav-icon js-open-cart" aria-label="Cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            <span class="nav-icon__badge cart-count" style="display:none">0</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu">
+    <a href="index.html">Home</a>
+    <a href="shop.html">Shop All</a>
+    <a href="shop.html?cat=premium">Premium</a>
+    <a href="shop.html?cat=signature">Signature</a>
+    <a href="shop.html?cat=essentials">Essentials</a>
+    <a href="cart.html">Cart</a>
+  </div>
+
+  <!-- Page Banner -->
+  <section class="page-banner">
+    <h1>Our Collection</h1>
+    <div class="page-banner__breadcrumb">
+      <a href="index.html">Home</a>
+      <span>/</span>
+      Shop
+    </div>
+  </section>
+
+  <!-- Shop Content -->
+  <section class="section">
+    <div class="container">
+      <!-- Controls -->
+      <div class="shop-controls reveal">
+        <div class="shop-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="premium">Premium</button>
+          <button class="filter-btn" data-filter="signature">Signature</button>
+          <button class="filter-btn" data-filter="classic">Classic</button>
+          <button class="filter-btn" data-filter="essentials">Essentials</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span class="results-count">17 fragrances</span>
+          <div class="shop-sort">
+            <select id="sort-select">
+              <option value="default">Sort by</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="name">Name: A-Z</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="products-grid" id="shop-products"></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <div class="footer__brand-name">O'luhle <em>Scents</em></div>
+          <p>Luxury fragrances from Officina Del Toca. Extrait de parfum crafted for those who appreciate the finer things.</p>
+          <div class="footer__social">
+            <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
+            <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
+            <a href="#" aria-label="TikTok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/></svg></a>
+          </div>
+        </div>
+        <div>
+          <h4>Shop</h4>
+          <div class="footer__links">
+            <a href="shop.html">All Fragrances</a>
+            <a href="shop.html?cat=premium">Premium Collection</a>
+            <a href="shop.html?cat=signature">Signature Collection</a>
+            <a href="shop.html?cat=essentials">Essentials</a>
+          </div>
+        </div>
+        <div>
+          <h4>Support</h4>
+          <div class="footer__links">
+            <a href="#">Shipping & Delivery</a>
+            <a href="#">Returns & Exchanges</a>
+            <a href="#">FAQ</a>
+            <a href="#">Contact Us</a>
+          </div>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <div class="footer__links">
+            <a href="tel:0761112096" class="footer__contact-link">076 111 2096</a>
+            <a href="#">info@oluhlescents.co.za</a>
+            <a href="#">South Africa</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>&copy; 2026 O'luhle Scents. All rights reserved.</span>
+        <span>Authorized retailer of Officina Del Toca</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Cart Panel -->
+  <div class="cart-overlay"></div>
+  <div class="cart-panel">
+    <div class="cart-panel__header">
+      <h3>Your Cart</h3>
+      <button class="cart-panel__close" aria-label="Close cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="cart-panel__items"></div>
+    <div class="cart-panel__footer">
+      <div class="cart-panel__total">
+        <span>Subtotal</span>
+        <span class="cart-panel__total-amount">R0</span>
+      </div>
+      <a href="cart.html" class="btn btn--dark btn--full" style="margin-bottom:8px;">View Cart</a>
+      <a href="checkout.html" class="btn btn--primary btn--full">Checkout</a>
+    </div>
+  </div>
+
+  <button class="back-to-top" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Handle URL category parameter
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('cat');
+      if (cat) {
+        const btn = document.querySelector(`.filter-btn[data-filter="${cat}"]`);
+        if (btn) btn.click();
+      }
+
+      // Sort functionality
+      document.getElementById('sort-select')?.addEventListener('change', function() {
+        let sorted = [...PRODUCTS];
+        switch(this.value) {
+          case 'price-low': sorted.sort((a,b) => a.price100 - b.price100); break;
+          case 'price-high': sorted.sort((a,b) => b.price100 - a.price100); break;
+          case 'name': sorted.sort((a,b) => a.name.localeCompare(b.name)); break;
+        }
+        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+        if (activeFilter !== 'all') sorted = sorted.filter(p => p.category === activeFilter);
+        renderProducts('shop-products', sorted);
+      });
+    });
+  </script>
+</body>
+</html>
