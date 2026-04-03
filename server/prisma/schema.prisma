@@ -14,15 +14,15 @@ model User {
   firstName    String
   lastName     String
   phone        String?
-  role         Role     @default(CUSTOMER)
+  role         String   @default("CUSTOMER")
   createdAt    DateTime @default(now())
   orders       Order[]
 }
 
-enum Role {
-  CUSTOMER
-  ADMIN
-}
+// enum Role {
+//   CUSTOMER
+//   ADMIN
+// }
 
 model Product {
   id         Int         @id @default(autoincrement())
@@ -43,7 +43,7 @@ model Order {
   id               String          @id @default(cuid())
   userId           String?
   user             User?           @relation(fields: [userId], references: [id])
-  status           OrderStatus     @default(PENDING_PAYMENT)
+  status           String          @default("PENDING_PAYMENT")
   subtotal         Int
   shippingCost     Int
   total            Int
@@ -57,14 +57,14 @@ model Order {
   shippingAddress  ShippingAddress?
 }
 
-enum OrderStatus {
-  PENDING_PAYMENT
-  PAID
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
+// enum OrderStatus {
+//   PENDING_PAYMENT
+//   PAID
+//   PROCESSING
+//   SHIPPED
+//   DELIVERED
+//   CANCELLED
+// }
 
 model OrderItem {
   id        String  @id @default(cuid())

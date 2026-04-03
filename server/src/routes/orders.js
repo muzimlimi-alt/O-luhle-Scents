@@ -2,24 +2,19 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
+import { buildSignature } from '../utils/payfast.js'
 
 const router = Router()
 
 const SHIPPING_COSTS = { standard: 99, express: 199 }
 
-function generatePayfastSignature(data, passphrase) {
-  const pairs = Object.entries(data)
-    .filter(([, v]) => v !== '' && v != null)
-    .map(([k, v]) => `${k}=${encodeURIComponent(String(v).trim())}`)
-    .join('&')
-
-  const str = passphrase ? `${pairs}&passphrase=${encodeURIComponent(passphrase.trim())}` : pairs
-  return crypto.createHash('md5').update(str).digest('hex')
-}
+// PayFast signature generation is now handled in utils/payfast.js
 
 // POST /api/orders  — create order + return PayFast payment data
 router.post('/', async (req, res, next) => {
   try {
+    console.log('--- New Order Request ---')
+    console.log('Payload:', JSON.stringify(req.body, null, 2))
     const { items, contact, shipping, shippingMethod } = req.body
 
     // --- Validate inputs ---
@@ -34,7 +29,7 @@ router.post('/', async (req, res, next) => {
     }
 
     // --- Look up products from DB (never trust frontend prices) ---
-    const productIds = items.map(i => i.productId)
+    const productIds = items.map(i => parseInt(i.productId || i.id)).filter(id => !isNaN(id))
     const products = await prisma.product.findMany({
       where: { id: { in: productIds }, active: true },
     })
@@ -47,10 +42,13 @@ router.post('/', async (req, res, next) => {
     let subtotal = 0
     const orderItems = items.map(item => {
       if (!['100ml', '50ml'].includes(item.size)) throw Object.assign(new Error('Invalid size'), { status: 400 })
-      const product = products.find(p => p.id === item.productId)
+      const productId = parseInt(item.productId || item.id)
+      const product = products.find(p => p.id === productId)
+      if (!product) throw new Error('Product not found in available list')
       const unitPrice = item.size === '100ml' ? product.price100ml : product.price50ml
-      subtotal += unitPrice * item.qty
-      return { productId: product.id, size: item.size, qty: item.qty, unitPrice }
+      const quantity = parseInt(item.quantity || item.qty) || 0
+      subtotal += unitPrice * quantity
+      return { productId: product.id, size: item.size, qty: quantity, unitPrice }
     })
 
     const shippingCost = SHIPPING_COSTS[shippingMethod]
@@ -100,12 +98,13 @@ router.post('/', async (req, res, next) => {
       email_address: contact.email,
       m_payment_id:  order.id,
       amount:        total.toFixed(2),
-      item_name:     "O'luhle Scents Order",
+      item_name:     "Oluhle Scents Order",
     }
 
-    payfastData.signature = generatePayfastSignature(
+    payfastData.signature = buildSignature(
       payfastData,
-      process.env.PAYFAST_PASSPHRASE || null
+      process.env.PAYFAST_PASSPHRASE || null,
+      false
     )
 
     res.status(201).json({ orderId: order.id, payfastUrl, payfastData })

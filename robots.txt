@@ -1,0 +1,16 @@
+# O'luhle Scents — robots.txt
+# Replace https://www.oluhle.co.za with your actual domain.
+
+User-agent: *
+Allow: /
+Allow: /shop.html
+Allow: /product-detail.html
+Allow: /index.html
+
+# Keep checkout + admin out of search results
+Disallow: /checkout.html
+Disallow: /checkout-success.html
+Disallow: /admin.html
+Disallow: /api/
+
+Sitemap: https://www.oluhle.co.za/sitemap.xml

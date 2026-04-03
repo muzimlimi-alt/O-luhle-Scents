@@ -4,6 +4,19 @@ import { requireAdmin } from '../middleware/auth.js'
 
 const router = Router()
 
+// GET /api/products/low-stock (admin only)
+router.get('/low-stock', requireAdmin, async (req, res, next) => {
+  try {
+    const products = await prisma.product.findMany({
+      where: { stockQty: { lt: 5 }, active: true },
+      orderBy: { stockQty: 'asc' },
+    })
+    res.json(products)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/products
 router.get('/', async (req, res, next) => {
   try {
