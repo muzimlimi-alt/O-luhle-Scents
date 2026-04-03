@@ -24,19 +24,41 @@ model User {
 //   ADMIN
 // }
 
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  slug      String    @unique
+  products  Product[]
+}
+
 model Product {
-  id         Int         @id @default(autoincrement())
-  name       String
-  category   String
-  price100ml Int
-  price50ml  Int
-  notes      String
-  badge      String      @default("")
-  image      String
-  stockQty   Int         @default(100)
-  active     Boolean     @default(true)
-  createdAt  DateTime    @default(now())
-  orderItems OrderItem[]
+  id           Int         @id @default(autoincrement())
+  sku          String      @unique
+  name         String
+  description  String      
+  categoryId   Int
+  category     Category    @relation(fields: [categoryId], references: [id])
+  price        Int?        // General price
+  price100ml   Int
+  price50ml    Int
+  badge        String      @default("")
+  imageUrl     String      @default("") // Keep for compatibility/fallback
+  images       String      @default("[]") // JSON string of filenames
+  primaryImage String?     
+  stockQty     Int         @default(100)
+  active       Boolean     @default(true)
+  colors       String      @default("[]") // JSON string
+  tags         String      @default("[]") // JSON string
+  
+  // Audit fields
+  createdBy    String?
+  updatedBy    String?
+  deletedBy    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?   // For soft deletes
+
+  orderItems   OrderItem[]
 }
 
 model Order {

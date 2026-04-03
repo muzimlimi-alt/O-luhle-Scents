@@ -3,36 +3,53 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-const products = [
-  { id: 1,  name: 'Zale',             category: 'premium',    price100ml: 2000, price50ml: 1100, notes: 'A bold, captivating blend of oud and amber',           badge: 'Bestseller', image: 'products/zale.jpg' },
-  { id: 2,  name: 'Mika',             category: 'premium',    price100ml: 2000, price50ml: 1100, notes: 'Warm spice meets soft vanilla undertones',              badge: '',           image: 'products/mika.jpg' },
-  { id: 3,  name: 'Koah',             category: 'premium',    price100ml: 2000, price50ml: 1100, notes: 'Deep woody fragrance with smoky leather accents',       badge: 'New',        image: 'products/koah.jpg' },
-  { id: 4,  name: 'Yugen',            category: 'signature',  price100ml: 1500, price50ml: 900,  notes: 'Mysterious oriental with exotic floral heart',          badge: '',           image: 'products/yugen.jpg' },
-  { id: 5,  name: "Antiqué",          category: 'signature',  price100ml: 1500, price50ml: 900,  notes: 'Timeless elegance with bergamot and sandalwood',        badge: 'Popular',    image: 'products/antique.jpg' },
-  { id: 6,  name: 'Edan',             category: 'signature',  price100ml: 1500, price50ml: 900,  notes: 'Fresh green notes grounded in earthy vetiver',          badge: '',           image: 'products/edan.jpg' },
-  { id: 7,  name: 'Aurelia',          category: 'signature',  price100ml: 1500, price50ml: 900,  notes: 'Golden florals with a luminous musk finish',            badge: '',           image: 'products/aurelia.jpg' },
-  { id: 8,  name: 'Il Piano',         category: 'signature',  price100ml: 1500, price50ml: 900,  notes: 'Harmonious blend of lavender, cedar and tonka',         badge: '',           image: 'products/ilpiano.jpg' },
-  { id: 9,  name: 'Satin',            category: 'classic',    price100ml: 1200, price50ml: 700,  notes: 'Silky smooth rose and white musk composition',          badge: '',           image: 'products/satin.jpg' },
-  { id: 10, name: 'Luna',             category: 'classic',    price100ml: 1200, price50ml: 700,  notes: 'Dreamy night jasmine with powdery iris',                badge: 'Bestseller', image: 'products/luna.jpg' },
-  { id: 11, name: 'Absolute',         category: 'classic',    price100ml: 1200, price50ml: 700,  notes: 'Refined patchouli with sweet amber warmth',             badge: '',           image: 'products/absolute.jpg' },
-  { id: 12, name: 'Sublime Rose Oud', category: 'essentials', price100ml: 1000, price50ml: 600,  notes: 'Damascena rose layered with rich oud',                  badge: '',           image: 'products/sublimerose.jpg' },
-  { id: 13, name: 'Kairos',           category: 'essentials', price100ml: 1000, price50ml: 600,  notes: 'Citrus opening with deep amber base',                   badge: '',           image: 'products/kairos.jpg' },
-  { id: 14, name: 'Assassin',         category: 'essentials', price100ml: 1000, price50ml: 600,  notes: 'Dark and seductive with black pepper and oud',          badge: 'New',        image: 'products/assassin.jpg' },
-  { id: 15, name: 'Mi Amor',          category: 'essentials', price100ml: 1000, price50ml: 600,  notes: 'Passionate blend of tuberose, vanilla and musk',        badge: '',           image: 'products/miamor.jpg' },
-  { id: 16, name: 'Eminence',         category: 'essentials', price100ml: 1000, price50ml: 600,  notes: 'Distinguished woody aromatic with saffron',             badge: '',           image: 'products/eminence.jpg' },
-  { id: 17, name: 'Chypre Fruity',    category: 'essentials', price100ml: 1000, price50ml: 600,  notes: 'Vibrant fruits over classic oakmoss and bergamot',      badge: '',           image: 'products/chyprefruity.jpg' },
+const categoryData = [
+  { name: 'Women', slug: 'women' },
+  { name: 'Men', slug: 'men' },
+  { name: 'Bag', slug: 'bag' },
+  { name: 'Shoes', slug: 'shoes' },
+  { name: 'Watches', slug: 'watches' },
+]
+
+const productData = [
+  { name: 'Zale',             categorySlug: 'women',    price: 1100, price100ml: 2000, price50ml: 1100, description: 'A bold, captivating blend of oud and amber',           badge: 'Bestseller' },
+  { name: 'Mika',             categorySlug: 'men',    price: 1100, price100ml: 2000, price50ml: 1100, description: 'Warm spice meets soft vanilla undertones',              badge: ''           },
+  { name: 'Koah',             categorySlug: 'bag',    price: 1100, price100ml: 2000, price50ml: 1100, description: 'Deep woody fragrance with smoky leather accents',       badge: 'New'        },
+  { name: 'Yugen',            categorySlug: 'shoes',  price: 900, price100ml: 1500, price50ml: 900,  description: 'Mysterious oriental with exotic floral heart',          badge: ''           },
+  { name: "Antiqué",          categorySlug: 'watches',  price: 900, price100ml: 1500, price50ml: 900,  description: 'Timeless elegance with bergamot and sandalwood',        badge: 'Popular'    },
 ]
 
 async function main() {
+  console.log('Clearing old data...')
+  await prisma.orderItem.deleteMany({})
+  await prisma.product.deleteMany({})
+  await prisma.category.deleteMany({})
+
+  console.log('Seeding categories...')
+  const createdCategories = {}
+  for (const cat of categoryData) {
+    const created = await prisma.category.create({ data: cat })
+    createdCategories[cat.slug] = created.id
+  }
+
   console.log('Seeding products...')
-  for (const product of products) {
-    await prisma.product.upsert({
-      where: { id: product.id },
-      update: product,
-      create: product,
+  for (let i = 0; i < productData.length; i++) {
+    const p = productData[i]
+    const { categorySlug, ...rest } = p
+    await prisma.product.create({
+      data: {
+        ...rest,
+        sku: `OLS-${p.name.toUpperCase().replace(/\s+/g, '-')}-${i+1}`,
+        categoryId: createdCategories[categorySlug],
+        images: JSON.stringify(['placeholder.jpg']),
+        primaryImage: 'placeholder.jpg',
+        colors: JSON.stringify(['Black', 'Gold']),
+        tags: JSON.stringify(['Fashion', 'Premium']),
+        createdBy: 'System Seed',
+        active: true
+      }
     })
   }
-  console.log('Seeded ${products.length} products.')
 
   const adminEmail = 'admin@oluhle.com'
   const passwordHash = await bcrypt.hash('adminPassword123', 12)
@@ -52,5 +69,10 @@ async function main() {
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1) })
-  .finally(() => prisma.$disconnect())
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

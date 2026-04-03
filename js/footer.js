@@ -60,12 +60,12 @@
             </span>
           </a>
         </div>
-        <div class="legal-admin-link">
+        <!--<div class="legal-admin-link">
           <a href="admin.html" class="legal-admin-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"/></svg>
             Admin Portal
           </a>
-        </div>
+        </div>-->
       </section>
 
       <!-- ── REFUND POLICY ────────────────────────────────────────────── -->

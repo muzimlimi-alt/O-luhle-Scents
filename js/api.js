@@ -32,7 +32,7 @@ export function setUser(user) {
 }
 
 export function isAdmin() {
-  return getUser()?.role === 'ADMIN'
+  return !!getToken() && getUser()?.role === 'ADMIN'
 }
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
@@ -41,33 +41,56 @@ export function isAdmin() {
 
 export async function apiFetch(path, options = {}) {
   const token = getToken()
-  const headers = { 'Content-Type': 'application/json', ...options.headers }
+  const headers = { ...options.headers }
+  
+  // Only set JSON content type if body is not FormData
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
+  }
+  
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  console.log(`[API] Fetch started: ${path}`)
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+    console.log(`[API] Fetch finished: ${path} (${res.status})`)
 
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`
-    try {
-      const body = await res.json()
-      message = body.error || body.message || message
-    } catch {}
-    const err = new Error(message)
-    err.status = res.status
+    if (!res.ok) {
+      if (res.status === 401) {
+        console.warn(`[API] Unauthorized (401) at ${path}. Clearing token.`)
+        clearToken()
+      }
+
+      let message = `Request failed (${res.status})`
+      try {
+        const body = await res.json()
+        message = body.error || body.message || message
+      } catch (jsonErr) {
+        console.warn(`[API] Failed to parse error JSON from ${path}`)
+      }
+      const err = new Error(message)
+      err.status = res.status
+      throw err
+    }
+
+    if (res.status === 204) return null
+    return await res.json()
+  } catch (err) {
+    console.error(`[API] Fetch error for ${path}:`, err.message)
     throw err
   }
-
-  // 204 No Content — return null
-  if (res.status === 204) return null
-  return res.json()
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────
 
 export function getProducts(params = {}) {
-  const qs = new URLSearchParams(
-    Object.fromEntries(Object.entries(params).filter(([, v]) => v))
-  ).toString()
+  const cleanParams = {}
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') {
+      cleanParams[k] = v
+    }
+  }
+  const qs = new URLSearchParams(cleanParams).toString()
   return apiFetch(`/api/products${qs ? '?' + qs : ''}`)
 }
 
@@ -133,11 +156,19 @@ export function adminUpdateOrderStatus(id, status) {
 }
 
 export function adminCreateProduct(data) {
-  return apiFetch('/api/products', { method: 'POST', body: JSON.stringify(data) })
+  const options = { method: 'POST', body: data }
+  if (!(data instanceof FormData)) {
+    options.body = JSON.stringify(data)
+  }
+  return apiFetch('/api/products', options)
 }
 
 export function adminUpdateProduct(id, data) {
-  return apiFetch(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  const options = { method: 'PATCH', body: data }
+  if (!(data instanceof FormData)) {
+    options.body = JSON.stringify(data)
+  }
+  return apiFetch(`/api/products/${id}`, options)
 }
 
 export function adminDeleteProduct(id) {

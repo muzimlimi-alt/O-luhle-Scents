@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Theme applied before first paint — prevents flash -->
+  <script>
+    (function(){
+      try {
+        var p = JSON.parse(localStorage.getItem('oluhle_admin_prefs')||'{}')
+        document.documentElement.setAttribute('data-theme', p.theme||'dark')
+        if (p.compactMode) document.documentElement.classList.add('compact-mode')
+      } catch(e) {}
+    })()
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — O'luhle Scents</title>
   <link rel="stylesheet" href="css/style.css">
@@ -16,6 +26,7 @@
       width:220px; flex-shrink:0; background:var(--color-bg-alt);
       border-right:1px solid var(--color-border); padding:32px 0;
       position:fixed; top:70px; bottom:0; left:0; overflow-y:auto;
+      display:flex; flex-direction:column;
     }
     .admin-sidebar h4 {
       padding:0 24px 16px; font-size:0.65rem; letter-spacing:0.15em;
@@ -128,27 +139,206 @@
       .admin-main { margin-left:0; padding:20px; }
       .form-2col { grid-template-columns:1fr; }
     }
+
+    /* ── Dark Theme overrides ── */
+    [data-theme="dark"] {
+      --color-bg:          #0f0e0c;
+      --color-bg-alt:      #1a1611;
+      --color-surface:     #1e1a14;
+      --color-dark:        #f5f0e8;
+      --color-text:        #e8e2d8;
+      --color-text-light:  rgba(232,226,216,0.48);
+      --color-border:      rgba(184,155,106,0.18);
+      --color-border-light:rgba(184,155,106,0.08);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.7);
+    }
+
+    /* ── Login page — CSS-class-driven theming ── */
+    #login-container { background: var(--color-bg) !important; transition: background 0.4s; }
+    .login-dark-deco  { transition: opacity 0.4s; }
+    [data-theme="light"] .login-dark-deco { opacity: 0; pointer-events: none; }
+
+    #login-card {
+      position:relative; z-index:1;
+      background: rgba(26,22,17,0.9);
+      backdrop-filter: blur(2px);
+      border: 1px solid rgba(184,155,106,0.2);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(184,155,106,0.1);
+      transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
+    }
+    [data-theme="light"] #login-card {
+      background: var(--color-surface) !important;
+      border-color: var(--color-border) !important;
+      box-shadow: var(--shadow-md) !important;
+      backdrop-filter: none;
+    }
+
+    .login-heading { color: #f5f0e8; transition: color 0.3s; }
+    [data-theme="light"] .login-heading { color: var(--color-dark) !important; }
+    .login-subtitle { color: rgba(245,240,232,0.4); transition: color 0.3s; }
+    [data-theme="light"] .login-subtitle { color: var(--color-text-light) !important; }
+    .login-footer-mark { color: rgba(245,240,232,0.2); transition: color 0.3s; }
+    [data-theme="light"] .login-footer-mark { color: var(--color-text-light) !important; opacity:0.5; }
+
+    .login-input {
+      width:100%; padding:12px 16px; border-radius:2px;
+      height:46px; font-size:0.88rem; outline:none;
+      letter-spacing:0.02em;
+      background: rgba(255,255,255,0.04);
+      color: #f5f0e8;
+      border: 1px solid rgba(184,155,106,0.2);
+      transition: background 0.3s, color 0.3s, border-color 0.25s;
+    }
+    [data-theme="light"] .login-input {
+      background: var(--color-bg) !important;
+      color: var(--color-text) !important;
+      border-color: var(--color-border) !important;
+    }
+    .login-input:focus {
+      border-color: rgba(184,155,106,0.75) !important;
+      background: rgba(184,155,106,0.06) !important;
+    }
+    .login-input::placeholder { color: rgba(184,155,106,0.35); }
+    [data-theme="light"] .login-input::placeholder { color: var(--color-text-light); opacity:0.6; }
+
+    /* ── Dark mode badge overrides ── */
+    [data-theme="dark"] .badge--pending   { background:rgba(251,191,36,0.15);  color:#fbbf24; }
+    [data-theme="dark"] .badge--paid      { background:rgba(52,211,153,0.12);  color:#34d399; }
+    [data-theme="dark"] .badge--shipped   { background:rgba(96,165,250,0.12);  color:#60a5fa; }
+    [data-theme="dark"] .badge--delivered { background:rgba(167,139,250,0.12); color:#a78bfa; }
+    [data-theme="dark"] .badge--cancelled { background:rgba(248,113,113,0.12); color:#f87171; }
+
+    /* ── Compact mode ── */
+    .compact-mode .admin-table td  { padding:7px 14px; }
+    .compact-mode .stat-card       { padding:16px 20px; }
+    .compact-mode .admin-main      { padding:24px 32px; }
+
+    /* ── Preferences section ── */
+    .pref-card {
+      background:var(--color-bg-alt); border:1px solid var(--color-border);
+      border-radius:var(--radius-lg); padding:28px 32px; margin-bottom:20px;
+    }
+    .pref-card__title {
+      font-size:0.72rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase;
+      color:var(--color-text); margin:0 0 6px;
+      display:flex; align-items:center; gap:10px; font-family:var(--font-body);
+    }
+    .pref-card__title i { color:var(--color-gold); width:14px; text-align:center; }
+    .pref-card__desc { font-size:0.82rem; color:var(--color-text-light); margin:0 0 24px; }
+    .pref-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:14px 0; border-bottom:1px solid var(--color-border-light); gap:16px;
+    }
+    .pref-row:last-of-type { border-bottom:none; padding-bottom:0; }
+    .pref-label { font-size:0.85rem; color:var(--color-text); display:block; margin-bottom:3px; }
+    .pref-hint  { font-size:0.73rem; color:var(--color-text-light); margin:0; }
+
+    /* Theme option preview cards */
+    .theme-options { display:flex; gap:16px; }
+    .theme-opt {
+      flex:1; background:none; border:2px solid var(--color-border);
+      border-radius:var(--radius-lg); overflow:hidden; cursor:pointer;
+      transition:border-color 0.2s; text-align:left; padding:0;
+    }
+    .theme-opt:hover  { border-color:var(--color-gold-light); }
+    .theme-opt.active { border-color:var(--color-gold); }
+
+    .theme-preview        { height:88px; position:relative; overflow:hidden; }
+    .theme-preview--dark  { background:#0f0e0c; }
+    .theme-preview--light { background:#faf8f5; }
+
+    .tp-bar { position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#b89b6a,transparent);opacity:0.6; }
+    .tp-header { position:absolute;top:2px;left:0;right:0;height:13px; }
+    .theme-preview--dark  .tp-header { background:#1a1611; border-bottom:1px solid rgba(184,155,106,0.2); }
+    .theme-preview--light .tp-header { background:#fff; border-bottom:1px solid #e8e2da; }
+    .tp-body    { position:absolute;top:15px;bottom:0;left:0;right:0;display:flex; }
+    .tp-sidebar { width:28px; }
+    .theme-preview--dark  .tp-sidebar { background:#1a1611; border-right:1px solid rgba(184,155,106,0.15); }
+    .theme-preview--light .tp-sidebar { background:#f2ede7; border-right:1px solid #e8e2da; }
+    .tp-content { flex:1; padding:5px 6px; display:flex; flex-direction:column; gap:4px; }
+    .tp-card    { border-radius:2px; height:13px; }
+    .theme-preview--dark  .tp-card { background:rgba(184,155,106,0.12); }
+    .theme-preview--light .tp-card { background:#fff; border:1px solid #e8e2da; }
+
+    .theme-opt__label {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 14px; font-size:0.8rem; color:var(--color-text); font-weight:500;
+    }
+    .theme-opt__check {
+      width:16px; height:16px; border-radius:50%; background:var(--color-gold);
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.55rem; color:#fff; opacity:0; transition:opacity 0.2s; flex-shrink:0;
+    }
+    .theme-opt.active .theme-opt__check { opacity:1; }
+
+    /* Toggle switch */
+    .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider {
+      position:absolute; cursor:pointer; inset:0;
+      background:var(--color-border); border-radius:24px; transition:0.3s;
+    }
+    .toggle-slider::before {
+      content:''; position:absolute; height:18px; width:18px;
+      left:3px; bottom:3px; background:white; border-radius:50%;
+      transition:0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-switch input:checked + .toggle-slider { background:var(--color-gold); }
+    .toggle-switch input:checked + .toggle-slider::before { transform:translateX(20px); }
+
+    /* Save confirmation */
+    #prefs-saved {
+      font-size:0.82rem; color:var(--color-success); margin:0;
+      display:none; align-items:center; gap:6px;
+    }
   </style>
 </head>
 <body>
 
   <div class="page-loader"><div class="loader-spinner"></div></div>
 
-  <div id="login-container" style="display: none; height: 100vh; align-items: center; justify-content: center; background: var(--color-bg);">
-    <div style="background: var(--color-surface); padding: 40px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); width: 100%; max-width: 400px; text-align: center;">
-      <h2 style="font-family: var(--font-display); margin-bottom: 24px; font-size: 2rem;">Admin Login</h2>
-      <p id="login-error" style="color: var(--color-error); font-size: 0.85rem; margin-bottom: 16px; display: none;"></p>
-      <form id="admin-login-form">
-        <div style="margin-bottom: 16px; text-align: left;">
-          <label style="display: block; font-size: 0.75rem; margin-bottom: 8px;">Email</label>
-          <input type="email" id="login-email" required style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); height: 42px; font-size: 1rem;">
+  <div id="login-container" style="display:none;height:100vh;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+    <!-- Dark-mode decorative elements (fade out in light mode) -->
+    <div class="login-dark-deco" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 20% 50%,rgba(184,155,106,0.07) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 80% 30%,rgba(184,155,106,0.05) 0%,transparent 60%);"></div>
+    <div class="login-dark-deco" style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--color-gold),transparent);opacity:0.4;"></div>
+    <div class="login-dark-deco" style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(184,155,106,0.3),transparent);"></div>
+
+    <!-- Card -->
+    <div id="login-card" style="padding:56px 52px;border-radius:2px;width:100%;max-width:440px;text-align:center;">
+
+      <!-- Ornament -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;">
+        <div style="height:1px;width:32px;background:linear-gradient(to right,transparent,var(--color-gold));"></div>
+        <div style="width:44px;height:44px;border:1px solid rgba(184,155,106,0.5);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--color-gold);">
+          <i class="fas fa-lock" style="font-size:0.8rem;"></i>
         </div>
-        <div style="margin-bottom: 24px; text-align: left;">
-          <label style="display: block; font-size: 0.75rem; margin-bottom: 8px;">Password</label>
-          <input type="password" id="login-password" required style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); height: 42px; font-size: 1rem;">
+        <div style="height:1px;width:32px;background:linear-gradient(to left,transparent,var(--color-gold));"></div>
+      </div>
+
+      <p style="font-size:0.6rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--color-gold);margin-bottom:10px;font-weight:500;font-family:var(--font-body);">O'luhle Scents</p>
+      <h2 class="login-heading" style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;margin-bottom:6px;letter-spacing:0.02em;">Admin Portal</h2>
+      <p class="login-subtitle" style="font-size:0.75rem;margin-bottom:40px;letter-spacing:0.04em;">Restricted access — authorised personnel only</p>
+
+      <!-- Divider -->
+      <div style="height:1px;background:linear-gradient(to right,transparent,rgba(184,155,106,0.25),transparent);margin-bottom:36px;"></div>
+
+      <p id="login-error" style="color:#e57373;font-size:0.8rem;margin-bottom:20px;padding:10px 14px;background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.3);border-radius:2px;display:none;text-align:left;"></p>
+
+      <form id="admin-login-form" style="text-align:left;">
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:0.62rem;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--color-gold);opacity:0.85;margin-bottom:10px;">Email Address</label>
+          <input type="email" id="login-email" class="login-input" required placeholder="admin@oluhle.com">
         </div>
-        <button type="submit" class="btn btn--primary btn--full">Login</button>
+        <div style="margin-bottom:36px;">
+          <label style="display:block;font-size:0.62rem;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--color-gold);opacity:0.85;margin-bottom:10px;">Password</label>
+          <input type="password" id="login-password" class="login-input" required placeholder="••••••••" style="letter-spacing:0.08em;">
+        </div>
+        <button type="submit" class="btn btn--primary btn--full" style="letter-spacing:0.18em;font-size:0.72rem;height:48px;font-weight:500;text-transform:uppercase;">Enter</button>
       </form>
+
+      <p class="login-footer-mark" style="margin-top:32px;font-size:0.62rem;letter-spacing:0.1em;">✦ PRIVATE DASHBOARD ✦</p>
     </div>
   </div>
 
@@ -159,7 +349,7 @@
       <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
       <div class="navbar__right">
         <span id="admin-email" style="font-size:0.78rem;color:var(--color-text-light);margin-right:16px;"></span>
-        <button id="logout-btn" class="btn btn--outline" style="padding:6px 16px;font-size:0.8rem;">Logout</button>
+        <button id="logout-btn" class="btn btn--outline-dark" style="padding:6px 18px;font-size:0.75rem;letter-spacing:0.08em;"><i class="fas fa-arrow-right-from-bracket" style="margin-right:6px;font-size:0.7rem;"></i>Logout</button>
       </div>
     </nav>
   </header>
@@ -172,6 +362,9 @@
       <button class="admin-nav-item" data-section="analytics">Analytics</button>
       <button class="admin-nav-item" data-section="orders">Orders</button>
       <button class="admin-nav-item" data-section="products">Products</button>
+      <div style="flex:1;"></div>
+      <div style="height:1px;background:var(--color-border);margin:8px 24px 8px;"></div>
+      <button class="admin-nav-item" data-section="preferences"><i class="fas fa-sliders" style="margin-right:8px;font-size:0.8rem;opacity:0.7;"></i>Preferences</button>
     </aside>
 
     <!-- Main content -->
@@ -268,20 +461,108 @@
       <section id="section-products" class="admin-section">
         <div class="section-header">
           <h2>Products</h2>
-          <button class="btn btn--primary btn--xs" id="add-product-btn">+ Add Product</button>
+          <div class="header-actions">
+            <span class="results-count" id="products-count">Showing 0 products</span>
+            <button class="btn btn--primary btn--xs" id="add-product-btn">+ Add Product</button>
+          </div>
         </div>
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>SKU</th><th>Name</th><th>Category</th><th>50ml</th><th>100ml</th>
-                <th>Stock</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="products-body">
-              <tr><td colspan="7" class="empty-state">Loading…</td></tr>
-            </tbody>
-          </table>
+
+        <!-- Product Controls -->
+        <div class="product-controls">
+          <div class="category-tabs" id="category-tabs">
+            <button class="cat-tab active" data-category="all">All Products</button>
+            <button class="cat-tab" data-category="women">Women</button>
+            <button class="cat-tab" data-category="men">Men</button>
+            <button class="cat-tab" data-category="bag">Bag</button>
+            <button class="cat-tab" data-category="shoes">Shoes</button>
+            <button class="cat-tab" data-category="watches">Watches</button>
+          </div>
+          
+          <div class="control-group">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="product-search" placeholder="Search products...">
+            </div>
+            <div class="sort-box">
+              <label for="product-sort">Sort By:</label>
+              <select id="product-sort" class="status-select">
+                <option value="default">Default</option>
+                <option value="popular">Popularity</option>
+                <option value="new">Newness</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+            </div>
+            <button class="btn btn--outline-dark btn--xs" id="toggle-filters">
+              <i class="fas fa-filter"></i> Filter
+            </button>
+          </div>
+        </div>
+
+        <div class="product-layout">
+          <!-- Filter Sidebar (Initially Hidden or Responsive) -->
+          <aside class="filter-sidebar" id="filter-sidebar">
+            <div class="filter-group">
+              <h4 class="filter-title">Price Range</h4>
+              <div class="filter-options">
+                <label class="filter-checkbox">
+                  <input type="checkbox" name="price-range" value="0-50"> R0.00 - R50.00
+                </label>
+                <label class="filter-checkbox">
+                  <input type="checkbox" name="price-range" value="50-100"> R50.00 - R100.00
+                </label>
+                <label class="filter-checkbox">
+                  <input type="checkbox" name="price-range" value="100-150"> R100.00 - R150.00
+                </label>
+                <label class="filter-checkbox">
+                  <input type="checkbox" name="price-range" value="150-200"> R150.00 - R200.00
+                </label>
+                <label class="filter-checkbox">
+                  <input type="checkbox" name="price-range" value="200+"> R200.00+
+                </label>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <h4 class="filter-title">Color</h4>
+              <div class="color-options" id="color-filter-options">
+                <!-- Dynamically populated or static common ones -->
+                <button class="color-btn" data-color="Black" title="Black" style="background:#000;"></button>
+                <button class="color-btn" data-color="Blue" title="Blue" style="background:#007bff;"></button>
+                <button class="color-btn" data-color="Grey" title="Grey" style="background:#6c757d;"></button>
+                <button class="color-btn" data-color="Green" title="Green" style="background:#28a745;"></button>
+                <button class="color-btn" data-color="Red" title="Red" style="background:#dc3545;"></button>
+                <button class="color-btn" data-color="White" title="White" style="background:#fff; border:1px solid #ddd;"></button>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <h4 class="filter-title">Tags</h4>
+              <div class="tag-options" id="tag-filter-options">
+                <button class="tag-btn" data-tag="Fashion">Fashion</button>
+                <button class="tag-btn" data-tag="Lifestyle">Lifestyle</button>
+                <button class="tag-btn" data-tag="Denim">Denim</button>
+                <button class="tag-btn" data-tag="Streetstyle">Streetstyle</button>
+                <button class="tag-btn" data-tag="Crafts">Crafts</button>
+              </div>
+            </div>
+            
+            <button class="btn btn--xs btn--outline-dark" style="width:100%;" id="clear-filters">Clear All Filters</button>
+          </aside>
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Image</th><th>SKU</th><th>Name</th><th>Category</th><th>Price</th>
+                  <th>Stock</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="products-body">
+                <tr><td colspan="8" class="empty-state">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -346,62 +627,204 @@
         </div>
       </section>
 
+      <!-- Preferences -->
+      <section id="section-preferences" class="admin-section">
+        <div class="section-header" style="margin-bottom:32px;">
+          <h2>Preferences</h2>
+        </div>
+
+        <!-- Appearance -->
+        <div class="pref-card">
+          <h4 class="pref-card__title"><i class="fas fa-palette"></i> Appearance</h4>
+          <p class="pref-card__desc">Choose a visual theme for the dashboard and login page.</p>
+          <div class="theme-options">
+            <button class="theme-opt" data-theme-val="dark">
+              <div class="theme-preview theme-preview--dark">
+                <div class="tp-bar"></div>
+                <div class="tp-header"></div>
+                <div class="tp-body">
+                  <div class="tp-sidebar"></div>
+                  <div class="tp-content">
+                    <div class="tp-card"></div>
+                    <div class="tp-card"></div>
+                    <div class="tp-card" style="width:65%;"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-opt__label">Dark <span class="theme-opt__check"><i class="fas fa-check"></i></span></div>
+            </button>
+            <button class="theme-opt" data-theme-val="light">
+              <div class="theme-preview theme-preview--light">
+                <div class="tp-bar"></div>
+                <div class="tp-header"></div>
+                <div class="tp-body">
+                  <div class="tp-sidebar"></div>
+                  <div class="tp-content">
+                    <div class="tp-card"></div>
+                    <div class="tp-card"></div>
+                    <div class="tp-card" style="width:65%;"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="theme-opt__label">Light <span class="theme-opt__check"><i class="fas fa-check"></i></span></div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="pref-card">
+          <h4 class="pref-card__title"><i class="fas fa-house"></i> Dashboard</h4>
+          <div class="pref-row">
+            <div>
+              <span class="pref-label">Default Landing Section</span>
+              <p class="pref-hint">Which section opens when you log in</p>
+            </div>
+            <select id="pref-default-section" class="status-select">
+              <option value="overview">Overview</option>
+              <option value="analytics">Analytics</option>
+              <option value="orders">Orders</option>
+              <option value="products">Products</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Inventory -->
+        <div class="pref-card">
+          <h4 class="pref-card__title"><i class="fas fa-boxes-stacked"></i> Inventory</h4>
+          <div class="pref-row">
+            <div>
+              <span class="pref-label">Low Stock Alert Threshold</span>
+              <p class="pref-hint">Show alerts when stock falls below this number of units</p>
+            </div>
+            <input type="number" id="pref-low-stock-thresh" class="status-select" min="1" max="100" value="5" style="width:80px;text-align:center;">
+          </div>
+        </div>
+
+        <!-- Display -->
+        <div class="pref-card">
+          <h4 class="pref-card__title"><i class="fas fa-table-cells"></i> Display</h4>
+          <div class="pref-row">
+            <div>
+              <span class="pref-label">Compact Tables</span>
+              <p class="pref-hint">Reduce row padding for a denser data view</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="pref-compact">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:12px;align-items:center;">
+          <button class="btn btn--primary" id="save-prefs-btn">Save Preferences</button>
+          <button class="btn btn--outline-dark btn--xs" id="reset-prefs-btn">Reset to Defaults</button>
+          <p id="prefs-saved"><i class="fas fa-circle-check"></i> Saved.</p>
+        </div>
+      </section>
+
     </main>
   </div>
   </div> <!-- end admin-wrapper -->
 
   <!-- Product Modal -->
   <div class="modal-overlay" id="product-modal">
-    <div class="modal">
+    <div class="modal modal--lg">
       <button class="modal__close" id="modal-close">&times;</button>
       <h3 class="modal__title" id="modal-title">Add Product</h3>
       <p class="modal-error" id="modal-error"></p>
-      <form id="product-form" novalidate>
+      <form id="product-form" novalidate enctype="multipart/form-data">
         <input type="hidden" id="product-id">
-        <div class="form-2col">
-          <div class="form-group">
-            <label for="p-name">Name *</label>
-            <input type="text" id="p-name" placeholder="Midnight Oud" required>
+        <div class="modal-grid">
+          <!-- Left Col: Basics -->
+          <div class="modal-col">
+            <div class="form-2col">
+              <div class="form-group">
+                <label for="p-name">Name *</label>
+                <input type="text" id="p-name" placeholder="Midnight Oud" required>
+              </div>
+              <div class="form-group">
+                <label for="p-sku">SKU *</label>
+                <input type="text" id="p-sku" placeholder="OLS-PRM-001" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="p-description">Description *</label>
+              <textarea id="p-description" rows="3" placeholder="A rich, warm fragrance…" required style="resize:vertical;"></textarea>
+            </div>
+            <div class="form-2col">
+              <div class="form-group">
+                <label for="p-category">Category *</label>
+                <select id="p-category" required>
+                  <option value="">Select…</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="p-stock">Stock Qty *</label>
+                <input type="number" id="p-stock" min="0" placeholder="50" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="p-price">Default Price (R) *</label>
+              <input type="number" id="p-price" min="1" step="0.01" placeholder="599" required>
+              <p class="form-hint">Main price shown in listings</p>
+            </div>
+            <div class="form-2col">
+              <div class="form-group">
+                <label for="p-price50">50ml Price (R)</label>
+                <input type="number" id="p-price50" min="0" step="0.01" placeholder="499">
+              </div>
+              <div class="form-group">
+                <label for="p-price100">100ml Price (R)</label>
+                <input type="number" id="p-price100" min="0" step="0.01" placeholder="749">
+              </div>
+            </div>
+            <div class="form-2col">
+              <div class="form-group">
+                <label for="p-colors">Colors (comma separated)</label>
+                <input type="text" id="p-colors" placeholder="Black, Blue, Gold">
+              </div>
+              <div class="form-group">
+                <label for="p-tags">Tags (comma separated)</label>
+                <input type="text" id="p-tags" placeholder="Fashion, New, Bestseller">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="p-badge">Status Badge</label>
+              <select id="p-badge">
+                <option value="">None</option>
+                <option value="New">New</option>
+                <option value="Popular">Popularness</option>
+                <option value="Sale">Sale</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="p-sku">SKU *</label>
-            <input type="text" id="p-sku" placeholder="OLS-PRM-001" required>
+
+          <!-- Right Col: Images -->
+          <div class="modal-col">
+            <div class="form-group">
+              <label>Product Images *</label>
+              <div class="image-upload-zone" id="image-upload-zone">
+                <input type="file" id="p-images" multiple accept="image/*" style="display:none;">
+                <div class="upload-placeholder" onclick="document.getElementById('p-images').click()">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Click to upload images</span>
+                  <small>Max 10 images, up to 5MB each</small>
+                </div>
+              </div>
+              <div class="image-previews" id="p-image-previews">
+                <!-- Preview items will go here -->
+              </div>
+              <p class="form-hint" style="margin-top:8px;">Drag to reorder. The first image is the primary thumbnail.</p>
+            </div>
+            
+            <div id="p-audit-info" class="audit-info" style="display:none; margin-top: auto;">
+              <small id="audit-created"></small><br>
+              <small id="audit-updated"></small>
+            </div>
           </div>
         </div>
-        <div class="form-group">
-          <label for="p-description">Description *</label>
-          <textarea id="p-description" rows="3" placeholder="A rich, warm fragrance…" required style="resize:vertical;"></textarea>
-        </div>
-        <div class="form-2col">
-          <div class="form-group">
-            <label for="p-category">Category *</label>
-            <select id="p-category" required>
-              <option value="">Select…</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="p-stock">Stock Qty *</label>
-            <input type="number" id="p-stock" min="0" placeholder="50" required>
-          </div>
-        </div>
-        <div class="form-2col">
-          <div class="form-group">
-            <label for="p-price50">Price 50ml (R) *</label>
-            <input type="number" id="p-price50" min="1" step="0.01" placeholder="499" required>
-          </div>
-          <div class="form-group">
-            <label for="p-price100">Price 100ml (R) *</label>
-            <input type="number" id="p-price100" min="1" step="0.01" placeholder="749" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="p-image">Image URL</label>
-          <input type="url" id="p-image" placeholder="https://…">
-        </div>
-        <div class="form-group">
-          <label for="p-badge">Badge (optional)</label>
-          <input type="text" id="p-badge" placeholder="Bestseller">
-        </div>
+
         <div class="modal-actions">
           <button type="button" class="btn btn--outline" id="modal-cancel">Cancel</button>
           <button type="submit" class="btn btn--primary" id="modal-submit">Save Product</button>

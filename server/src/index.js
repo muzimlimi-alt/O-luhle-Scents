@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import orderRoutes from './routes/orders.js'
 import webhookRoutes from './routes/webhooks.js'
+import categoryRoutes from './routes/categories.js'
 import adminRoutes from './routes/admin.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -38,6 +39,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/categories', categoryRoutes)
 app.use('/api/webhooks', webhookRoutes)
 
 // Serve frontend static files from the project root
