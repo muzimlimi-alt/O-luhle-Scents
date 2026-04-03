@@ -19,23 +19,29 @@ import {
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 // Hide UI immediately if not logged in as admin.
-;(function guardAdmin() {
+function applyGuard() {
   if (!isAdmin()) {
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('admin-wrapper').style.display = 'none'
-      document.getElementById('login-container').style.display = 'flex'
-      const loader = document.querySelector('.page-loader')
-      if (loader) {
-        loader.style.opacity = '0'
-        setTimeout(() => loader.style.display = 'none', 500)
-      }
-    })
+    const adminWrapper = document.getElementById('admin-wrapper')
+    const loginContainer = document.getElementById('login-container')
+    if (adminWrapper) adminWrapper.style.display = 'none'
+    if (loginContainer) loginContainer.style.display = 'flex'
+    
+    const loader = document.querySelector('.page-loader')
+    if (loader) {
+      loader.style.opacity = '0'
+      setTimeout(() => loader.style.display = 'none', 500)
+    }
   } else {
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('admin-wrapper').style.display = 'block'
-    })
+    const adminWrapper = document.getElementById('admin-wrapper')
+    if (adminWrapper) adminWrapper.style.display = 'block'
   }
-})()
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', applyGuard)
+} else {
+  applyGuard()
+}
 
 // ── Page init ─────────────────────────────────────────────────────────────────
 
@@ -43,7 +49,7 @@ let allOrders   = []
 let allProducts = []
 let categories  = []
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function initAdminPage() {
   // Show admin email in header
   const user = getUser()
   const emailEl = document.getElementById('admin-email')
@@ -116,7 +122,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => loader.style.display = 'none', 500)
     }
   }
-})
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAdminPage)
+} else {
+  initAdminPage()
+}
 
 // ── Data loaders ──────────────────────────────────────────────────────────────
 
