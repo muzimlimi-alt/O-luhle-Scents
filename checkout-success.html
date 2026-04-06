@@ -76,39 +76,51 @@
   <script src="js/app.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
-  <script>
-    const API_URL = 'http://localhost:3000';
+  <script type="module">
+    import { getOrder } from './js/api.js';
 
     document.addEventListener('DOMContentLoaded', async () => {
-      hideLoader();
       const params = new URLSearchParams(window.location.search);
       const orderId = params.get('order');
 
-      if (!orderId) return;
+      if (!orderId) {
+        document.querySelector('.page-loader')?.classList.add('hidden');
+        return;
+      }
 
-      document.getElementById('order-ref').textContent = `Order reference: ${orderId}`;
+      const refEl = document.getElementById('order-ref');
+      if (refEl) refEl.textContent = `Order reference: ${orderId}`;
 
       try {
-        const res = await fetch(`${API_URL}/api/orders/${orderId}`);
-        if (!res.ok) return;
-        const order = await res.json();
-
+        const order = await getOrder(orderId);
+        
         const summaryEl = document.getElementById('order-summary');
         const itemsEl   = document.getElementById('order-items');
 
-        itemsEl.innerHTML = order.items.map(item => `
-          <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--color-border-light);">
-            <span>${item.product.name} <span style="color:var(--color-text-light);">${item.size} × ${item.qty}</span></span>
-            <span>R${(item.unitPrice * item.qty).toLocaleString()}</span>
-          </div>
-        `).join('');
+        if (itemsEl && order.items) {
+          itemsEl.innerHTML = order.items.map(item => `
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:8px 0;border-bottom:1px solid var(--color-border-light);">
+              <span>${item.variant?.product?.name || 'Scent'} <span style="color:var(--color-text-light);font-size:0.75rem;">(${item.variant?.size || 'Standard'} × ${item.quantity})</span></span>
+              <span>R${(parseFloat(item.priceAtPurchase) * item.quantity).toLocaleString()}</span>
+            </div>
+          `).join('');
+        }
 
-        document.getElementById('order-subtotal').textContent = `R${order.subtotal.toLocaleString()}`;
-        document.getElementById('order-shipping').textContent = `R${order.shippingCost.toLocaleString()}`;
-        document.getElementById('order-total').textContent    = `R${order.total.toLocaleString()}`;
-        summaryEl.style.display = 'block';
-      } catch {
-        // Summary is optional — silently skip if API is unreachable
+        const subtotal = parseFloat(order.totalAmount) - parseFloat(order.shippingCost);
+        
+        const subtotalEl = document.getElementById('order-subtotal');
+        const shippingEl = document.getElementById('order-shipping');
+        const totalEl    = document.getElementById('order-total');
+
+        if (subtotalEl) subtotalEl.textContent = `R${subtotal.toLocaleString()}`;
+        if (shippingEl) shippingEl.textContent = `R${parseFloat(order.shippingCost).toLocaleString()}`;
+        if (totalEl)    totalEl.textContent    = `R${parseFloat(order.totalAmount).toLocaleString()}`;
+        
+        if (summaryEl) summaryEl.style.display = 'block';
+      } catch (err) {
+        console.error('[Success Page] Error loading order:', err);
+      } finally {
+        document.querySelector('.page-loader')?.classList.add('hidden');
       }
     });
   </script>

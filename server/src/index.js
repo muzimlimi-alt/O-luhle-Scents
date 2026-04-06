@@ -13,6 +13,7 @@ import adminOpsRoutes from './routes/admin_ops.js'
 import trackingRoutes from './routes/tracking.js'
 import quoteRoutes from './routes/quotes.js'
 import settingsRoutes from './routes/settings.js'
+import cartRoutes from './routes/cart.js'
 
 
 
@@ -54,6 +55,7 @@ app.use('/api/webhooks', webhookRoutes)
 app.use('/api/tracking', trackingRoutes)
 app.use('/api/quotes', quoteRoutes)
 app.use('/api/admin/settings', settingsRoutes)
+app.use('/api/cart', cartRoutes)
 
 
 

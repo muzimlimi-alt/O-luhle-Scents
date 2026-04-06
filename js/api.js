@@ -102,6 +102,13 @@ export function getCategories() {
   return apiFetch('/api/categories')
 }
 
+export function validateCart(items, currency = 'ZAR') {
+  return apiFetch('/api/cart/validate', {
+    method: 'POST',
+    body: JSON.stringify({ items, currency })
+  })
+}
+
 // ── Orders ────────────────────────────────────────────────────────────────────
 
 export function createOrder(payload) {
@@ -118,7 +125,7 @@ export function initiatePayment(orderId) {
 
 export function getShippingEstimate(country, postalCode, subtotal) {
   const qs = new URLSearchParams({ country, postalCode, subtotal }).toString()
-  return apiFetch(`/api/shipping/estimate?${qs}`)
+  return apiFetch(`/api/orders/shipping/estimate?${qs}`)
 }
 
 

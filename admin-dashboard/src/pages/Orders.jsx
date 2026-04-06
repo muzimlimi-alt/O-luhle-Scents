@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ordersApi } from '../services/api';
 import { ShoppingBag, Eye, User, Search, Truck, X } from 'lucide-react';
 
@@ -16,18 +16,24 @@ export function Orders() {
   const [fulfillData, setFulfillData] = useState({ trackingNumber: '', courierKey: 'THE_COURIER_GUY', estimatedDelivery: '' });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
 
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async () => {
     try {
-      const items = await ordersApi.list();
+      const items = await ordersApi.list({ 
+        status: statusFilter || undefined, 
+        paymentStatus: paymentFilter || undefined 
+      });
       setOrders(items);
     } catch (err) {
       console.warn('Orders API failed:', err.message);
     }
-  }
+  }, [statusFilter, paymentFilter]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleOpenFulfill = (order) => {
     setSelectedOrder(order);
@@ -55,11 +61,36 @@ export function Orders() {
       </div>
 
       <div className="card" style={{ marginBottom: '24px' }}>
-         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <div style={{ flexGrow: 1, position: 'relative' }}>
+         <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 180px', gap: '16px', alignItems: 'center' }}>
+            <div style={{ position: 'relative' }}>
                <Search size={18} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
                <input type="text" className="search-input-classic" placeholder="Filter by customer, ID or tracking..." />
             </div>
+            
+            <select 
+              className="search-input-classic" 
+              style={{ paddingLeft: '12px' }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="SHIPPED">Shipped</option>
+              <option value="DELIVERED">Delivered</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+
+            <select 
+              className="search-input-classic" 
+              style={{ paddingLeft: '12px' }}
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+            >
+              <option value="">All Payments</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="paid">Paid</option>
+            </select>
          </div>
       </div>
 

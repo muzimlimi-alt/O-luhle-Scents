@@ -69,7 +69,10 @@ router.post('/login', async (req, res, next) => {
       token,
       user: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
     })
-  } catch (err) { next(err) }
+  } catch (err) { 
+    console.error('[Login Failure]', err);
+    next(err);
+  }
 })
 
 // GET /api/auth/me — verify session

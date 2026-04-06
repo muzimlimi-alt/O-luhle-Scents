@@ -18,22 +18,24 @@ import {
   Settings, 
   LogOut 
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const sidebarLinks = [
   { path: '/', label: 'Overview', icon: <LayoutDashboard size={18} /> },
   { path: '/analytics', label: 'Analytics', icon: <BarChart3 size={18} /> },
   { path: '/orders', label: 'Orders', icon: <ShoppingCart size={18} /> },
+  { path: '/payments', label: 'Payments', icon: <CreditCard size={18} /> },
   { path: '/products', label: 'Products', icon: <Package size={18} /> },
   { path: '/inventory', label: 'Inventory', icon: <Boxes size={18} /> },
+  { path: '/notifications', label: 'Notifications', icon: <Bell size={18} /> },
   { path: '/quotes', label: 'Quotes', icon: <FileText size={18} /> },
   { path: '/customers', label: 'Customers', icon: <Users size={18} /> },
   { path: '/invoices', label: 'Invoices', icon: <FileText size={18} /> },
   { path: '/suppliers', label: 'Suppliers', icon: <Truck size={18} /> },
   { path: '/purchases', label: 'Purchases', icon: <PurchaseIcon size={18} /> },
   { path: '/admin-users', label: 'Admin Users', icon: <UserCog size={18} /> },
+  { path: '/audit-logs', label: 'Audit Logs', icon: <ScrollText size={18} /> },
   { path: '/config', label: 'System Config', icon: <Settings size={18} /> },
-  { path: '/preferences', label: 'Preferences', icon: <Settings size={18} /> },
 ];
 
 export function Sidebar() {

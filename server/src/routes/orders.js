@@ -2,7 +2,7 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
-import { buildSignature } from '../utils/payfast.js'
+import { buildSignature, buildPaymentPayload } from '../utils/payfast.js'
 
 import { calculateShipping } from '../lib/shippingService.js'
 
@@ -101,26 +101,16 @@ router.post('/', async (req, res, next) => {
       })
     })
 
-    // 4. Build PayFast data
-    const sandbox = process.env.PAYFAST_SANDBOX === 'true'
-    const payfastUrl = sandbox ? 'https://sandbox.payfast.co.za/eng/process' : 'https://www.payfast.co.za/eng/process'
-    
-    // Use the buildSignature util (assuming it exists in utils/payfast.js)
-    const payfastData = {
-      merchant_id: process.env.PAYFAST_MERCHANT_ID,
-      merchant_key: process.env.PAYFAST_MERCHANT_KEY,
-      return_url: `${process.env.FRONTEND_URL}/checkout-success.html?order=${order.id}`,
-      cancel_url: `${process.env.FRONTEND_URL}/checkout.html`,
-      notify_url: `${process.env.SERVER_URL}/api/webhooks/payfast`,
-      name_first: shipping.firstName,
-      name_last: shipping.lastName,
-      email_address: contact.email,
-      m_payment_id: order.id,
-      amount: Number(totalAmount).toFixed(2),
-      item_name: "O'luhle Scents Order",
-    }
-
-    payfastData.signature = buildSignature(payfastData, process.env.PAYFAST_PASSPHRASE)
+    // 4. Build PayFast data using centralized utility
+    const { payfastUrl, payfastData } = buildPaymentPayload({
+      id: order.id,
+      totalAmount: order.totalAmount,
+      email: contact.email,
+      shippingAddress: { 
+        firstName: shipping.firstName, 
+        lastName: shipping.lastName 
+      }
+    })
 
     res.status(201).json({ orderId: order.id, payfastUrl, payfastData })
   } catch (err) {
@@ -135,7 +125,10 @@ router.get('/:id', async (req, res, next) => {
   try {
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },
-      include: { items: { include: { product: true } }, shippingAddress: true },
+      include: { 
+        items: { include: { variant: { include: { product: true } } } }, 
+        shippingAddress: true 
+      },
     })
     if (!order) return res.status(404).json({ error: 'Order not found' })
     res.json(order)
@@ -147,9 +140,15 @@ router.get('/:id', async (req, res, next) => {
 // GET /api/orders  — admin: list all orders
 router.get('/', requireAdmin, async (req, res, next) => {
   try {
+    const { status, paymentStatus } = req.query
+    const where = {}
+    if (status) where.status = status
+    if (paymentStatus) where.paymentStatus = paymentStatus
+
     const orders = await prisma.order.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
-      include: { shippingAddress: true, items: true },
+      include: { shippingAddress: true, items: true, customer: true },
     })
     res.json(orders)
   } catch (err) {

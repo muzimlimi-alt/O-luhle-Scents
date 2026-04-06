@@ -1,8 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-const PreferencesContext = createContext();
-
-export const PREF_KEY = 'oluhle_admin_prefs';
+import React, { useState, useEffect } from 'react';
+import { PreferencesContext, PREF_KEY } from './PreferencesContext';
 
 const DEFAULT_PREFS = {
   theme: 'dark',
@@ -16,8 +13,6 @@ const DEFAULT_PREFS = {
 /**
  * Global preference orchestration for the O'luhle Scents administrative suite.
  * ensures absolute synchronization between localized UI settings and the PostgreSQL fulfillment engine.
- * persists state in 'localStorage' to maintain continuity with legacy administrative patterns.
- * provides a unified interface for Theme, Compact Mode, and Privacy Mode (Revenue Blurring).
  */
 export function PreferencesProvider({ children }) {
   const [prefs, setPrefs] = useState(() => {
@@ -51,9 +46,3 @@ export function PreferencesProvider({ children }) {
     </PreferencesContext.Provider>
   );
 }
-
-export const usePreferences = () => {
-  const context = useContext(PreferencesContext);
-  if (!context) throw new Error('usePreferences must be used within a PreferencesProvider');
-  return context;
-};

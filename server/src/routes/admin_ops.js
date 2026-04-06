@@ -91,6 +91,53 @@ router.get('/purchases', requireAdmin, async (req, res, next) => {
   }
 })
 
+// ─── PAYMENTS ────────────────────────────────────────────────────────────────
+router.get('/payments', requireAdmin, async (req, res, next) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      include: { order: { include: { customer: true } } },
+      orderBy: { paidAt: 'desc' }
+    })
+    res.json(payments)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ─── INVENTORY ───────────────────────────────────────────────────────────────
+router.get('/inventory', requireAdmin, async (req, res, next) => {
+  try {
+    const inventory = await prisma.inventory.findMany({
+      include: { 
+        variant: { 
+          include: { 
+            product: { include: { supplier: true } } 
+          } 
+        } 
+      },
+      orderBy: { quantity: 'asc' }
+    })
+    res.json(inventory)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.get('/inventory/logs', requireAdmin, async (req, res, next) => {
+  try {
+    const logs = await prisma.inventoryLog.findMany({
+      include: { 
+        variant: { include: { product: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200
+    })
+    res.json(logs)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // ─── INVOICES ────────────────────────────────────────────────────────────────
 router.get('/invoices', requireAdmin, async (req, res, next) => {
   try {

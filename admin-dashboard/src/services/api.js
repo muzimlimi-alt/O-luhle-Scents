@@ -96,6 +96,17 @@ export const adminOpsApi = {
   purchases: {
     list: () => api.get('/admin/ops/purchases'),
   },
+  payments: {
+    list: () => api.get('/admin/ops/payments'),
+  },
+  inventory: {
+    list: () => api.get('/admin/ops/inventory'),
+    logs: () => api.get('/admin/ops/inventory/logs'),
+  },
+  notifications: {
+    list: () => api.get('/admin/ops/notifications'),
+    markRead: (id) => api.patch(`/admin/ops/notifications/${id}/read`),
+  },
   invoices: {
     list: () => api.get('/admin/ops/invoices'),
     bulkDownload: (ids) => api.post('/admin/ops/invoices/bulk-pdf', { ids }, { responseType: 'blob' }),

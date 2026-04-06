@@ -110,7 +110,7 @@ export function buildPaymentPayload(order) {
     name_last:     order.shippingAddress.lastName,
     email_address: order.email,
     m_payment_id:  order.id,
-    amount:        Number(order.totalAmount).toFixed(2),
+    amount:        parseFloat(order.totalAmount).toFixed(2),
     item_name:     "Oluhle Scents Order",
   }
 

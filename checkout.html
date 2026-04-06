@@ -96,40 +96,38 @@
           <div class="form-group">
             <label for="postal">Postal Code</label>
             <input type="text" id="postal" placeholder="2000" style="max-width:200px;">
-          </div>
-
-          <!-- Shipping Method -->
+          </div>          <!-- Shipping Method -->
           <h3 style="margin:32px 0 20px;font-size:1.3rem;">Shipping Method</h3>
-          <div style="border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;">
+          <div id="shipping-methods-container" style="border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;">
             <label style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer;border-bottom:1px solid var(--color-border-light);background:var(--color-bg-alt);">
               <div style="display:flex;align-items:center;gap:12px;">
-                <input type="radio" name="shipping" checked style="accent-color:var(--color-gold);">
+                <input type="radio" id="shipping-standard" name="shipping" value="99" data-name="Standard Delivery" checked style="accent-color:var(--color-gold);">
                 <div>
                   <div style="font-weight:500;font-size:0.9rem;">Standard Delivery</div>
                   <div style="font-size:0.75rem;color:var(--color-text-light);">3–5 business days</div>
                 </div>
               </div>
-              <span style="font-weight:500;">R99</span>
+              <span class="method-price" style="font-weight:500;">R99</span>
             </label>
             <label style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer;">
               <div style="display:flex;align-items:center;gap:12px;">
-                <input type="radio" name="shipping" style="accent-color:var(--color-gold);">
+                <input type="radio" id="shipping-express" name="shipping" value="199" data-name="Express Delivery" style="accent-color:var(--color-gold);">
                 <div>
                   <div style="font-weight:500;font-size:0.9rem;">Express Delivery</div>
                   <div style="font-size:0.75rem;color:var(--color-text-light);">1–2 business days</div>
                 </div>
               </div>
-              <span style="font-weight:500;">R199</span>
+              <span class="method-price" style="font-weight:500;">R199</span>
             </label>
           </div>
 
-          <!-- Payment placeholder -->
+          <!-- Payment placeholder 
           <h3 style="margin:32px 0 20px;font-size:1.3rem;">Payment</h3>
           <div style="padding:32px;background:var(--color-bg-alt);border-radius:var(--radius-lg);text-align:center;border:1px dashed var(--color-border);">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-light)" stroke-width="1.5" style="margin-bottom:12px;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             <p style="color:var(--color-text-light);font-size:0.85rem;margin-bottom:4px;">Payment gateway integration ready</p>
             <p style="color:var(--color-text-light);font-size:0.75rem;">Supports PayFast, Yoco, or Stripe</p>
-          </div>
+          </div>-->
 
           <button class="btn btn--primary btn--full btn--lg mt-md" id="place-order-btn" type="button">
             Place Order
@@ -243,6 +241,20 @@
       // --- Dynamic Shipping Calculation ---
       let shippingCost = 0;
 
+      // Initialize shipping cost based on the default selection
+      const initialRadio = document.querySelector('input[name="shipping"]:checked');
+      if (initialRadio) {
+        shippingCost = parseFloat(initialRadio.value) || 0;
+      }
+
+      // Update when a radio button is manually clicked
+      document.querySelectorAll('input[name="shipping"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          shippingCost = parseFloat(e.target.value) || 0;
+          updateSummaryTotals();
+        });
+      });
+
       async function updateShippingEstimate() {
         const postal = document.getElementById('postal').value.trim();
         const province = document.getElementById('province').value;
@@ -250,8 +262,32 @@
 
         if (postal && province) {
           try {
-            const data = await getShippingEstimate('South Africa', postal, subtotal);
-            shippingCost = data.cost;
+            const { cost } = await getShippingEstimate('South Africa', postal, subtotal);
+            
+            // Standard is the base cost
+            const standardRadio = document.getElementById('shipping-standard');
+            const expressRadio = document.getElementById('shipping-express');
+            
+            if (standardRadio) {
+              standardRadio.value = cost;
+              const priceSpan = standardRadio.closest('label').querySelector('.method-price');
+              if (priceSpan) priceSpan.textContent = cost === 0 ? 'FREE' : `R${cost.toLocaleString()}`;
+            }
+            
+            if (expressRadio) {
+              // Express is base + 100 as a business rule
+              const expressCost = cost + 100;
+              expressRadio.value = expressCost;
+              const priceSpan = expressRadio.closest('label').querySelector('.method-price');
+              if (priceSpan) priceSpan.textContent = `R${expressCost.toLocaleString()}`;
+            }
+
+            // Update shippingCost based on the CURRENTLY selected radio
+            const selectedRadio = document.querySelector('input[name="shipping"]:checked');
+            if (selectedRadio) {
+              shippingCost = parseFloat(selectedRadio.value) || 0;
+            }
+            
             updateSummaryTotals();
           } catch (err) {
             console.error('Shipping estimate failed', err);
@@ -307,28 +343,29 @@
           return;
         }
 
-        const shippingCost = getSelectedShipping();
-        const shippingMethod = shippingCost === 99 ? 'standard' : 'express';
+        const selectedRadio = document.querySelector('input[name="shipping"]:checked');
+        const shippingMethod = selectedRadio ? selectedRadio.getAttribute('data-name') : 'Standard Delivery';
 
         btn.disabled = true;
         btn.textContent = 'Processing…';
 
         try {
           const data = await createOrder({
-            items: cart.map(i => ({ variantId: i.variantId, quantity: i.qty || i.quantity })),
+            items: cart.map(i => ({ variantId: i.variantId, quantity: parseInt(i.qty || i.quantity) })),
             contact: { email, phone },
-            shipping: { firstName, lastName, street, city, province, postalCode },
+            shipping: { firstName, lastName, street, city, province, postalCode, country: 'South Africa' },
             shippingMethod,
           });
 
-
-          // Clear the cart
+          // Logic for clearing cart: 
+          // We clear it here because the user is successfully handing off to PayFast.
           localStorage.removeItem('oluhle_cart');
 
           // Submit to PayFast via a hidden auto-submitting form
           const form = document.createElement('form');
           form.method = 'POST';
           form.action = data.payfastUrl;
+          
           for (const [key, value] of Object.entries(data.payfastData)) {
             const input = document.createElement('input');
             input.type = 'hidden';
@@ -336,11 +373,13 @@
             input.value = value;
             form.appendChild(input);
           }
+          
           document.body.appendChild(form);
           form.submit();
 
         } catch (err) {
-          errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+          console.error('Order failed:', err);
+          errorEl.textContent = err.message || 'Something went wrong. Please check your connection and try again.';
           errorEl.style.display = 'block';
           btn.disabled = false;
           btn.textContent = 'Place Order';

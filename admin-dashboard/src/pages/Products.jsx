@@ -18,11 +18,29 @@ export function Products() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
+  // Pagination & Filtering State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [sortBy, setSortBy] = useState('newest');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+
   const fetchProducts = async () => {
+    setLoading(true);
     try {
-      const response = await productsApi.list();
-      const data = response.products || response;
-      setProducts(Array.isArray(data) ? data : []);
+      const response = await productsApi.list({
+        page,
+        limit: 8,
+        sort: sortBy,
+        category: selectedCategory,
+        status: selectedStatus,
+        search: searchTerm
+      });
+      
+      setProducts(response.products || []);
+      setTotalPages(response.totalPages || 1);
+      setTotalProducts(response.total || 0);
     } catch (err) {
       console.error('Failed to sync inventory:', err);
     } finally {
@@ -39,8 +57,21 @@ export function Products() {
     }
   };
 
+  // Debounce search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1); // Reset to first page on new search
+      fetchProducts();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Handle other filter changes
   useEffect(() => {
     fetchProducts();
+  }, [page, sortBy, selectedCategory, selectedStatus]);
+
+  useEffect(() => {
     fetchCategories();
   }, []);
 
@@ -79,12 +110,6 @@ export function Products() {
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    (p.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (p.brand && p.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (p.variants?.some(v => v.sku?.toLowerCase().includes(searchTerm.toLowerCase())))
-  );
-
   return (
     <div className="elite-products-container">
       {/* ATELIER EXPLORER HEADER */}
@@ -111,141 +136,209 @@ export function Products() {
           <Search className="search-icon" size={18} />
           <input 
             type="text" 
-            placeholder="Explore by name, brand, or SKU..." 
+            placeholder="Search by name, brand, or SKU..." 
             className="search-glass-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        
         <div className="filter-group">
-          <button className="btn-glass">
-            <Filter size={16} />
-            <span>CATEGORIES</span>
-          </button>
+          {/* Status Filter */}
+          <div className="select-glass-wrapper">
+             <Filter size={16} className="select-icon" />
+             <select 
+               className="select-glass"
+               value={selectedStatus}
+               onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
+             >
+                <option value="all">ALL PORTFOLIO</option>
+                <option value="active">LIVE ON BOUTIQUE</option>
+                <option value="inactive">ARCHIVED</option>
+             </select>
+          </div>
+
+          {/* Category Filter */}
+          <div className="select-glass-wrapper">
+             <Package size={16} className="select-icon" />
+             <select 
+               className="select-glass"
+               value={selectedCategory}
+               onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
+             >
+                <option value="all">ALL CATEGORIES</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name?.toUpperCase()}</option>
+                ))}
+             </select>
+          </div>
+
+          {/* Sort Control */}
+          <div className="select-glass-wrapper">
+             <BarChart3 size={16} className="select-icon" />
+             <select 
+               className="select-glass"
+               value={sortBy}
+               onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+             >
+                <option value="newest">NEWEST FIRST</option>
+                <option value="oldest">OLDEST FIRST</option>
+                <option value="name-asc">NAME A-Z</option>
+                <option value="name-desc">NAME Z-A</option>
+             </select>
+          </div>
         </div>
       </div>
 
       {/* PRODUCT GALLERY */}
       <div className="products-atelier-gallery">
-        {loading ? (
+        {loading && products.length === 0 ? (
           <div className="atelier-loading">
             <Loader2 className="spinner" size={40} />
             <p>SYNCHRONIZING ATELIER DATA...</p>
           </div>
         ) : (
-          <div className="atelier-grid">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="atelier-card-wrapper animate-in">
-                <div className="atelier-card elite-glass">
-                  {/* CARD HEADER: STATUS & BRAND */}
-                  <div className="card-top">
-                    <div className="status-indicator">
-                      {product.isActive !== false ? (
-                        <span className="badge-status active">
-                          <Eye size={12} /> LIVE ON BOUTIQUE
-                        </span>
-                      ) : (
-                        <span className="badge-status archived">
-                          <EyeOff size={12} /> ARCHIVED
-                        </span>
-                      )}
-                    </div>
-                    <div className="card-actions">
-                      <button onClick={() => handleEdit(product)} className="btn-mini-action" title="Edit Portfolio"><Edit2 size={14} /></button>
-                      <button onClick={() => handleDelete(product.id)} className="btn-mini-action danger" title="Decommission"><Trash2 size={14} /></button>
-                    </div>
-                  </div>
-
-                  <div className="card-content-layout">
-                    {/* LEFT: THUMBNAIL */}
-                    <div className="card-visual-sidebar">
-                      <div className="image-atelier-frame">
-                        {product.primaryImage ? (
-                          <img src={`${API_ORIGIN}/images/products/${product.primaryImage}`} alt={product.name} />
+          <>
+            <div className={`atelier-grid ${loading ? 'opacity-50' : ''}`}>
+              {products.map(product => (
+                <div key={product.id} className="atelier-card-wrapper animate-in">
+                  <div className="atelier-card elite-glass">
+                    {/* CARD HEADER: STATUS & BRAND */}
+                    <div className="card-top">
+                      <div className="status-indicator">
+                        {product.isActive !== false ? (
+                          <span className="badge-status active">
+                            <Eye size={12} /> LIVE ON BOUTIQUE
+                          </span>
                         ) : (
-                          <div className="image-placeholder">
-                            <ImageIcon size={32} opacity={0.3} />
-                          </div>
+                          <span className="badge-status archived">
+                            <EyeOff size={12} /> ARCHIVED
+                          </span>
                         )}
-                        <div className="image-overlay-glow"></div>
                       </div>
-                      
-                      <div className="sidebar-meta">
-                        <div className="meta-item">
-                          <Tag size={12} />
-                          <span className="label">Category:</span>
-                          <span className="value">{product.category?.name || 'Uncategorized'}</span>
-                        </div>
-                        <div className="meta-item">
-                          <Truck size={12} />
-                          <span className="label">Artisan:</span>
-                          <span className="value">{product.supplier?.name || 'In-House'}</span>
-                        </div>
+                      <div className="card-actions">
+                        <button onClick={() => handleEdit(product)} className="btn-mini-action" title="Edit Portfolio"><Edit2 size={14} /></button>
+                        <button onClick={() => handleDelete(product.id)} className="btn-mini-action danger" title="Decommission"><Trash2 size={14} /></button>
                       </div>
                     </div>
 
-                    {/* RIGHT: DETAILS & VARIANTS */}
-                    <div className="card-main-body">
-                      <div className="product-identity">
-                        <span className="brand-eyebrow">{product.brand || "O'luhle Scents"}</span>
-                        <h3 className="product-name">{product.name}</h3>
-                        {product.tags && (
-                          <div className="tag-cloud">
-                            {product.tags.split(',').map((tag, idx) => (
-                              <span key={idx} className="atelier-tag">{tag.trim()}</span>
-                            ))}
+                    <div className="card-content-layout">
+                      {/* LEFT: THUMBNAIL */}
+                      <div className="card-visual-sidebar">
+                        <div className="image-atelier-frame">
+                          {product.primaryImage ? (
+                            <img src={`${API_ORIGIN}/images/products/${product.primaryImage}`} alt={product.name} />
+                          ) : (
+                            <div className="image-placeholder">
+                              <ImageIcon size={32} opacity={0.3} />
+                            </div>
+                          )}
+                          <div className="image-overlay-glow"></div>
+                        </div>
+                        
+                        <div className="sidebar-meta">
+                          <div className="meta-item">
+                            <Tag size={12} />
+                            <span className="label">Category:</span>
+                            <span className="value">{product.category?.name || 'Uncategorized'}</span>
                           </div>
-                        )}
+                          <div className="meta-item">
+                            <Truck size={12} />
+                            <span className="label">Artisan:</span>
+                            <span className="value">{product.supplier?.name || 'In-House'}</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="variant-matrix-container">
-                        <div className="matrix-header">
-                          <Layers size={14} />
-                          <span>VARIATION MATRIX</span>
-                        </div>
-                        <div className="matrix-scroll">
-                          <table className="matrix-table">
-                            <thead>
-                              <tr>
-                                <th>SIZE</th>
-                                <th>RETAIL</th>
-                                <th>COST</th>
-                                <th>STOCK</th>
-                                <th>SKU/BARCODE</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {product.variants?.map(v => (
-                                <tr key={v.id}>
-                                  <td className="font-outfit">{v.size}</td>
-                                  <td className="price-primary">R{v.price}</td>
-                                  <td className="price-cost">R{v.costPrice || '--'}</td>
-                                  <td>
-                                    <div className="stock-level-indicator">
-                                      <span className={`stock-count ${v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) ? 'low' : ''}`}>
-                                        {v.inventory?.quantity || 0}
-                                      </span>
-                                      {v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) && (
-                                        <AlertCircle size={12} className="low-stock-icon" />
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="sku-cell">
-                                    <span className="sku-text" title={`Barcode: ${v.barcode || 'N/A'}`}>{v.sku}</span>
-                                    {v.barcode && <Fingerprint size={10} className="barcode-icon" />}
-                                  </td>
-                                </tr>
+                      {/* RIGHT: DETAILS & VARIANTS */}
+                      <div className="card-main-body">
+                        <div className="product-identity">
+                          <span className="brand-eyebrow">{product.brand || "O'luhle Scents"}</span>
+                          <h3 className="product-name">{product.name}</h3>
+                          {product.tags && (
+                            <div className="tag-cloud">
+                              {product.tags.split(',').map((tag, idx) => (
+                                <span key={idx} className="atelier-tag">{tag.trim()}</span>
                               ))}
-                            </tbody>
-                          </table>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="variant-matrix-container">
+                          <div className="matrix-header">
+                            <Layers size={14} />
+                            <span>VARIATION MATRIX</span>
+                          </div>
+                          <div className="matrix-scroll">
+                            <table className="matrix-table">
+                              <thead>
+                                <tr>
+                                  <th>SIZE</th>
+                                  <th>RETAIL</th>
+                                  <th>COST</th>
+                                  <th>STOCK</th>
+                                  <th>SKU/BARCODE</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {product.variants?.map(v => (
+                                  <tr key={v.id}>
+                                    <td className="font-outfit">{v.size}</td>
+                                    <td className="price-primary">R{v.price}</td>
+                                    <td className="price-cost">R{v.costPrice || '--'}</td>
+                                    <td>
+                                      <div className="stock-level-indicator">
+                                        <span className={`stock-count ${v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) ? 'low' : ''}`}>
+                                          {v.inventory?.quantity || 0}
+                                        </span>
+                                        {v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) && (
+                                          <AlertCircle size={12} className="low-stock-icon" />
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="sku-cell">
+                                      <span className="sku-text" title={`Barcode: ${v.barcode || 'N/A'}`}>{v.sku}</span>
+                                      {v.barcode && <Fingerprint size={10} className="barcode-icon" />}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="atelier-pagination">
+              <div className="pagination-info">
+                Showing {products.length} of {totalProducts} Products
               </div>
-            ))}
-          </div>
+              <div className="pagination-controls">
+                <button 
+                  className="btn-pagination" 
+                  disabled={page === 1 || loading}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  PREVIOUS
+                </button>
+                <div className="page-summary">
+                  PAGE {page} OF {totalPages}
+                </div>
+                <button 
+                  className="btn-pagination" 
+                  disabled={page === totalPages || loading}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  NEXT
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -308,32 +401,69 @@ export function Products() {
 
         /* DISCOVERY BAR */
         .atelier-discovery { 
-          display: flex; gap: 20px; margin-bottom: 40px; 
+          display: flex; 
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 16px; 
+          margin-bottom: 40px; 
           animation: slideIn 0.8s cubic-bezier(0.19, 1, 0.22, 1);
         }
         .search-glass-container {
-          flex: 1; position: relative; display: flex; align-items: center;
+          flex: 1; 
+          min-width: 280px;
+          position: relative; 
+          display: flex; 
+          align-items: center;
         }
         .search-icon { position: absolute; left: 20px; color: var(--atelier-gold); opacity: 0.6; }
         .search-glass-input {
-          width: 100%; padding: 16px 20px 16px 54px;
+          width: 100%; padding: 14px 20px 14px 54px;
           background: var(--atelier-card); border: 1.5px solid var(--atelier-border);
-          border-radius: 12px; color: #fff; font-size: 0.95rem;
+          border-radius: 12px; color: #fff; font-size: 0.9rem;
           transition: all 0.3s; backdrop-filter: blur(10px);
         }
         .search-glass-input:focus { border-color: var(--atelier-gold); outline: none; box-shadow: 0 0 20px rgba(184,155,106,0.1); }
 
-        .btn-glass {
-          background: var(--atelier-card); border: 1.5px solid var(--atelier-border);
-          border-radius: 12px; color: var(--atelier-text); padding: 0 24px;
-          height: 100%; display: flex; align-items: center; gap: 10px;
-          font-size: 0.85rem; letter-spacing: 0.1em; cursor: pointer; transition: all 0.3s;
+        .filter-group { 
+          display: flex; 
+          flex-wrap: wrap;
+          gap: 12px;
+          flex: 2;
+          justify-content: flex-end;
         }
-        .btn-glass:hover { border-color: var(--atelier-gold); background: var(--atelier-gold-low); }
+
+        /* Responsive stack for discovery */
+        @media (max-width: 992px) {
+          .atelier-discovery { flex-direction: column; align-items: stretch; }
+          .filter-group { justify-content: flex-start; flex: none; }
+          .select-glass-wrapper { flex: 1; min-width: 150px; }
+          .select-glass { width: 100%; min-width: unset; }
+        }
+
+        /* SELECT GLASS */
+        .select-glass-wrapper { position: relative; display: flex; align-items: center; }
+        .select-icon { position: absolute; left: 16px; color: var(--atelier-gold); pointer-events: none; opacity: 0.7; }
+        .select-glass {
+          background: var(--atelier-card); border: 1.5px solid var(--atelier-border);
+          border-radius: 12px; color: var(--atelier-text); padding: 14px 20px 14px 44px;
+          font-size: 0.75rem; letter-spacing: 0.1em; cursor: pointer; transition: all 0.3s;
+          appearance: none; -webkit-appearance: none; min-width: 160px; backdrop-filter: blur(10px);
+          text-transform: uppercase;
+        }
+        .select-glass:hover { border-color: var(--atelier-gold); background: var(--atelier-gold-low); }
+        .select-glass:focus { outline: none; border-color: var(--atelier-gold); }
+        .select-glass option { background: #1a1917; color: #fff; }
 
         /* GALLERY GRID */
-        .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(650px, 1fr)); gap: 30px; }
+        .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); gap: 30px; }
         @media (max-width: 1400px) { .atelier-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { 
+          .elite-products-container { padding: 20px; }
+          .card-content-layout { flex-direction: column; align-items: center; }
+          .card-visual-sidebar { width: 100%; max-width: 300px; }
+          .atelier-pagination { flex-direction: column; gap: 20px; text-align: center; }
+          .atelier-title { font-size: 2rem; }
+        }
 
         .atelier-card-wrapper { transition: transform 0.4s; }
         .atelier-card-wrapper:hover { transform: translateY(-5px); }
@@ -437,6 +567,7 @@ export function Products() {
         .barcode-icon { color: var(--atelier-gold); opacity: 0.5; }
 
         /* UTILS */
+        .opacity-50 { opacity: 0.5; pointer-events: none; }
         .animate-in { animation: cardIn 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards; opacity: 0; transform: translateY(20px); }
         @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
         .font-outfit { font-family: var(--atelier-font-header); }
@@ -445,8 +576,25 @@ export function Products() {
         .spinner { animation: spin 2s linear infinite; margin-bottom: 15px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* PAGINATION */
+        .atelier-pagination {
+          margin-top: 50px; padding: 24px; border-top: 1px solid var(--atelier-border);
+          display: flex; justify-content: space-between; align-items: center;
+          background: rgba(0,0,0,0.2); border-radius: 20px;
+        }
+        .pagination-info { font-size: 0.85rem; color: var(--atelier-text-muted); font-family: var(--atelier-font-header); }
+        .pagination-controls { display: flex; align-items: center; gap: 24px; }
+        .btn-pagination {
+          background: transparent; border: 1px solid var(--atelier-border);
+          color: var(--atelier-text); padding: 10px 20px; border-radius: 8px;
+          font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em;
+          cursor: pointer; transition: all 0.3s;
+        }
+        .btn-pagination:not(:disabled):hover { background: var(--atelier-gold); color: #000; border-color: var(--atelier-gold); transform: translateY(-2px); }
+        .btn-pagination:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-summary { font-size: 0.75rem; font-weight: 700; color: var(--atelier-gold); letter-spacing: 0.1em; }
       `}} />
     </div>
   );
 }
-
