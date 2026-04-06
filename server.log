@@ -1,0 +1,20 @@
+O'luhle Scents server running on http://localhost:3000
+[PATCH /api/products/:id] Payload: {
+  id: '97292495-1cfa-4601-a979-800c44d2b028',
+  body: [Object: null prototype] {
+    name: 'Redesign Test Fragrance',
+    brand: "O'luhle Aura",
+    categoryId: '0ca8b9a1-8515-4c61-af3c-3dce11168f18',
+    supplierId: '',
+    description: 'Redesign verification test. Luxe scent with premium notes.',
+    isActive: 'false',
+    tags: '',
+    existingImages: '["1775488039938_1775252537252_test-product.png"]',
+    variants: '[{"id":"c1d35d0e-848f-4c4a-b32f-0c0d8854fe3f","size":"50ml","price":"1000","costPrice":"0","quantity":"10","sku":"RTF-50","barcode":"","lowStockThreshold":"5"},{"id":"7d40a84e-767f-4a40-9482-e9f2d5361199","size":"Standard","price":"0","costPrice":"0","quantity":"0","sku":"SKU-1775420119561-604","barcode":"","lowStockThreshold":"5"}]'
+  },
+  files: 0
+}
+[PATCH] Transaction Logic: {
+  safeCategoryId: '0ca8b9a1-8515-4c61-af3c-3dce11168f18',
+  safeSupplierId: null
+}

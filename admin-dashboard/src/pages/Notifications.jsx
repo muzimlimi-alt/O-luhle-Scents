@@ -1,152 +1,190 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Bell, AlertTriangle, Package, CheckCircle, Clock } from 'lucide-react';
+import { 
+  Bell, 
+  CheckCircle, 
+  AlertTriangle, 
+  Info, 
+  Trash2, 
+  X, 
+  Clock, 
+  Search, 
+  Filter
+} from 'lucide-react';
 import { DateTime } from 'luxon';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await adminOpsApi.notifications.list();
+      setNotifications(data || []);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchNotifications() {
-      try {
-        const data = await adminOpsApi.notifications.list();
-        setNotifications(data);
-      } catch (err) {
-        console.error('Failed to fetch notifications:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchNotifications();
   }, []);
 
   const markAsRead = async (id) => {
     try {
       await adminOpsApi.notifications.markRead(id);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      fetchNotifications();
     } catch (err) {
-      console.error('Failed to mark as read:', err);
+      console.error('Mark read failed:', err);
     }
   };
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'LOW_STOCK': return <AlertTriangle className="status--error-text" size={20} />;
-      case 'NEW_ORDER': return <Package className="status--paid-text" size={20} />;
-      default: return <Bell size={20} />;
+  const deleteNotification = async (id) => {
+    try {
+      await adminOpsApi.notifications.delete(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error('Delete failed:', err);
     }
   };
+
+  const filtered = notifications.filter(n => {
+    const matchesSearch = n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          n.message.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === '' || n.type === typeFilter;
+    return matchesSearch && matchesType;
+  });
 
   return (
-    <div className="notifications-page">
-      <div className="content-header">
-        <h2 className="page-title">Operational Intelligence</h2>
-        <p className="page-subtitle">Critical alerts and system notifications for the O'luhle ecosystem</p>
+    <div className="elite-notifications-container animate-fade-in">
+      <div className="atelier-header">
+        <div className="header-titles">
+          <h1 className="couture-text">Intelligence Feed</h1>
+          <p className="couture-subtext">Real-time operational alerts and system diagnostics</p>
+        </div>
       </div>
 
-      <div className="card">
+      <div className="atelier-discovery">
+        <div className="search-glass-wrapper">
+          <Search size={18} className="glass-icon" />
+          <input 
+            type="text" 
+            className="search-glass-input" 
+            placeholder="Discovery via alert title or content..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="filter-glass-matrix">
+           <div className="select-glass-wrapper">
+              <Filter size={14} className="glass-icon" />
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <option value="">Alerts: All Types</option>
+                <option value="INFO">System Information</option>
+                <option value="WARNING">Operational Warning</option>
+                <option value="ERROR">Critical Failure</option>
+              </select>
+           </div>
+        </div>
+      </div>
+
+      <div className="atelier-grid vertical-feed">
         {loading ? (
-          <div className="loading-state">Gathering intelligence...</div>
+          <div className="elite-loading">
+            <div className="loader-gold"></div>
+            <p>Syncing broadcast matrix...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="elite-empty-state">
+            <Bell size={48} />
+            <p>Operational intelligence is silent at this interval.</p>
+          </div>
         ) : (
-          <div className="notification-list">
-            {notifications.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px', color: 'var(--color-text-muted)' }}>
-                <Bell size={48} strokeWidth={1} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                <p>System is operating within optimal parameters.</p>
+          filtered.map((n) => (
+            <div key={n.id} className={`elite-glass alert-card fade-in-blur ${!n.isRead ? 'unread' : 'read'}`}>
+              <div className="alert-card-side">
+                {!n.isRead && <div className="unread-pulse"></div>}
+                <div className={`alert-icon-box ${n.type.toLowerCase()}`}>
+                   {n.type === 'ERROR' ? <AlertTriangle size={20} /> : n.type === 'WARNING' ? <Info size={20} /> : <CheckCircle size={20} />}
+                </div>
               </div>
-            ) : (
-              notifications.map((n) => (
-                <div key={n.id} className={`notification-item ${n.isRead ? 'is-read' : 'is-unread'}`}>
-                  <div className="notification-icon">
-                    {getIcon(n.type)}
-                  </div>
-                  <div className="notification-content">
-                    <p className="notification-message">{n.message}</p>
-                    <div className="notification-footer">
-                      <span className="notification-time">
-                        <Clock size={12} /> {DateTime.fromISO(n.createdAt).toRelative()}
-                      </span>
+
+              <div className="alert-card-content">
+                <div className="alert-header-row">
+                  <span className="alert-type-tag">{n.type}</span>
+                  <span className="alert-time">{DateTime.fromISO(n.createdAt).toRelative()}</span>
+                </div>
+                <h3 className="alert-title">{n.title}</h3>
+                <p className="alert-message">{n.message}</p>
+                
+                <div className="alert-footer">
+                   <div className="footer-actions">
                       {!n.isRead && (
-                        <button 
-                          className="text-btn" 
-                          onClick={() => markAsRead(n.id)}
-                          style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-primary)' }}
-                        >
-                          Acknowledge
+                        <button className="btn-mini-action" onClick={() => markAsRead(n.id)}>
+                          <CheckCircle size={14} /> Resolve
                         </button>
                       )}
-                    </div>
-                  </div>
-                  {!n.isRead && <div className="unread-dot"></div>}
+                      <button className="btn-mini-action delete" onClick={() => deleteNotification(n.id)}>
+                        <Trash2 size={14} /> Purge
+                      </button>
+                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .notification-list {
-          display: flex;
-          flex-direction: column;
-        }
-        .notification-item {
-          display: flex;
-          gap: 16px;
-          padding: 20px;
-          border-bottom: 1px solid var(--color-border-light);
-          position: relative;
-          transition: background 0.2s ease;
-        }
-        .notification-item:hover {
-          background: #fafafa;
-        }
-        .notification-item.is-unread {
-          background: rgba(212, 175, 55, 0.03);
-        }
-        .notification-item.is-read {
-          opacity: 0.7;
-        }
-        .notification-icon {
-          flex-shrink: 0;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: var(--shadow-sm);
-        }
-        .notification-content {
-          flex: 1;
-        }
-        .notification-message {
-          font-weight: 500;
-          margin-bottom: 8px;
-          color: var(--color-text);
-        }
-        .notification-footer {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        .notification-time {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .unread-dot {
-          position: absolute;
-          top: 24px;
-          right: 20px;
-          width: 8px;
-          height: 8px;
-          background: var(--color-primary);
-          border-radius: 50%;
+        .elite-notifications-container { padding: 40px; max-width: 1000px; margin: 0 auto; min-height: 100vh; }
+        .atelier-header { margin-bottom: 48px; border-left: 3px solid var(--color-primary); padding-left: 24px; }
+        
+        .atelier-discovery { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 24px; }
+        .search-glass-wrapper { position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; flex: 1; }
+        .search-glass-input { background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
+        .filter-glass-matrix { display: flex; gap: 16px; }
+        .select-glass-wrapper { background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
+        .select-glass-wrapper select { background: none; border: none; color: white; outline: none; cursor: pointer; font-size: 0.85rem; }
+
+        .vertical-feed { display: flex; flex-direction: column; gap: 20px; }
+        
+        .alert-card { display: flex; padding: 24px; gap: 24px; transition: var(--transition); border-left: 4px solid transparent; }
+        .alert-card.unread { background: rgba(184, 155, 106, 0.03); border-left-color: var(--color-primary); }
+        .alert-card.read { opacity: 0.7; filter: grayscale(0.5); }
+        .alert-card:hover { transform: translateX(8px); background: rgba(255,255,255,0.02); }
+
+        .alert-card-side { display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; }
+        .unread-pulse { width: 8px; height: 8px; background: var(--color-primary); border-radius: 50%; box-shadow: 0 0 10px var(--color-primary); animation: pulse 2s infinite; position: absolute; top: -4px; right: -4px; }
+        
+        .alert-icon-box { width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); }
+        .alert-icon-box.error { color: #e74c3c; }
+        .alert-icon-box.warning { color: var(--color-primary); }
+        .alert-icon-box.info { color: #3498db; }
+
+        .alert-card-content { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .alert-header-row { display: flex; justify-content: space-between; align-items: center; }
+        .alert-type-tag { font-size: 0.6rem; font-weight: 800; letter-spacing: 2px; color: var(--color-text-muted); opacity: 0.5; }
+        .alert-time { font-size: 0.75rem; color: var(--color-text-muted); }
+        
+        .alert-title { font-size: 1.1rem; font-weight: 700; color: white; margin: 0; }
+        .alert-message { font-size: 0.95rem; color: var(--color-text-muted); line-height: 1.6; margin: 0; }
+
+        .alert-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-border-alt); }
+        .footer-actions { display: flex; gap: 20px; }
+        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; opacity: 0.6; transition: 0.2s; }
+        .btn-mini-action:hover { opacity: 1; color: var(--color-primary); }
+        .btn-mini-action.delete:hover { color: #e74c3c; }
+
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(184, 155, 106, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(184, 155, 106, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(184, 155, 106, 0); } }
+        @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
+
+        @media (max-width: 768px) {
+          .atelier-discovery { flex-direction: column; align-items: stretch; }
         }
       `}} />
     </div>

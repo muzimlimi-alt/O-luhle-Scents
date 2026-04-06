@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search } from 'lucide-react';
+import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database } from 'lucide-react';
 import { DateTime } from 'luxon';
 
 export function Inventory() {
@@ -31,170 +31,197 @@ export function Inventory() {
   );
 
   return (
-    <div className="inventory-page">
-      <div className="content-header">
-        <h2 className="page-title">Luxury Reservoir Management</h2>
-        <p className="page-subtitle">Real-time stock monitoring and historical movement tracking</p>
+    <div className="elite-inventory-container animate-fade-in">
+      <div className="atelier-header">
+        <div className="header-titles">
+          <h1 className="couture-text">Reservoir Management</h1>
+          <p className="couture-subtext">Real-time monitoring of artisanal fragrance reserves</p>
+        </div>
       </div>
 
-      <div className="tab-container cards-stack" style={{ marginBottom: '24px' }}>
-        <button 
-          className={`tab-btn ${activeTab === 'levels' ? 'active' : ''}`}
-          onClick={() => setActiveTab('levels')}
-        >
-          <Package size={18} /> Current Levels
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          <History size={18} /> Movement History
-        </button>
+      <div className="discovery-matrix">
+        <div className="tab-glass-panel">
+          <button 
+            className={`tab-glass-btn ${activeTab === 'levels' ? 'active' : ''}`}
+            onClick={() => setActiveTab('levels')}
+          >
+            <Layers size={18} /> Reserve Levels
+          </button>
+          <button 
+            className={`tab-glass-btn ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            <History size={18} /> Movement Archive
+          </button>
+        </div>
+
+        <div className="search-glass-wrapper">
+          <Search size={18} className="glass-icon" />
+          <input 
+            type="text" 
+            className="search-glass-input"
+            placeholder="Discovery via variant or size..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="atelier-stats-grid">
+         <div className="elite-glass inventory-kpi">
+           <div className="kpi-top">
+             <Database size={20} color="var(--color-primary)" />
+             <span className="kpi-label">Master Catalog SKUs</span>
+           </div>
+           <h3 className="kpi-value">{items.length}</h3>
+         </div>
+         <div className="elite-glass inventory-kpi error">
+           <div className="kpi-top">
+             <AlertCircle size={20} color="#e74c3c" />
+             <span className="kpi-label">Depleted Reserves</span>
+           </div>
+           <h3 className="kpi-value">{items.filter(i => i.quantity <= i.lowStockThreshold).length}</h3>
+         </div>
       </div>
 
       {activeTab === 'levels' ? (
-        <div className="inventory-levels-view animate-fade-in">
-          <div className="inventory-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-             <div className="kpi-card">
-               <p className="kpi-label">Total SKUs</p>
-               <h3 className="kpi-value">{items.length}</h3>
-             </div>
-             <div className="kpi-card" style={{ borderColor: 'var(--color-error)' }}>
-               <p className="kpi-label">Low Stock</p>
-               <h3 className="kpi-value" style={{ color: 'var(--color-error-text)' }}>
-                 {items.filter(i => i.quantity <= i.lowStockThreshold).length}
-               </h3>
-             </div>
-          </div>
+        <div className="atelier-grid fade-in-blur">
+          {filteredItems.map(item => {
+            const isLow = item.quantity <= item.lowStockThreshold;
+            return (
+              <div key={item.id} className="elite-glass inventory-card">
+                <div className="inventory-card-top">
+                  <div className="variant-info">
+                    <span className="variant-name">{item.variant?.product?.name}</span>
+                    <span className="variant-size">{item.variant?.size}</span>
+                  </div>
+                  <span className={`status-indicator ${isLow ? 'error' : 'optimal'}`}>
+                    {isLow ? 'CRITICAL' : 'OPTIMAL'}
+                  </span>
+                </div>
 
-          <div className="card">
-            <div className="search-bar" style={{ padding: '16px', borderBottom: '1px solid var(--color-border-light)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Search size={18} color="var(--color-text-muted)" />
-              <input 
-                type="text" 
-                placeholder="Search variants..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none' }}
-              />
-            </div>
-            <div className="table-responsive">
-              <table className="modern-table">
-                <thead>
-                  <tr>
-                    <th>Variant</th>
-                    <th>Supplier</th>
-                    <th>Current Level</th>
-                    <th>Threshold</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredItems.map(item => {
-                    const isLow = item.quantity <= item.lowStockThreshold;
-                    return (
-                      <tr key={item.id}>
-                        <td>
-                          <p style={{ fontWeight: 600 }}>{item.variant?.product?.name}</p>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{item.variant?.size}</p>
-                        </td>
-                        <td>{item.variant?.product?.supplier?.name || '-'}</td>
-                        <td style={{ fontWeight: 700 }}>{item.quantity} units</td>
-                        <td>{item.lowStockThreshold}</td>
-                        <td>
-                          <span className={`status-badge ${isLow ? 'status--error' : 'status--paid'}`}>
-                            {isLow ? <AlertCircle size={12} /> : null}
-                            {isLow ? 'REPLENISH' : 'OPTIMAL'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                <div className="inventory-metrics">
+                  <div className="metric-glass">
+                    <span className="metric-label">Residual Stock</span>
+                    <span className="metric-value">{item.quantity} Units</span>
+                  </div>
+                  <div className="metric-glass">
+                    <span className="metric-label">Low Threshold</span>
+                    <span className="metric-value">{item.lowStockThreshold} Units</span>
+                  </div>
+                </div>
+
+                <div className="inventory-footer">
+                  <span className="supplier-tag">
+                    <Landmark size={12} /> {item.variant?.product?.supplier?.name || 'In-House'}
+                  </span>
+                  <button className="btn-mini-action">
+                    <History size={14} /> Audit
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
-        <div className="inventory-history-view animate-fade-in">
-          <div className="card">
-            <div className="table-responsive">
-              <table className="modern-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Variant</th>
-                    <th>Movement</th>
-                    <th>Reason</th>
-                    <th>Reference</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map(log => (
-                    <tr key={log.id}>
-                      <td style={{ fontSize: '0.85rem' }}>
-                        {DateTime.fromISO(log.createdAt).toFormat('dd LLL, HH:mm')}
-                      </td>
-                      <td>
-                        <p style={{ fontWeight: 600 }}>{log.variant?.product?.name}</p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{log.variant?.size}</p>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: log.quantityChanged > 0 ? 'var(--color-success-text)' : 'var(--color-error-text)' }}>
-                          {log.quantityChanged > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                          {log.quantityChanged > 0 ? '+' : ''}{log.quantityChanged} units
-                        </div>
-                      </td>
-                      <td style={{ fontSize: '0.85rem' }}>{log.reason}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                         {log.referenceId ? `#${log.referenceId.split('-')[0].toUpperCase()}` : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="atelier-grid fade-in-blur">
+           {logs.map(log => (
+            <div key={log.id} className="elite-glass movement-card">
+              <div className="movement-header">
+                <div className="movement-type">
+                   {log.quantityChanged > 0 ? <TrendingUp size={18} color="#2ecc71" /> : <TrendingDown size={18} color="#e74c3c" />}
+                   <span className={log.quantityChanged > 0 ? 'inc' : 'dec'}>
+                     {log.quantityChanged > 0 ? '+' : ''}{log.quantityChanged} Units
+                   </span>
+                </div>
+                <span className="movement-date">{DateTime.fromISO(log.createdAt).toFormat('dd LLL, HH:mm')}</span>
+              </div>
+              
+              <div className="movement-variant">
+                <span className="variant-name">{log.variant?.product?.name}</span>
+                <span className="variant-size">{log.variant?.size}</span>
+              </div>
+
+              <div className="movement-reason">
+                <span className="reason-label">Reason Code</span>
+                <span className="reason-value">{log.reason}</span>
+              </div>
+
+              <div className="movement-ref">
+                 <span className="ref-label">Treasury Ref</span>
+                 <span className="ref-value">{log.referenceId ? `#${log.referenceId.split('-')[0].toUpperCase()}` : 'SYSTEM_ADJ'}</span>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .tab-container {
-          display: flex;
-          background: #fff;
-          padding: 4px;
-          border-radius: 12px;
-          box-shadow: var(--shadow-sm);
-          width: fit-content;
-          border: 1px solid var(--color-border-light);
-        }
-        .tab-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 20px;
-          border-radius: 8px;
-          border: none;
-          background: transparent;
-          font-weight: 600;
-          color: var(--color-text-muted);
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .tab-btn:hover {
-          color: var(--color-primary);
-        }
-        .tab-btn.active {
-          background: var(--color-primary);
-          color: #000;
-          box-shadow: var(--shadow-sm);
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+        .elite-inventory-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+        .atelier-header { margin-bottom: 48px; border-left: 3px solid var(--color-primary); padding-left: 24px; }
+        
+        .discovery-matrix { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; gap: 24px; }
+        
+        .tab-glass-panel { background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 4px; display: flex; gap: 4px; }
+        .tab-glass-btn { background: none; border: none; color: var(--color-text-muted); padding: 8px 16px; border-radius: 2px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
+        .tab-glass-btn.active { background: var(--color-primary); color: #000; }
+        .tab-glass-btn:hover:not(.active) { color: white; background: rgba(255,255,255,0.05); }
+
+        .search-glass-wrapper { position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; flex: 1; max-width: 400px; }
+        .search-glass-input { background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.85rem; }
+
+        .atelier-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 40px; }
+        .inventory-kpi { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+        .inventory-kpi.error { border-color: rgba(231, 76, 60, 0.3); }
+        .kpi-top { display: flex; align-items: center; gap: 12px; }
+        .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-muted); font-weight: 600; }
+        .kpi-value { font-size: 2rem; font-weight: 700; color: white; font-family: var(--font-display); }
+
+        .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
+        
+        .inventory-card { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .inventory-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .variant-info { display: flex; flex-direction: column; }
+        .variant-name { font-weight: 700; font-size: 1.1rem; color: white; }
+        .variant-size { font-size: 0.75rem; color: var(--color-primary); text-transform: uppercase; font-weight: 600; }
+        
+        .status-indicator { font-size: 0.6rem; padding: 3px 8px; border-radius: 2px; font-weight: 700; letter-spacing: 1px; }
+        .status-indicator.optimal { background: rgba(39, 174, 96, 0.15); color: #2ecc71; }
+        .status-indicator.error { background: rgba(231, 76, 60, 0.15); color: #e74c3c; }
+
+        .inventory-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .metric-glass { padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--color-border-alt); border-radius: 4px; }
+        .metric-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; }
+        .metric-value { font-weight: 700; font-size: 0.95rem; color: white; }
+
+        .inventory-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-border); }
+        .supplier-tag { font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px; }
+        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; }
+        .btn-mini-action:hover { color: var(--color-primary); }
+
+        .movement-card { padding: 24px; display: flex; flex-direction: column; gap: 16px; border-left: 2px solid var(--color-border); }
+        .movement-header { display: flex; justify-content: space-between; align-items: center; }
+        .movement-type { display: flex; align-items: center; gap: 8px; }
+        .movement-type span { font-weight: 800; font-size: 1.1rem; }
+        .movement-type span.inc { color: #2ecc71; }
+        .movement-type span.dec { color: #e74c3c; }
+        .movement-date { font-size: 0.7rem; color: var(--color-text-muted); font-family: monospace; }
+        
+        .movement-variant { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 1px solid var(--color-border-alt); }
+        .movement-reason { display: flex; flex-direction: column; gap: 2px; }
+        .reason-label { font-size: 0.6rem; text-transform: uppercase; color: var(--color-text-muted); }
+        .reason-value { font-size: 0.85rem; font-weight: 500; }
+
+        .movement-ref { margin-top: auto; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-primary); font-family: monospace; }
+        .ref-label { color: var(--color-text-muted); font-family: var(--font-body); }
+
+        @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
+        .fade-in-blur { animation: eliteFadeIn 0.4s ease-out; }
+
+        @media (max-width: 768px) {
+          .discovery-matrix { flex-direction: column; align-items: stretch; }
+          .atelier-stats-grid { grid-template-columns: 1fr; }
+          .atelier-grid { grid-template-columns: 1fr; }
         }
       `}} />
     </div>

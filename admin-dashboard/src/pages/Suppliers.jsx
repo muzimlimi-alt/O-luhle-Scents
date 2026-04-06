@@ -8,7 +8,10 @@ import {
   ExternalLink,
   Search,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  X,
+  Globe,
+  Star
 } from 'lucide-react';
 
 export function Suppliers() {
@@ -17,6 +20,7 @@ export function Suppliers() {
   const [showModal, setShowModal] = useState(false);
   const [newSupplier, setNewSupplier] = useState({ name: '', contactEmail: '', phone: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchSuppliers();
@@ -48,62 +52,86 @@ export function Suppliers() {
     }
   }
 
+  const filteredSuppliers = suppliers.filter(s => 
+    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.contactEmail.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="suppliers-page">
-      <div className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-          <h2 className="page-title">Supply Chain Partners</h2>
-          <p className="page-subtitle">Manage global fragrance distribution and fulfillment partners</p>
+    <div className="elite-suppliers-container animate-fade-in">
+      <div className="atelier-header">
+        <div className="header-titles">
+          <h1 className="couture-text">Supply Chain Partners</h1>
+          <p className="couture-subtext">Global distribution and raw material fulfillment curators</p>
         </div>
-        <button className="btn btn--primary" onClick={() => setShowModal(true)}>
-          <Plus size={18} /> Add New Partner
+        <button className="elite-btn-plus" onClick={() => setShowModal(true)}>
+          <Plus size={18} /> Register Partner
         </button>
       </div>
 
+      <div className="atelier-discovery">
+        <div className="search-glass-wrapper">
+          <Search size={18} className="glass-icon" />
+          <input 
+            type="text" 
+            className="search-glass-input" 
+            placeholder="Discovery via partner name or email..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
-          <Loader2 className="animate-spin" size={48} color="#d4af37" />
+        <div className="elite-loading">
+          <div className="loader-gold"></div>
+          <p>Gathering supplier intelligence...</p>
         </div>
       ) : (
-        <div className="suppliers-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
-          {suppliers.map(s => (
-            <div key={s.id} className="card supplier-card" style={{ transition: 'transform 0.2s' }}>
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Truck size={24} color="#d4af37" />
+        <div className="atelier-grid">
+          {filteredSuppliers.map(s => (
+            <div key={s.id} className="elite-glass partner-card fade-in-blur">
+              <div className="partner-card-header">
+                <div className="partner-avatar">
+                   <Truck size={24} color="var(--color-primary)" />
                 </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{s.name}</h3>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fragrance Distribution</p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem' }}>
-                  <Mail size={16} color="var(--color-text-muted)" />
-                  <a href={`mailto:${s.contactEmail}`} style={{ color: 'inherit', textDecoration: 'none' }}>{s.contactEmail}</a>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem' }}>
-                  <Phone size={16} color="var(--color-text-muted)" />
-                  <span>{s.phone || 'No phone recorded'}</span>
+                <div className="partner-status">
+                   <Star size={12} fill="var(--color-primary)" />
+                   <span>VERIFIED PARTNER</span>
                 </div>
               </div>
 
-              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border-alt)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  Partner since: {new Date(s.createdAt).toLocaleDateString()}
+              <div className="partner-info">
+                <h3 className="partner-name">{s.name}</h3>
+                <span className="partner-domain">FRAGRANCE DISTRIBUTION</span>
+              </div>
+
+              <div className="partner-contacts">
+                <div className="contact-glass">
+                  <Mail size={14} />
+                  <a href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a>
                 </div>
-                <button className="btn btn--outline-dark btn--sm">
-                  View Performance
+                <div className="contact-glass">
+                  <Phone size={14} />
+                  <span>{s.phone || 'No direct dial'}</span>
+                </div>
+              </div>
+
+              <div className="partner-footer">
+                <div className="footer-meta">
+                   <Globe size={12} />
+                   <span>Joined {new Date(s.createdAt).toLocaleDateString()}</span>
+                </div>
+                <button className="btn-mini-action">
+                  <ExternalLink size={14} /> Portfolio
                 </button>
               </div>
             </div>
           ))}
-          {suppliers.length === 0 && (
-            <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px' }}>
-              <AlertCircle size={48} color="var(--color-text-muted)" style={{ margin: '0 auto 16px' }} />
-              <h3>No suppliers found</h3>
-              <p style={{ color: 'var(--color-text-muted)' }}>Start by adding your first luxury distribution partner.</p>
+          {filteredSuppliers.length === 0 && (
+            <div className="elite-empty-state">
+              <AlertCircle size={48} />
+              <p>No distribution partners are currently authorized.</p>
             </div>
           )}
         </div>
@@ -111,52 +139,118 @@ export function Suppliers() {
 
       {/* --- ADD MODAL --- */}
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '500px' }}>
-            <div className="modal-header">
-              <h3>Register New Partner</h3>
-              <button className="close-btn" onClick={() => setShowModal(false)}>&times;</button>
+        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="elite-modal glass-panel">
+            <div className="modal-top">
+              <h2 className="couture-text">Register Partner</h2>
+              <button className="close-btn" onClick={() => setShowModal(false)}><X size={24} /></button>
             </div>
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-group">
-                <label>Company Name</label>
+            
+            <form onSubmit={handleSubmit} className="elite-form">
+              <div className="elite-input-group">
+                <label className="elite-input-label">Company Nomenclature</label>
                 <input 
                   type="text" 
+                  className="elite-glass-input"
                   value={newSupplier.name} 
                   onChange={e => setNewSupplier({...newSupplier, name: e.target.value})}
                   required 
                   placeholder="e.g. Grasse Essence Co."
                 />
               </div>
-              <div className="form-group">
-                <label>Contact Email (for Restock Alerts)</label>
+              <div className="elite-input-group">
+                <label className="elite-input-label">Communication Nexus (Email)</label>
                 <input 
                   type="email" 
+                  className="elite-glass-input"
                   value={newSupplier.contactEmail} 
                   onChange={e => setNewSupplier({...newSupplier, contactEmail: e.target.value})}
                   required 
                   placeholder="fulfillment@grasse.com"
                 />
               </div>
-              <div className="form-group">
-                <label>Phone Number</label>
+              <div className="elite-input-group">
+                <label className="elite-input-label">Voice Channel (Phone)</label>
                 <input 
                   type="tel" 
+                  className="elite-glass-input"
                   value={newSupplier.phone} 
                   onChange={e => setNewSupplier({...newSupplier, phone: e.target.value})}
                   placeholder="+33 4 00 00 00 00"
                 />
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn--secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn--primary" disabled={submitting}>
-                  {submitting ? 'Registering...' : 'Register Partner'}
+              
+              <div className="modal-actions-elite">
+                <button type="submit" className="elite-btn" disabled={submitting}>
+                  {submitting ? 'Authenticating...' : 'Authorize Partner'}
                 </button>
+                <button type="button" className="elite-btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .elite-suppliers-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+        .atelier-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 48px; border-left: 3px solid var(--color-primary); padding-left: 24px; }
+        
+        .elite-btn-plus { background: var(--color-primary); color: #000; border: none; padding: 12px 24px; border-radius: 4px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; transition: var(--transition); }
+        .elite-btn-plus:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 8px 20px rgba(184,155,106,0.25); }
+
+        .atelier-discovery { margin-bottom: 40px; }
+        .search-glass-wrapper { position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; max-width: 500px; }
+        .search-glass-input { background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
+
+        .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 32px; }
+        
+        .partner-card { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+        .partner-card-header { display: flex; justify-content: space-between; align-items: center; }
+        .partner-avatar { width: 56px; height: 56px; background: rgba(184,155,106,0.1); border: 1px solid var(--color-border-alt); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .partner-status { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; font-weight: 800; color: var(--color-primary); letter-spacing: 1.5px; }
+
+        .partner-info { display: flex; flex-direction: column; gap: 4px; }
+        .partner-name { font-size: 1.4rem; font-weight: 700; color: white; margin: 0; }
+        .partner-domain { font-size: 0.65rem; letter-spacing: 2px; color: var(--color-text-muted); font-weight: 600; }
+
+        .partner-contacts { display: flex; flex-direction: column; gap: 12px; }
+        .contact-glass { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--color-border-alt); border-radius: 4px; font-size: 0.9rem; color: white; }
+        .contact-glass a { color: inherit; text-decoration: none; transition: var(--transition); }
+        .contact-glass a:hover { color: var(--color-primary); }
+        .contact-glass svg { color: var(--color-text-muted); }
+
+        .partner-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--color-border); }
+        .footer-meta { font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
+        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
+        .btn-mini-action:hover { color: var(--color-primary); }
+
+        .elite-loading { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 100px 0; color: var(--color-text-muted); }
+        .elite-empty-state { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 100px 0; color: var(--color-text-muted); opacity: 0.5; }
+        .loader-gold { width: 40px; height: 40px; border: 3px solid rgba(184,155,106,0.1); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.92); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: eliteFadeIn 0.4s ease-out; }
+        .elite-modal { width: 100%; max-width: 480px; padding: 40px; position: relative; }
+        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .close-btn { background: none; border: none; color: white; cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        .close-btn:hover { opacity: 1; }
+
+        .elite-glass-input { width: 100%; background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: white; outline: none; transition: var(--transition); font-size: 0.9rem; }
+        .elite-glass-input:focus { border-color: var(--color-primary); background: rgba(184,155,106,0.05); }
+
+        .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
+        .elite-btn { background: var(--color-primary); color: #000; padding: 14px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; transition: var(--transition); }
+        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: white; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
+
+        @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
+        .animate-fade-in { animation: eliteFadeIn 0.4s ease-out; }
+        .fade-in-blur { animation: eliteFadeIn 0.4s ease-out; }
+
+        @media (max-width: 768px) {
+          .atelier-header { flex-direction: column; gap: 24px; }
+          .atelier-grid { grid-template-columns: 1fr; }
+        }
+      `}} />
     </div>
   );
 }

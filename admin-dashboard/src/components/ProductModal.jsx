@@ -45,7 +45,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
       setFormData({
         name: product.name || '',
         brand: product.brand || "O'luhle Scents",
-        categoryId: typeof product.category === 'object' ? product.category.id : (product.categoryId || ''),
+        categoryId: (product.category && typeof product.category === 'object') ? product.category.id : (product.categoryId || ''),
         supplierId: product.supplierId || '',
         description: product.description || '',
         isActive: product.isActive !== false,
