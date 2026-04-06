@@ -5,19 +5,17 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import prisma from '../lib/prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
+import { convertPrice } from '../lib/currencyService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const uploadDir = path.join(__dirname, '../../../images/products')
 
-// Ensure upload directory exists
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true })
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir)
-  },
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const timestamp = Date.now()
     const originalName = file.originalname.replace(/\s+/g, '_')
@@ -27,13 +25,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp/
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
     const mimetype = allowedTypes.test(file.mimetype)
     if (extname && mimetype) return cb(null, true)
-    cb(new Error('Only images (.jpg, .jpeg, .png, .webp) are allowed'))
+    cb(new Error('Only images are allowed'))
   }
 })
 
@@ -42,223 +40,247 @@ const router = Router()
 // GET /api/products
 router.get('/', async (req, res, next) => {
   try {
-    const { 
-      category, 
-      search, 
-      sort, 
-      minPrice, 
-      maxPrice, 
-      colors, 
-      tags,
-      includeDeleted // admin might want this
-    } = req.query
+    const { category, search, sort, minPrice, maxPrice, tags, currency = 'ZAR' } = req.query
+    // Admins (Bearer token present) see all products; storefront only sees active
+    const isAdmin = !!req.headers.authorization
+    const where = isAdmin ? {} : { isActive: true }
 
-    const where = {
-      deletedAt: includeDeleted === 'true' ? undefined : null,
-      active: includeDeleted === 'true' ? undefined : true
-    }
-
-    if (category && category !== 'all') {
-      where.category = { slug: category }
-    }
-
+    if (category && category !== 'all') where.category = category
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-        { sku: { contains: search } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ]
+    }
+    
+    if (tags) {
+      const tagList = tags.split(',')
+      where.AND = tagList.map(t => ({ tags: { contains: t } }))
     }
 
     if (minPrice || maxPrice) {
-      where.price = {
-        gte: minPrice ? parseInt(minPrice) : undefined,
-        lte: maxPrice ? parseInt(maxPrice) : undefined
+      where.variants = {
+        some: {
+          price: {
+            gte: minPrice ? parseFloat(minPrice) : undefined,
+            lte: maxPrice ? parseFloat(maxPrice) : undefined
+          }
+        }
       }
-    }
-
-    // Filter by JSON strings (basic contains for simplicity in SQLite)
-    if (colors) {
-      const colorList = colors.split(',')
-      where.AND = where.AND || []
-      colorList.forEach(c => {
-        where.AND.push({ colors: { contains: c } })
-      })
-    }
-
-    if (tags) {
-      const tagList = tags.split(',')
-      where.AND = where.AND || []
-      tagList.forEach(t => {
-        where.AND.push({ tags: { contains: t } })
-      })
     }
 
     let orderBy = { createdAt: 'desc' }
-    if (sort) {
-      switch (sort) {
-        case 'new': orderBy = { createdAt: 'desc' }; break
-        case 'price-low': orderBy = { price: 'asc' }; break
-        case 'price-high': orderBy = { price: 'desc' }; break
-        case 'popular': orderBy = { orderItems: { _count: 'desc' } }; break
-      }
-    }
-
+    if (sort === 'price-low') orderBy = { variants: { _count: 'asc' } }
+    
     const products = await prisma.product.findMany({
       where,
-      include: { category: true },
+      include: { 
+        category: true,
+        supplier: true,
+        variants: { include: { inventory: true } } 
+      },
       orderBy
     })
 
-    res.json({
-      count: products.length,
-      products
-    })
-  } catch (err) {
-    next(err)
-  }
+    // On-the-fly currency conversion
+    const formattedProducts = await Promise.all(products.map(async (p) => {
+      const convertedVariants = await Promise.all(p.variants.map(async (v) => ({
+        ...v,
+        originalPrice: v.price,
+        price: await convertPrice(v.price, currency),
+        currency
+      })))
+      return { ...p, variants: convertedVariants }
+    }))
+
+    res.json({ count: formattedProducts.length, products: formattedProducts })
+  } catch (err) { next(err) }
 })
 
-// GET /api/products/low-stock (admin only)
+
+// GET /api/products/low-stock
 router.get('/low-stock', requireAdmin, async (req, res, next) => {
   try {
-    const products = await prisma.product.findMany({
-      where: { stockQty: { lt: 5 }, deletedAt: null },
-      include: { category: true },
-      orderBy: { stockQty: 'asc' },
+    const threshold = parseInt(req.query.threshold) || 5
+    const lowStock = await prisma.inventory.findMany({
+      where: { quantity: { lt: threshold } },
+      include: { variant: { include: { product: { include: { supplier: true } } } } }
     })
-    res.json(products)
-  } catch (err) {
-    next(err)
-  }
-})
-
-// GET /api/products/:id
-router.get('/:id', async (req, res, next) => {
-  try {
-    const id = parseInt(req.params.id)
-    if (isNaN(id)) return res.status(400).json({ error: 'Invalid product ID' })
-
-    const product = await prisma.product.findFirst({
-      where: { id, deletedAt: null },
-      include: { category: true },
-    })
-    if (!product) return res.status(404).json({ error: 'Product not found' })
-    res.json(product)
-  } catch (err) {
-    next(err)
-  }
+    res.json(lowStock)
+  } catch (err) { next(err) }
 })
 
 // POST /api/products (admin only)
 router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next) => {
   try {
-    const { 
-      name, description, sku, categoryId, 
-      price, price50ml, price100ml, 
-      badge, stockQty, colors, tags, primaryImage 
-    } = req.body
+    const { name, brand, description, categoryId, variants, supplierId, tags } = req.body
+    const files = req.files || []
+    const filenames = files.map(f => f.filename)
+    const primaryImage = filenames.length > 0 ? filenames[0] : null
     
-    const filenames = req.files.map(f => f.filename)
-    const user = req.user?.firstName + ' ' + (req.user?.lastName || '')
+    const parsedVariants = JSON.parse(variants || '[]')
 
-    const product = await prisma.product.create({
-      data: {
-        name,
-        description,
-        sku,
-        categoryId: parseInt(categoryId),
-        price: price ? parseInt(price) : null,
-        price50ml: parseInt(price50ml || 0),
-        price100ml: parseInt(price100ml || 0),
-        badge,
-        stockQty: parseInt(stockQty || 0),
-        images: JSON.stringify(filenames),
-        primaryImage: primaryImage || filenames[0],
-        imageUrl: filenames[0] ? `/images/products/${filenames[0]}` : '',
-        colors: colors || '[]',
-        tags: tags || '[]',
-        createdBy: user.trim()
-      },
-      include: { category: true }
+    const product = await prisma.$transaction(async (tx) => {
+      // Defensive UUID handling: Ensure empty strings or "undefined" are passed as null
+      const safeCategoryId = (categoryId && categoryId !== "" && categoryId !== "undefined") ? categoryId : null;
+      const safeSupplierId = (supplierId && supplierId !== "" && supplierId !== "undefined") ? supplierId : null;
+
+      const p = await tx.product.create({
+        data: {
+          name, 
+          brand: brand || "O'luhle Scents", 
+          description: description || "", 
+          category: safeCategoryId ? { connect: { id: safeCategoryId } } : undefined,
+          supplier: safeSupplierId ? { connect: { id: safeSupplierId } } : undefined,
+          images: JSON.stringify(filenames),
+          primaryImage,
+          isActive: true
+        }
+      })
+
+      for (const v of parsedVariants) {
+        const variantPrice = parseFloat(v.price) || 0;
+        const variantCost = (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0;
+        
+        const variant = await tx.productVariant.create({
+          data: {
+            productId: p.id,
+            size: v.size || 'Standard',
+            price: variantPrice,
+            costPrice: variantCost,
+            sku: v.sku || `SKU-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+            barcode: v.barcode || null,
+          }
+        })
+        
+        await tx.inventory.create({
+          data: {
+            variantId: variant.id,
+            quantity: parseInt(v.quantity || 0),
+            lowStockThreshold: parseInt(v.lowStockThreshold || 5)
+          }
+        })
+      }
+      return tx.product.findUnique({
+        where: { id: p.id },
+        include: { variants: { include: { inventory: true } } }
+      })
     })
+
     res.status(201).json(product)
-  } catch (err) {
-    next(err)
+  } catch (err) { 
+    console.error('[POST /api/products] Error:', err);
+    next(err);
   }
 })
 
-// PATCH /api/products/:id (admin only)
+// PATCH /api/products/:id
 router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, next) => {
   try {
-    const productId = parseInt(req.params.id)
-    const { 
-      name, description, sku, categoryId, 
-      price, price50ml, price100ml, 
-      badge, stockQty, active, colors, tags, 
-      primaryImage, existingImages 
-    } = req.body
+    console.log('[PATCH /api/products/:id] Payload:', { id: req.params.id, body: req.body, files: req.files?.length });
+    const { name, brand, description, categoryId, isActive, variants, tags, existingImages } = req.body
     
-    const user = req.user?.firstName + ' ' + (req.user?.lastName || '')
-    const newFiles = req.files.map(f => f.filename)
+    // Manage image orchestration
+    let currentImages = []
+    try { currentImages = JSON.parse(existingImages || '[]') } catch (e) { currentImages = [] }
     
-    // Combine existing and new images
-    let finalImages = []
-    if (existingImages) {
-      finalImages = Array.isArray(existingImages) ? existingImages : [existingImages]
-    }
-    finalImages = [...finalImages, ...newFiles]
+    const files = req.files || []
+    const newFiles = files.map(f => f.filename)
+    const allImages = [...currentImages, ...newFiles]
+    const primaryImage = allImages.length > 0 ? allImages[0] : null
 
-    const data = {
-      updatedBy: user.trim()
-    }
-    
-    if (name !== undefined) data.name = name
-    if (description !== undefined) data.description = description
-    if (sku !== undefined) data.sku = sku
-    if (categoryId !== undefined) data.categoryId = parseInt(categoryId)
-    if (price !== undefined) data.price = parseInt(price)
-    if (price50ml !== undefined) data.price50ml = parseInt(price50ml)
-    if (price100ml !== undefined) data.price100ml = parseInt(price100ml)
-    if (stockQty !== undefined) data.stockQty = parseInt(stockQty)
-    if (badge !== undefined) data.badge = badge
-    if (active !== undefined) data.active = active === 'true' || active === true
-    if (colors !== undefined) data.colors = colors
-    if (tags !== undefined) data.tags = tags
-    
-    data.images = JSON.stringify(finalImages)
-    data.primaryImage = primaryImage || finalImages[0]
-    if (finalImages[0]) data.imageUrl = `/images/products/${finalImages[0]}`
+    const product = await prisma.$transaction(async (tx) => {
+      // Defensive UUID handling
+      const safeCategoryId = (categoryId && categoryId !== "" && categoryId !== "undefined") ? categoryId : null;
+      const safeSupplierId = (req.body.supplierId && req.body.supplierId !== "" && req.body.supplierId !== "undefined") ? req.body.supplierId : null;
+      
+      console.log('[PATCH] Transaction Logic:', { safeCategoryId, safeSupplierId });
 
-    const product = await prisma.product.update({
-      where: { id: productId },
-      data,
-      include: { category: true }
+      // 1. Update Product details
+      const p = await tx.product.update({
+        where: { id: req.params.id },
+        data: { 
+          name, 
+          brand, 
+          description, 
+          category: safeCategoryId ? { connect: { id: safeCategoryId } } : { disconnect: true },
+          supplier: safeSupplierId ? { connect: { id: safeSupplierId } } : { disconnect: true },
+          isActive: isActive === 'true' || isActive === true,
+          images: JSON.stringify(allImages),
+          primaryImage
+        }
+      })
+
+      // 2. Manage Variants (if provided)
+      if (variants) {
+        const parsedVariants = JSON.parse(variants)
+        // For simplicity in this modernization, we'll sync by SKU or recreate
+        // production grade: update by ID, delete missing, create new.
+        for (const v of parsedVariants) {
+          if (v.id) {
+            await tx.productVariant.update({
+              where: { id: v.id },
+              data: { 
+                size: v.size, 
+                price: parseFloat(v.price) || 0, 
+                costPrice: (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0,
+                barcode: v.barcode || undefined
+              }
+            })
+            if (v.quantity !== undefined || v.lowStockThreshold !== undefined) {
+              await tx.inventory.updateMany({
+                where: { variantId: v.id },
+                data: { 
+                  quantity: v.quantity !== undefined ? parseInt(v.quantity) : undefined,
+                  lowStockThreshold: v.lowStockThreshold !== undefined ? parseInt(v.lowStockThreshold) : undefined
+                }
+              })
+            }
+          } else {
+            const nv = await tx.productVariant.create({
+              data: {
+                productId: p.id,
+                size: v.size,
+                price: parseFloat(v.price) || 0,
+                costPrice: (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0,
+                sku: v.sku || `SKU-${Date.now()}`,
+                barcode: v.barcode || null
+              }
+            })
+            await tx.inventory.create({
+              data: { 
+                variantId: nv.id, 
+                quantity: parseInt(v.quantity || 0),
+                lowStockThreshold: parseInt(v.lowStockThreshold || 5)
+              }
+            })
+          }
+        }
+      }
+
+      return tx.product.findUnique({
+        where: { id: req.params.id },
+        include: { variants: { include: { inventory: true } } }
+      })
     })
+
     res.json(product)
-  } catch (err) {
-    next(err)
+  } catch (err) { 
+    console.error('[PATCH /api/products/:id] Error:', err);
+    next(err);
   }
 })
 
-// DELETE /api/products/:id (admin only)
+
+// DELETE /api/products/:id (soft delete)
 router.delete('/:id', requireAdmin, async (req, res, next) => {
   try {
-    const productId = parseInt(req.params.id)
-    const user = req.user?.firstName + ' ' + (req.user?.lastName || '')
-
     await prisma.product.update({
-      where: { id: productId },
-      data: { 
-        active: false,
-        deletedAt: new Date(),
-        deletedBy: user.trim()
-      }
+      where: { id: req.params.id },
+      data: { isActive: false }
     })
     res.status(204).end()
-  } catch (err) {
-    next(err)
-  }
+  } catch (err) { next(err) }
 })
 
 export default router

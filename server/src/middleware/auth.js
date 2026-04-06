@@ -17,7 +17,7 @@ export function requireAuth(req, res, next) {
 
 export function requireAdmin(req, res, next) {
   requireAuth(req, res, () => {
-    if (req.user.role !== 'ADMIN') {
+    if (req.user.role?.toUpperCase() !== 'ADMIN') {
       return res.status(403).json({ error: 'Admin access required' })
     }
     next()

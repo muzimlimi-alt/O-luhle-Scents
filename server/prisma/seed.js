@@ -4,73 +4,114 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 const categoryData = [
-  { name: 'Women', slug: 'women' },
-  { name: 'Men', slug: 'men' },
-  { name: 'Bag', slug: 'bag' },
-  { name: 'Shoes', slug: 'shoes' },
-  { name: 'Watches', slug: 'watches' },
+  { name: 'Signature Collection', slug: 'signature' },
+  { name: 'Premium Collection', slug: 'premium' },
+  { name: 'Essentials', slug: 'essentials' }
 ]
 
 const productData = [
-  { name: 'Zale',             categorySlug: 'women',    price: 1100, price100ml: 2000, price50ml: 1100, description: 'A bold, captivating blend of oud and amber',           badge: 'Bestseller' },
-  { name: 'Mika',             categorySlug: 'men',    price: 1100, price100ml: 2000, price50ml: 1100, description: 'Warm spice meets soft vanilla undertones',              badge: ''           },
-  { name: 'Koah',             categorySlug: 'bag',    price: 1100, price100ml: 2000, price50ml: 1100, description: 'Deep woody fragrance with smoky leather accents',       badge: 'New'        },
-  { name: 'Yugen',            categorySlug: 'shoes',  price: 900, price100ml: 1500, price50ml: 900,  description: 'Mysterious oriental with exotic floral heart',          badge: ''           },
-  { name: "Antiqué",          categorySlug: 'watches',  price: 900, price100ml: 1500, price50ml: 900,  description: 'Timeless elegance with bergamot and sandalwood',        badge: 'Popular'    },
+  { 
+    name: 'Zale', 
+    brand: 'O\'luhle Scents', 
+    categorySlug: 'premium',
+    description: 'A bold, captivating blend of oud and amber.',
+    variants: [
+      { size: '50ml', price: 1100, quantity: 15 },
+      { size: '100ml', price: 2000, quantity: 8 }
+    ]
+  },
+  { 
+    name: 'Mika', 
+    brand: 'O\'luhle Scents', 
+    categorySlug: 'premium',
+    description: 'Warm spice meets soft vanilla undertones.',
+    variants: [
+      { size: '50ml', price: 1100, quantity: 12 }
+    ]
+  },
+  { 
+    name: 'Luna', 
+    brand: 'O\'luhle Scents', 
+    categorySlug: 'signature',
+    description: 'Dreamy night jasmine with powdery iris.',
+    variants: [
+      { size: '50ml', price: 900, quantity: 20 },
+      { size: '100ml', price: 1500, quantity: 5 }
+    ]
+  }
 ]
 
 async function main() {
-  console.log('Clearing old data...')
-  await prisma.orderItem.deleteMany({})
+  console.log('🏛️  Initializing PostgreSQL Fulfillment Engine...')
+
+  // Clear data in order
+  await prisma.inventoryLog.deleteMany({})
+  await prisma.inventory.deleteMany({})
+  await prisma.productVariant.deleteMany({})
   await prisma.product.deleteMany({})
   await prisma.category.deleteMany({})
-
-  console.log('Seeding categories...')
-  const createdCategories = {}
+  await prisma.adminUser.deleteMany({})
+  
+  console.log('🎨 Seeding classification layer...')
+  const categories = {}
   for (const cat of categoryData) {
     const created = await prisma.category.create({ data: cat })
-    createdCategories[cat.slug] = created.id
+    categories[cat.slug] = created.id
   }
 
-  console.log('Seeding products...')
-  for (let i = 0; i < productData.length; i++) {
-    const p = productData[i]
-    const { categorySlug, ...rest } = p
-    await prisma.product.create({
+  console.log('🏺 Orchestrating luxury catalogue...')
+  for (const p of productData) {
+    const product = await prisma.product.create({
       data: {
-        ...rest,
-        sku: `OLS-${p.name.toUpperCase().replace(/\s+/g, '-')}-${i+1}`,
-        categoryId: createdCategories[categorySlug],
+        name: p.name,
+        brand: p.brand,
+        description: p.description,
+        categoryId: categories[p.categorySlug],
+        isActive: true,
         images: JSON.stringify(['placeholder.jpg']),
-        primaryImage: 'placeholder.jpg',
-        colors: JSON.stringify(['Black', 'Gold']),
-        tags: JSON.stringify(['Fashion', 'Premium']),
-        createdBy: 'System Seed',
-        active: true
+        primaryImage: 'placeholder.jpg'
       }
     })
+
+    // Create Variants & Inventory
+    for (const v of p.variants) {
+      const sku = `OLS-${p.name.toUpperCase()}-${v.size.replace(/\s+/g, '')}`
+      await prisma.productVariant.create({
+        data: {
+          productId: product.id,
+          size: v.size,
+          price: v.price,
+          sku: sku,
+          inventory: {
+            create: {
+              quantity: v.quantity,
+              lowStockThreshold: 5
+            }
+          }
+        }
+      })
+    }
   }
 
+  console.log('🔒 Initializing administrative portal...')
   const adminEmail = 'admin@oluhle.com'
   const passwordHash = await bcrypt.hash('adminPassword123', 12)
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { role: 'ADMIN' },
-    create: {
+  await prisma.adminUser.create({
+    data: {
       email: adminEmail,
       passwordHash,
-      firstName: 'Admin',
-      lastName: 'User',
+      name: 'O\'luhle Admin',
       role: 'ADMIN',
-      phone: '0123456789'
+      isActive: true
     }
   })
-  console.log('Admin user ready:', adminEmail)
+
+  console.log('✅ Synchronized Successfully. Admin: ' + adminEmail)
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error('❌ Synchronous Synchronization Error:', e)
     process.exit(1)
   })
   .finally(async () => {

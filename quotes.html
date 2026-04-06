@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional RFQ | O'luhle Scents</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+  <style>
+    .rfq-page { padding-top: 120px; min-height: 100vh; background: var(--color-bg); }
+    .rfq-container { max-width: 800px; margin: 0 auto; }
+    .rfq-header { text-align: center; margin-bottom: 60px; }
+    
+    .rfq-form-card { 
+      background: #fff; padding: 48px; border-radius: var(--radius-xl); 
+      box-shadow: var(--shadow-md); border: 1px solid var(--color-border-light);
+    }
+    
+    .rfq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    .form-group { margin-bottom: 24px; }
+    .form-group label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; color: var(--color-text-muted); }
+    .form-group input, .form-group textarea, .form-group select { 
+      width: 100%; padding: 14px; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); font-family: inherit;
+    }
+    
+    .product-selector { background: var(--color-bg-alt); padding: 24px; border-radius: var(--radius-lg); margin-bottom: 32px; }
+    .selected-product { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 12px; background: #fff; margin-top: 12px; border-radius: var(--radius-sm); border: 1px solid var(--color-border-light);
+    }
+    
+    .btn-remove { background: none; border: none; color: var(--color-error-text); cursor: pointer; font-size: 0.75rem; }
+    
+    .success-panel { text-align: center; padding: 60px 0; display: none; }
+    .success-icon { font-size: 4rem; color: var(--color-gold); margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <nav class="navbar container">
+      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <div class="navbar__links">
+        <a href="products.html" class="navbar__link">Boutique</a>
+        <a href="quotes.html" class="navbar__link active">Professional</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="rfq-page">
+    <div class="container rfq-container">
+      
+      <div id="rfq-form-wrapper">
+        <div class="rfq-header">
+           <h1 style="font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 16px;">Professional Quote Request</h1>
+           <p style="color: var(--color-text-light); max-width: 600px; margin: 0 auto;">Tailored fragrance solutions for boutique hotels, high-end retail, and corporate gifting. Please provide your requirement specifications below.</p>
+        </div>
+
+        <div class="rfq-form-card">
+          <form id="rfq-form">
+            <div class="rfq-grid">
+              <div class="form-group">
+                <label>Contact Name</label>
+                <input type="text" id="contact-name" placeholder="Full name or Company rep" required>
+              </div>
+              <div class="form-group">
+                <label>Business Email</label>
+                <input type="email" id="contact-email" placeholder="email@company.com" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" id="contact-phone" placeholder="+27 ..." required>
+            </div>
+
+            <div class="product-selector">
+              <label style="font-weight: 600; margin-bottom: 16px; display: block;">FRAGRANCE SELECTION</label>
+              <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <select id="product-select" style="flex: 2;">
+                  <option value="">Select a fragrance...</option>
+                </select>
+                <input type="number" id="product-qty" value="10" min="1" style="flex: 1;" placeholder="Qty">
+                <button type="button" class="btn btn--secondary" onclick="addProjectItem()" style="padding: 12px 24px;">Add</button>
+              </div>
+              
+              <div id="selected-list">
+                <!-- Items appear here -->
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Project Notes / Custom Requirements</label>
+              <textarea id="notes" rows="4" placeholder="e.g. Bulk packaging requirements, specific delivery windows..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn--primary" style="width: 100%; padding: 18px; font-size: 1rem; letter-spacing: 0.1em;">SUBMIT REQUEST FOR QUOTE</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="success-panel" class="success-panel">
+         <div class="success-icon">✦</div>
+         <h2 style="font-family: var(--font-display); font-size: 2rem; margin-bottom: 16px;">Request Received</h2>
+         <p style="color: var(--color-text-light); margin-bottom: 32px;">Our boutique concierge team will review your requirements and generate a professional quote within 24 business hours.</p>
+         <p>Reference: <strong id="rfq-ref" style="color: var(--color-gold); font-family: var(--font-mono);"></strong></p>
+         <a href="index.html" class="btn btn--secondary" style="margin-top: 40px;">Return to Boutique</a>
+      </div>
+
+    </div>
+  </main>
+
+  <script type="module">
+    import { apiFetch } from './js/api.js';
+
+    let selectedItems = [];
+    let products = [];
+
+    async function init() {
+      try {
+        const data = await fetch('/api/products').then(res => res.json());
+        // Flatten variants for selection
+        products = data.flatMap(p => p.variants.map(v => ({
+           id: v.id,
+           label: `${p.name} — ${v.size}`
+        })));
+        
+        const select = document.getElementById('product-select');
+        products.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.label;
+          select.appendChild(opt);
+        });
+      } catch (err) { console.error(err); }
+    }
+
+    window.addProjectItem = () => {
+      const select = document.getElementById('product-select');
+      const qtyInput = document.getElementById('product-qty');
+      const variantId = select.value;
+      const qty = parseInt(qtyInput.value);
+
+      if(!variantId || qty < 1) return;
+
+      const product = products.find(p => p.id === variantId);
+      selectedItems.push({ variantId, qty, label: product.label });
+      renderList();
+      
+      select.value = '';
+      qtyInput.value = '10';
+    }
+
+    window.removeItem = (index) => {
+      selectedItems.splice(index, 1);
+      renderList();
+    }
+
+    function renderList() {
+      const list = document.getElementById('selected-list');
+      list.innerHTML = selectedItems.map((item, idx) => `
+        <div class="selected-product">
+          <span><strong>${item.qty}x</strong> ${item.label}</span>
+          <button type="button" class="btn-remove" onclick="removeItem(${idx})">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('rfq-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if(selectedItems.length === 0) return alert('Please add at least one fragrance to your request.');
+
+      const payload = {
+        contact: {
+          name: document.getElementById('contact-name').value,
+          email: document.getElementById('contact-email').value,
+          phone: document.getElementById('contact-phone').value,
+        },
+        items: selectedItems,
+        notes: document.getElementById('notes').value
+      };
+
+      try {
+        const res = await fetch('/api/quotes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if(!res.ok) throw new Error('Submission failed');
+        const data = await res.json();
+        
+        document.getElementById('rfq-form-wrapper').style.display = 'none';
+        document.getElementById('success-panel').style.display = 'block';
+        document.getElementById('rfq-ref').textContent = data.quoteNumber;
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

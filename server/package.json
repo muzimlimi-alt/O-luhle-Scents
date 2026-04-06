@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/index.js",
+    "dev": "npm run db:start && node --watch src/index.js",
     "start": "node src/index.js",
+    "db:init": "node scripts/init_portable_pg.js",
+    "db:start": "cmd /c \"\"C:\\Program Files\\PostgreSQL\\18\\bin\\pg_ctl.exe\" -D pgdata -o \"-p 5437\" start\"",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
+    "db:migrate:pg": "prisma migrate dev --name init_postgres --schema=prisma/schema.prisma",
     "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
@@ -14,14 +17,26 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "archiver": "^7.0.1",
+    "axios": "^1.14.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1"
+    "luxon": "^3.7.2",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.4",
+    "pdfkit": "^0.18.0",
+    "twilio": "^5.13.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "prisma": "^5.22.0"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "node prisma/seed.js"
   }
 }

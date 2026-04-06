@@ -116,6 +116,12 @@ export function initiatePayment(orderId) {
   return apiFetch(`/api/orders/${orderId}/pay`, { method: 'POST' })
 }
 
+export function getShippingEstimate(country, postalCode, subtotal) {
+  const qs = new URLSearchParams({ country, postalCode, subtotal }).toString()
+  return apiFetch(`/api/shipping/estimate?${qs}`)
+}
+
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function login(email, password) {
@@ -190,8 +196,8 @@ export function adminGetMetrics() {
   return apiFetch('/api/admin/metrics')
 }
 
-export function adminGetLowStock() {
-  return apiFetch('/api/products/low-stock')
+export function adminGetLowStock(threshold = 5) {
+  return apiFetch(`/api/products/low-stock?threshold=${threshold}`)
 }
 
 export function adminGetSales(period = 30) {

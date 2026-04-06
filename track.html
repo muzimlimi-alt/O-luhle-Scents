@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Your Shipment | O'luhle Scents</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+  <style>
+    .tracking-page { padding-top: 120px; min-height: 80vh; }
+    .tracking-container { max-width: 700px; margin: 0 auto; }
+    
+    .tracking-header { text-align: center; margin-bottom: 48px; }
+    .tracking-number-badge { 
+      display: inline-block; padding: 8px 16px; background: var(--color-bg-alt); 
+      border-radius: 50px; font-family: var(--font-mono); font-size: 0.9rem; color: var(--color-gold);
+    }
+    
+    /* Progress Bar */
+    .tracking-progress { 
+      display: flex; justify-content: space-between; position: relative; margin-bottom: 60px;
+      padding: 0 10px;
+    }
+    .tracking-progress::before {
+      content: ''; position: absolute; top: 15px; left: 0; right: 0; height: 2px;
+      background: var(--color-border-light); z-index: 1;
+    }
+    .tracking-progress-fill {
+      position: absolute; top: 15px; left: 0; height: 2px;
+      background: var(--color-gold); z-index: 2; transition: width 1s ease;
+    }
+    .step { position: relative; z-index: 3; text-align: center; width: 60px; }
+    .step-dot { 
+      width: 32px; height: 32px; border-radius: 50%; background: var(--color-bg); 
+      border: 2px solid var(--color-border-light); margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+    }
+    .step.active .step-dot { border-color: var(--color-gold); background: var(--color-bg); }
+    .step.completed .step-dot { background: var(--color-gold); border-color: var(--color-gold); color: #fff; }
+    .step-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-light); }
+    .step.active .step-label { color: var(--color-text); font-weight: 600; }
+    
+    /* Timeline */
+    .timeline { position: relative; padding-left: 32px; margin-top: 40px; }
+    .timeline::before {
+      content: ''; position: absolute; top: 0; bottom: 0; left: 7px; width: 1px;
+      background: var(--color-border-light);
+    }
+    .timeline-item { position: relative; margin-bottom: 32px; }
+    .timeline-dot { 
+      position: absolute; left: -32px; width: 15px; height: 15px; border-radius: 50%; 
+      background: var(--color-bg); border: 2px solid var(--color-gold);
+    }
+    .timeline-content { background: var(--color-bg-alt); padding: 16px; border-radius: var(--radius-lg); }
+    .timeline-status { font-family: var(--font-display); font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+    .timeline-msg { font-size: 0.8rem; color: var(--color-text-light); margin-bottom: 8px; }
+    .timeline-meta { font-size: 0.7rem; color: var(--color-text-muted); display: flex; justify-content: space-between; }
+    
+    .tracking-card { background: #fff; border: 1px solid var(--color-border-light); padding: 32px; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+    
+    .empty-tracking { text-align: center; padding: 100px 0; }
+    .search-tracking { max-width: 400px; margin: 40px auto 0; display: flex; gap: 8px; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <nav class="navbar">
+      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+    </nav>
+  </header>
+
+  <main class="tracking-page">
+    <div class="container tracking-container">
+      
+      <div id="tracking-content">
+        <!-- Main tracking UI will be injected here -->
+        <div class="empty-tracking">
+          <h2>Track Your Shipment</h2>
+          <p style="color:var(--color-text-light);margin-top:12px;">Enter your tracking number below to follow your luxury package.</p>
+          <div class="search-tracking">
+            <input type="text" id="track-input" placeholder="e.g. TCG123456789" style="flex:1;">
+            <button class="btn btn--primary" onclick="handleSearch()">Track</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script type="module">
+    import { apiFetch } from './js/api.js';
+
+    window.handleSearch = () => {
+      const num = document.getElementById('track-input').value.trim();
+      if(num) window.location.href = `track.html?number=${num}`;
+    };
+
+    async function initTracking() {
+      const params = new URLSearchParams(window.location.search);
+      const number = params.get('number');
+      if(!number) return;
+
+      const content = document.getElementById('tracking-content');
+      content.innerHTML = `
+        <div style="display:flex;justify-content:center;padding:100px;">
+          <div class="loader-spinner"></div>
+        </div>
+      `;
+
+      try {
+        const res = await fetch(`/api/tracking/${number}`);
+        if(!res.ok) throw new Error('Tracking number not found');
+        const data = await res.json();
+        renderTracking(data);
+      } catch (err) {
+        content.innerHTML = `
+          <div class="empty-tracking">
+            <h2 style="color:var(--color-error-text);">Not Found</h2>
+            <p style="color:var(--color-text-light);margin-top:12px;">We couldn't find tracking information for "${number}".</p>
+            <div class="search-tracking">
+              <input type="text" id="track-input" placeholder="Enter tracking number" value="${number}" style="flex:1;">
+              <button class="btn btn--primary" onclick="handleSearch()">Track</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function renderTracking(data) {
+      const content = document.getElementById('tracking-content');
+      const statusMap = { 'PENDING': 0, 'SHIPPED': 1, 'IN_TRANSIT': 2, 'OUT_FOR_DELIVERY': 3, 'DELIVERED': 4 };
+      const currentStep = statusMap[data.shippingStatus] || 1;
+      const progressPercent = (currentStep / 4) * 100;
+
+      content.innerHTML = `
+        <div class="tracking-header">
+          <h2 style="margin-bottom:12px;">Shipment Status</h2>
+          <div class="tracking-number-badge">${data.trackingNumber}</div>
+          <p style="margin-top:16px;font-size:0.85rem;color:var(--color-text-light);">
+            Carried by <strong>${data.courierName}</strong>
+            ${data.estimatedDelivery ? ` · Estimated Delivery: <strong>${new Date(data.estimatedDelivery).toLocaleDateString()}</strong>` : ''}
+          </p>
+        </div>
+
+        <div class="tracking-card">
+          <div class="tracking-progress">
+             <div class="tracking-progress-fill" style="width: ${progressPercent}%"></div>
+             ${['Placed', 'Shipped', 'In-Transit', 'On Delivery', 'Delivered'].map((step, i) => `
+               <div class="step ${i <= currentStep ? 'completed' : ''} ${i === currentStep ? 'active' : ''}">
+                 <div class="step-dot">${i < currentStep ? '✓' : ''}</div>
+                 <div class="step-label">${step}</div>
+               </div>
+             `).join('')}
+          </div>
+
+          <h4 style="margin-bottom:24px;text-transform:uppercase;letter-spacing:0.1em;font-size:0.75rem;color:var(--color-text-muted);">Shipment History</h4>
+          <div class="timeline">
+            ${data.events.map(event => `
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-status">${event.status.replace('_', ' ')}</div>
+                  <div class="timeline-msg">${event.message || 'Processing shipment update.'}</div>
+                  <div class="timeline-meta">
+                    <span>${event.location || 'Johannesburg HUB'}</span>
+                    <span>${new Date(event.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    initTracking();
+  </script>
+</body>
+</html>

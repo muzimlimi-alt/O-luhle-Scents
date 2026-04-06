@@ -1,0 +1,129 @@
+/* 
+  O'luhle Scents - Premium Admin Button System
+  Centralized design for luxury, modern aesthetics.
+*/
+
+:root {
+  --btn-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --btn-radius: 8px;
+  --btn-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --btn-shadow-hover: 0 6px 20px rgba(184, 155, 106, 0.25);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+  transition: var(--btn-transition);
+  border: 1px solid transparent;
+  gap: 8px;
+  outline: none;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* --- Primary: Premium Gold Gradient --- */
+.btn--primary {
+  background: linear-gradient(135deg, #b89b6a 0%, #8c7650 100%);
+  color: #0f0e0c;
+  box-shadow: var(--btn-shadow);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d4bc91 0%, #b89b6a 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+/* --- Secondary: Glassmorphic Dark --- */
+.btn--secondary {
+  background: rgba(26, 22, 17, 0.6);
+  backdrop-filter: blur(8px);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: rgba(184, 155, 106, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+/* --- Outline: Elegant Border --- */
+.btn--outline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.btn--outline:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(184, 155, 106, 0.05);
+  transform: translateY(-2px);
+}
+
+/* --- Danger: Refined Crimson --- */
+.btn--danger {
+  background: rgba(192, 57, 43, 0.1);
+  border-color: rgba(192, 57, 43, 0.3);
+  color: #f87171;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(192, 57, 43, 0.2);
+}
+
+/* --- Action/Icon Buttons: Minimalist --- */
+.action-btn, .icon-btn, .classic-action-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--btn-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover, .icon-btn:hover, .classic-action-btn:hover {
+  background: rgba(184, 155, 106, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.action-btn.danger:hover, .icon-btn.danger:hover {
+  background: rgba(192, 57, 43, 0.2);
+  border-color: #f87171;
+  color: #f87171;
+}
+
+/* --- Sizes --- */
+.btn--sm { padding: 6px 12px; font-size: 0.75rem; }
+.btn--xs { padding: 4px 8px; font-size: 0.7rem; }
+.btn--lg { padding: 14px 28px; font-size: 1rem; }

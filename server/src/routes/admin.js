@@ -4,63 +4,91 @@ import { requireAdmin } from '../middleware/auth.js'
 
 const router = Router()
 
-// GET /api/admin/metrics
-router.get('/metrics', requireAdmin, async (req, res, next) => {
+// GET /api/admin/metrics/dashboard
+router.get('/metrics/dashboard', requireAdmin, async (req, res, next) => {
   try {
-    // 1. Total Revenue (Paid/Shipped/Delivered)
-    const revenueData = await prisma.order.aggregate({
+    const revenue = await prisma.order.aggregate({
       where: { status: { in: ['paid', 'shipped', 'delivered'] } },
-      _sum: { total: true },
+      _sum: { totalAmount: true }
     })
-
-    // 2. Total Orders (All time)
-    const totalOrders = await prisma.order.count()
-
-    // 3. Total Customers (Unique users with CUSTOMER role)
-    const totalCustomers = await prisma.user.count({
-      where: { role: 'CUSTOMER' }
+    const orders = await prisma.order.count()
+    const customers = await prisma.customer.count()
+    const lowStock = await prisma.inventory.count({
+      where: { quantity: { lte: prisma.inventory.lowStockThreshold } }
     })
 
     res.json({
-      totalRevenue: revenueData._sum.total || 0,
-      totalOrders,
-      totalCustomers
+      revenue: Number(revenue._sum.totalAmount) || 0,
+      orders,
+      customers,
+      lowStock
     })
-  } catch (err) {
-    next(err)
-  }
+  } catch (err) { next(err) }
 })
 
-// GET /api/admin/sales
-router.get('/sales', requireAdmin, async (req, res, next) => {
+// GET /api/admin/metrics/predictions
+router.get('/metrics/predictions', requireAdmin, async (req, res, next) => {
   try {
-    const period = parseInt(req.query.period) || 30
-    const since = new Date(Date.now() - period * 24 * 60 * 60 * 1000)
-
-    const dailySales = await prisma.order.findMany({
-      where: { createdAt: { gte: since } },
-      select: { createdAt: true, total: true, status: true }
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    
+    // 1. Fetch sales velocity for all variants
+    const sales = await prisma.orderItem.findMany({
+      where: { order: { createdAt: { gte: thirtyDaysAgo }, status: { in: ['paid', 'shipped'] } } },
+      select: { variantId: true, quantity: true }
     })
 
-    // Grouping in JS is safer for SQLite + Prisma DateTime quirks
-    const groups = {}
-    dailySales.forEach(o => {
-      const date = o.createdAt instanceof Date ? o.createdAt : new Date(o.createdAt)
-      if (isNaN(date.getTime())) return // Skip invalid dates
-      const day = date.toISOString().slice(0, 10)
-      if (!groups[day]) groups[day] = { date: day, count: 0, revenue: 0 }
-      groups[day].count++
-      if (['paid', 'shipped', 'delivered'].includes((o.status || '').toLowerCase())) {
-        groups[day].revenue += o.total || 0
+    const velocityMap = {}
+    sales.forEach(s => {
+      velocityMap[s.variantId] = (velocityMap[s.variantId] || 0) + s.quantity
+    })
+
+    // 2. Fetch current inventory
+    const inventory = await prisma.inventory.findMany({
+      include: { variant: { include: { product: true } } }
+    })
+
+    const predictions = inventory.map(inv => {
+      const thirtyDaySales = velocityMap[inv.variantId] || 0
+      const dailyVelocity = thirtyDaySales / 30
+      
+      let daysRemaining = Infinity
+      if (dailyVelocity > 0) {
+        daysRemaining = Math.floor(inv.quantity / dailyVelocity)
       }
+
+      return {
+        variantId: inv.variantId,
+        productName: inv.variant.product.name,
+        size: inv.variant.size,
+        currentStock: inv.quantity,
+        thirtyDaySales,
+        dailyVelocity: dailyVelocity.toFixed(2),
+        daysRemaining: daysRemaining === Infinity ? 999 : daysRemaining,
+        predictionDate: daysRemaining === Infinity ? null : new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000)
+      }
+    }).sort((a, b) => a.daysRemaining - b.daysRemaining).slice(0, 10)
+
+    res.json(predictions)
+  } catch (err) { next(err) }
+})
+
+// GET /api/admin/metrics/abandoned
+router.get('/metrics/abandoned', requireAdmin, async (req, res, next) => {
+  try {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
+    const abandonedOrders = await prisma.order.findMany({
+      where: { 
+        status: 'pending', 
+        paymentStatus: 'unpaid',
+        createdAt: { lt: twoHoursAgo },
+        abandonedEmailSent: false 
+      },
+      include: { customer: true, items: { include: { variant: { include: { product: true } } } } },
+      orderBy: { createdAt: 'desc' }
     })
-
-    const daily = Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
-
-    res.json(daily)
-  } catch (err) {
-    next(err)
-  }
+    res.json(abandonedOrders)
+  } catch (err) { next(err) }
 })
 
 export default router
+

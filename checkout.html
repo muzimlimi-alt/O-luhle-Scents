@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checkout — O'luhle Scents</title>
+  <title>Checkout | O'luhle Scents</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/modern-extensions.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('oluhle_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
 </head>
 <body>
 
@@ -208,58 +210,65 @@
           itemsContainer.innerHTML = cart.map((item, index) => `
             <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border-light);position:relative;">
               <div style="width:56px;height:70px;border-radius:var(--radius);overflow:hidden;background:var(--color-bg-alt);flex-shrink:0;position:relative;">
-                <img src="${item.imageUrl ? 'images/' + item.imageUrl : getPlaceholderImage(item.name)}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='${getPlaceholderImage(item.name)}'">
-                <span style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--color-gold);color:#fff;border-radius:50%;font-size:0.6rem;display:flex;align-items:center;justify-content:center;font-weight:600;">${item.quantity || item.qty}</span>
+                <img src="${item.image ? 'images/' + item.image : getPlaceholderImage(item.name)}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='${getPlaceholderImage(item.name)}'">
+                <span style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--color-gold);color:#fff;border-radius:50%;font-size:0.6rem;display:flex;align-items:center;justify-content:center;font-weight:600;">${item.qty || item.quantity}</span>
               </div>
               <div style="flex:1;">
                 <div style="font-family:var(--font-display);font-weight:500;">${item.name}</div>
                 <div style="font-size:0.72rem;color:var(--color-text-light);">${item.size}</div>
-                <button type="button" class="js-remove-item" data-index="${index}" style="background:none;border:none;padding:0;color:var(--color-text-light);font-size:0.65rem;text-decoration:underline;cursor:pointer;margin-top:4px;letter-spacing:0.05em;">Remove</button>
+                <button type="button" class="js-remove-item" data-variant="${item.variantId}" style="background:none;border:none;padding:0;color:var(--color-text-light);font-size:0.65rem;text-decoration:underline;cursor:pointer;margin-top:4px;letter-spacing:0.05em;">Remove</button>
               </div>
-              <div style="font-weight:500;font-size:0.85rem;">R${((parseFloat(item.price) || 0) * (parseInt(item.quantity || item.qty) || 0)).toLocaleString()}</div>
+              <div style="font-weight:500;font-size:0.85rem;">R${((parseFloat(item.price) || 0) * (parseInt(item.qty || item.quantity) || 0)).toLocaleString()}</div>
             </div>
           `).join('');
 
           // Add click listeners to remove buttons
           document.querySelectorAll('.js-remove-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
-              const idx = parseInt(e.target.dataset.index);
-              removeItem(idx);
+              const variantId = e.target.dataset.variant;
+              removeItem(variantId);
             });
           });
+
         }
         updateSummaryTotals();
       }
 
-      function removeItem(index) {
-        cart.splice(index, 1);
+      function removeItem(variantId) {
+        cart = cart.filter(item => item.variantId !== variantId);
         localStorage.setItem('oluhle_cart', JSON.stringify(cart));
         renderCheckoutItems();
-        
-        // Update global cart badge if possible (if app.js is loaded)
-        if (window.updateCartUI) window.updateCartUI();
       }
 
-      // --- Shipping method: update total on radio change ---
-      function getSelectedShipping() {
-        const radios = document.querySelectorAll('input[name="shipping"]');
-        for (const r of radios) {
-          if (r.checked) return r.closest('label').querySelector('span').textContent === 'R99' ? 99 : 199;
+      // --- Dynamic Shipping Calculation ---
+      let shippingCost = 0;
+
+      async function updateShippingEstimate() {
+        const postal = document.getElementById('postal').value.trim();
+        const province = document.getElementById('province').value;
+        const subtotal = cart.reduce((s, i) => s + (parseFloat(i.price) * (i.qty || i.quantity)), 0);
+
+        if (postal && province) {
+          try {
+            const data = await getShippingEstimate('South Africa', postal, subtotal);
+            shippingCost = data.cost;
+            updateSummaryTotals();
+          } catch (err) {
+            console.error('Shipping estimate failed', err);
+          }
         }
-        return 99;
       }
 
       function updateSummaryTotals() {
         const subtotal = cart.reduce((s, i) => {
           const itemPrice = parseFloat(i.price) || 0;
-          const itemQty   = parseInt(i.quantity || i.qty) || 0;
+          const itemQty   = parseInt(i.qty || i.quantity) || 0;
           return s + (itemPrice * itemQty);
         }, 0);
         
-        const shippingCost = cart.length > 0 ? getSelectedShipping() : 0;
         const subtotalEl = document.querySelector('.checkout-subtotal');
         const totalEl    = document.querySelector('.checkout-total');
-        const shippingEl = document.querySelector('.checkout-shipping-val'); // Added unique class for shipping display
+        const shippingEl = document.querySelector('.checkout-shipping-val');
 
         if (subtotalEl) subtotalEl.textContent = `R${subtotal.toLocaleString()}`;
         if (shippingEl) shippingEl.textContent = `R${shippingCost.toLocaleString()}`;
@@ -267,7 +276,9 @@
       }
 
       renderCheckoutItems();
-      document.querySelectorAll('input[name="shipping"]').forEach(r => r.addEventListener('change', updateSummaryTotals));
+      document.getElementById('postal')?.addEventListener('blur', updateShippingEstimate);
+      document.getElementById('province')?.addEventListener('change', updateShippingEstimate);
+
 
       // --- Place Order ---
       document.getElementById('place-order-btn').addEventListener('click', async () => {
@@ -286,7 +297,6 @@
         const firstName = document.getElementById('first-name').value.trim();
         const lastName  = document.getElementById('last-name').value.trim();
         const street    = document.getElementById('address').value.trim();
-        const apartment = document.getElementById('address2').value.trim();
         const city      = document.getElementById('city').value.trim();
         const province  = document.getElementById('province').value;
         const postalCode = document.getElementById('postal').value.trim();
@@ -305,11 +315,12 @@
 
         try {
           const data = await createOrder({
-            items: cart.map(i => ({ productId: i.productId || i.id, size: i.size, quantity: i.quantity || i.qty })),
+            items: cart.map(i => ({ variantId: i.variantId, quantity: i.qty || i.quantity })),
             contact: { email, phone },
-            shipping: { firstName, lastName, street, apartment, city, province, postalCode },
+            shipping: { firstName, lastName, street, city, province, postalCode },
             shippingMethod,
           });
+
 
           // Clear the cart
           localStorage.removeItem('oluhle_cart');
