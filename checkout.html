@@ -214,7 +214,7 @@
               <div style="flex:1;">
                 <div style="font-family:var(--font-display);font-weight:500;">${item.name}</div>
                 <div style="font-size:0.72rem;color:var(--color-text-light);">${item.size}</div>
-                <button type="button" class="js-remove-item" data-variant="${item.variantId}" style="background:none;border:none;padding:0;color:var(--color-text-light);font-size:0.65rem;text-decoration:underline;cursor:pointer;margin-top:4px;letter-spacing:0.05em;">Remove</button>
+                <button type="button" class="js-remove-item" data-variant="${item.variantId}" style="background:none;border:none;padding:0;color:#d9534f;font-size:0.65rem;text-decoration:underline;cursor:pointer;margin-top:4px;letter-spacing:0.05em;">Remove</button>
               </div>
               <div style="font-weight:500;font-size:0.85rem;">R${((parseFloat(item.price) || 0) * (parseInt(item.qty || item.quantity) || 0)).toLocaleString()}</div>
             </div>

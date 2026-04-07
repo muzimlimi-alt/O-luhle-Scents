@@ -20,7 +20,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         sizeContainer: document.querySelector('.size-options'),
         qtyInput: document.querySelector('.qty-input'),
         addBtn: document.querySelector('.btn-add-cart'),
-        relatedGrid: document.getElementById('related-products')
+        relatedGrid: document.getElementById('related-products'),
+        // New sensory elements
+        metaType: document.querySelector('#meta-type span'),
+        metaConc: document.querySelector('#meta-concentration span'),
+        metaLong: document.querySelector('#meta-longevity span'),
+        metaFamily: document.querySelector('#meta-family span'),
+        noteTop: document.querySelector('#note-top p'),
+        noteHeart: document.querySelector('#note-heart p'),
+        noteBase: document.querySelector('#note-base p'),
+        scentPyramid: document.querySelector('.scent-pyramid')
     };
 
     let selectedVariant = null;
@@ -48,6 +57,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.breadcrumb.textContent = product.name;
         elements.image.src = `images/products/${product.primaryImage || 'placeholder.jpg'}`;
         elements.image.alt = product.name;
+
+        // Render new sensory details
+        if (elements.metaType) elements.metaType.textContent = product.type || 'Extrait de Parfum';
+        if (elements.metaConc) elements.metaConc.textContent = product.oilConcentration || 'N/A';
+        if (elements.metaLong) elements.metaLong.textContent = product.longevity || 'N/A';
+        
+        if (elements.metaFamily && product.scentFamily) {
+            elements.metaFamily.parentElement.style.display = 'block';
+            elements.metaFamily.textContent = product.scentFamily;
+        } else if (elements.metaFamily) {
+            elements.metaFamily.parentElement.style.display = 'none';
+        }
+
+        // Render Scent Pyramid
+        const hasNotes = product.topNotes || product.heartNotes || product.baseNotes;
+        if (elements.scentPyramid) {
+            if (hasNotes) {
+                elements.scentPyramid.style.display = 'block';
+                if (elements.noteTop) elements.noteTop.textContent = product.topNotes || '—';
+                if (elements.noteHeart) elements.noteHeart.textContent = product.heartNotes || '—';
+                if (elements.noteBase) elements.noteBase.textContent = product.baseNotes || '—';
+            } else {
+                elements.scentPyramid.style.display = 'none';
+            }
+        }
 
         // Render variants
         elements.sizeContainer.innerHTML = '';
@@ -118,11 +152,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!validation.valid) {
                 const result = validation.results[0];
                 if (result.availableQuantity <= 0) {
-                    alert('Apologies, this item just sold out.');
+                    showToast('Apologies, this item just sold out.', 'error');
                     selectedVariant.inventory.quantity = 0;
                     selectVariant(selectedVariant, document.querySelector(`.size-option[data-variant-id="${selectedVariant.id}"]`));
                 } else {
-                    alert(`Only ${result.availableQuantity} units remain. Adjusting your selection.`);
+                    showToast(`Only ${result.availableQuantity} units remain. Adjusting your selection.`, 'warning');
                     elements.qtyInput.value = result.availableQuantity;
                 }
                 // Reset button if validation fails
@@ -146,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     price: Number(selectedVariant.price) || 0,
                     qty: qty,
                     image: productData.primaryImage ? `products/${productData.primaryImage}` : '',
-                    currency: currentCurrency || 'ZAR'
+                    currency: localStorage.getItem('oluhle_currency') || 'ZAR'
                 });
             }
 
@@ -154,6 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
             
             // Visual feedback
+            showToast(`${productData.name} added to cart.`, 'success');
             elements.addBtn.textContent = 'Added!';
             elements.addBtn.classList.add('btn--success');
             setTimeout(() => {
@@ -164,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (err) {
             console.error('Add to cart failed:', err);
-            alert('An error occurred while validating stock. Please try again.');
+            showToast('An error occurred while validating stock. Please try again.', 'error');
             elements.addBtn.textContent = originalText;
             elements.addBtn.disabled = false;
         }

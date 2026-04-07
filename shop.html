@@ -169,29 +169,5 @@
   <script src="js/app.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
-  <script>
-    // Handle URL category parameter
-    document.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
-      const cat = params.get('cat');
-      if (cat) {
-        const btn = document.querySelector(`.filter-btn[data-filter="${cat}"]`);
-        if (btn) btn.click();
-      }
-
-      // Sort functionality
-      document.getElementById('sort-select')?.addEventListener('change', function() {
-        let sorted = [...PRODUCTS];
-        switch(this.value) {
-          case 'price-low': sorted.sort((a,b) => (a.variants?.[0]?.price || 0) - (b.variants?.[0]?.price || 0)); break;
-          case 'price-high': sorted.sort((a,b) => (b.variants?.[0]?.price || 0) - (a.variants?.[0]?.price || 0)); break;
-          case 'name': sorted.sort((a,b) => a.name.localeCompare(b.name)); break;
-        }
-        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
-        if (activeFilter !== 'all') sorted = sorted.filter(p => p.category === activeFilter);
-        renderProducts('shop-products', sorted);
-      });
-    });
-  </script>
 </body>
 </html>

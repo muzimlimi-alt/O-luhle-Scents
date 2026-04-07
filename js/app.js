@@ -188,15 +188,16 @@ function renderCartPage() {
           <div class="cart-table__info">
             <div class="cart-table__name">${item.name}</div>
             <div class="cart-table__size">${item.size}</div>
+            <div class="cart-item__remove" onclick="event.preventDefault();event.stopPropagation();removeFromCartByVariant('${item.variantId}')">Remove</div>
           </div>
         </a>
       </td>
       <td data-label="Price">${formatPrice(item.price)}</td>
       <td data-label="Quantity">
         <div class="quantity-selector">
-          <button onclick="event.stopPropagation();updateCartQtyByVariant('${item.variantId}', ${item.qty - 1})">−</button>
-          <input type="text" value="${item.qty}" readonly>
-          <button onclick="event.stopPropagation();updateCartQtyByVariant('${item.variantId}', ${item.qty + 1})">+</button>
+          <button class="qty-btn" onclick="event.stopPropagation();updateCartQtyByVariant('${item.variantId}', ${item.qty - 1})">−</button>
+          <input type="text" class="qty-input" value="${item.qty}" readonly>
+          <button class="qty-btn" onclick="event.stopPropagation();updateCartQtyByVariant('${item.variantId}', ${item.qty + 1})">+</button>
         </div>
       </td>
       <td data-label="Total"><strong>${formatPrice(item.price * item.qty)}</strong></td>
@@ -212,6 +213,19 @@ function renderCartPage() {
 function renderProducts(containerId, products, limit) {
   const container = document.getElementById(containerId);
   if (!container) return;
+
+  const countEl = document.querySelector('.results-count');
+  if (countEl) {
+    countEl.textContent = `${products.length} ${products.length === 1 ? 'fragrance' : 'fragrances'}`;
+  }
+
+  if (products.length === 0) {
+    container.innerHTML = `<div class="empty-state" style="grid-column: 1/-1; padding: 100px 0;">
+      <h3 style="font-family: var(--font-display); font-size: 1.5rem; color: var(--color-gold); margin-bottom: 20px;">No Scents Found</h3>
+      <p style="color: rgba(255,255,255,0.5);">Try adjusting your filters or collection selection.</p>
+    </div>`;
+    return;
+  }
 
   const items = limit ? products.slice(0, limit) : products;
 
@@ -238,6 +252,64 @@ function renderProducts(containerId, products, limit) {
   initScrollReveal();
 }
 
+function initShopFilters() {
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const sortSelect = document.getElementById('sort-select');
+  if (!filterBtns.length && !sortSelect) return;
+
+  const updateShop = async () => {
+    const activeBtn = document.querySelector('.filter-btn.active');
+    const category = activeBtn?.dataset.filter || 'all';
+    const sort = sortSelect?.value || 'default';
+
+    // 1. Fetch filtered products from API (Applying category on server)
+    const params = { category };
+    const products = await fetchProducts(params);
+    PRODUCTS = products; // Sync global state for Quick Add
+    
+    // 2. Perform Client-side sorting on the returned set
+    let sorted = [...products];
+    switch(sort) {
+      case 'price-low': 
+        sorted.sort((a,b) => (a.variants?.[0]?.price || 0) - (b.variants?.[0]?.price || 0)); 
+        break;
+      case 'price-high': 
+        sorted.sort((a,b) => (b.variants?.[0]?.price || 0) - (a.variants?.[0]?.price || 0)); 
+        break;
+      case 'name': 
+        sorted.sort((a,b) => a.name.localeCompare(b.name)); 
+        break;
+    }
+
+    renderProducts('shop-products', sorted);
+  };
+
+  filterBtns.forEach(btn => {
+    btn.onclick = (e) => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateShop();
+    };
+  });
+
+  if (sortSelect) sortSelect.onchange = updateShop;
+
+  // Initial check for URL params
+  const params = new URLSearchParams(window.location.search);
+  const cat = params.get('cat');
+  if (cat) {
+    const target = Array.from(filterBtns).find(b => b.dataset.filter === cat);
+    if (target) {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      target.classList.add('active');
+      updateShop();
+    }
+  }
+
+  // Always trigger an initial load if we are on the shop page
+  updateShop();
+}
+
 function initScrollReveal() {
   const observerOptions = {
     threshold: 0.1,
@@ -261,24 +333,20 @@ async function handleCurrencyChange(e) {
   currentCurrency = newCurrency;
   localStorage.setItem('oluhle_currency', newCurrency);
   
-  // Reload products with new currency
-  PRODUCTS = await fetchProducts();
+  // Reload shop if present
+  if (document.getElementById('shop-products')) {
+    initShopFilters();
+  } else {
+    // Reload other globals
+    PRODUCTS = await fetchProducts();
+    if (document.getElementById('featured-products')) renderProducts('featured-products', PRODUCTS.filter(p => p.isActive), 8);
+    if (document.querySelector('.product-detail')) window.location.reload(); // Refresh detail page values
+  }
   
-  // Update UI
-  if (document.getElementById('featured-products')) renderProducts('featured-products', PRODUCTS.filter(p => p.isActive), 8);
-  if (document.getElementById('shop-products')) renderProducts('shop-products', PRODUCTS);
-  if (document.querySelector('.product-detail')) initProductDetail();
-  
-  // Note: Cart items stay at their original price or you can update them.
-  // Generally, standard is to clear cart or update prices. Let's update if possible.
   updateCartPrices();
 }
 
 async function updateCartPrices() {
-  // If we wanted to be perfect, we'd loop through cart and re-fetch prices for each variantId
-  // For now, let's just clear cart on currency change to avoid arbitrage or keep it.
-  // Luxury stores often clear cart or lock currency at start.
-  // We'll just refresh UI for now.
   updateCartUI();
 }
 
@@ -344,7 +412,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     currencySelect.addEventListener('change', handleCurrencyChange);
   }
 
-  PRODUCTS = await fetchProducts();
+  // Initial load
+  if (document.getElementById('shop-products')) {
+    initShopFilters(); // Handle shop specifically
+  } else {
+    PRODUCTS = await fetchProducts();
+    if (document.getElementById('featured-products')) {
+      const featured = PRODUCTS.filter(p => (p.isActive || p.is_active === true)).slice(0, 8);
+      renderProducts('featured-products', featured);
+    }
+  }
+  
   updateCartUI();
   
   // Checkout Validation Interceptor
@@ -362,15 +440,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('.cart-overlay')?.addEventListener('click', closeCartPanel);
   document.querySelector('.hamburger')?.addEventListener('click', toggleMobileMenu);
 
-  if (document.getElementById('featured-products')) {
-    const featured = PRODUCTS.filter(p => p.isActive).slice(0, 8);
-    renderProducts('featured-products', featured);
-  }
-  if (document.getElementById('shop-products')) renderProducts('shop-products', PRODUCTS);
-  
-  // Update UI on load
-  updateCartUI();
-  
   hideLoader();
 });
 
@@ -390,18 +459,74 @@ function hideLoader() { document.querySelector('.page-loader')?.classList.add('h
 function openCartPanel() { document.querySelector('.cart-panel')?.classList.add('open'); document.querySelector('.cart-overlay')?.classList.add('open'); }
 function closeCartPanel() { document.querySelector('.cart-panel')?.classList.remove('open'); document.querySelector('.cart-overlay')?.classList.remove('open'); }
 function toggleMobileMenu() { document.querySelector('.mobile-menu')?.classList.toggle('open'); }
-function showToast(message, type = 'success') {
-  let toast = document.querySelector('.toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.className = 'toast';
-    document.body.appendChild(toast);
+// --- Elite Messaging System ---
+const EliteMessaging = {
+  container: null,
+  icons: {
+    success: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    warning: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+    close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+  },
+
+  init() {
+    if (!this.container) {
+      this.container = document.createElement('div');
+      this.container.className = 'toast-container';
+      document.body.appendChild(this.container);
+    }
+
+    window.addEventListener('oluhle_message', (e) => {
+      const { type, title, message } = e.detail;
+      this.show(type, title, message);
+    });
+  },
+
+  show(type = 'success', title = 'Notification', message = '', duration = 5000) {
+    if (!this.container) this.init();
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    
+    toast.innerHTML = `
+      <div class="toast__icon">${this.icons[type] || this.icons.info}</div>
+      <div class="toast__content">
+        <div class="toast__title">${title}</div>
+        <div class="toast__message">${message}</div>
+      </div>
+      <button class="toast__close" aria-label="Dismiss">${this.icons.close}</button>
+    `;
+
+    this.container.appendChild(toast);
+    
+    // Force reflow for animation
+    void toast.offsetWidth;
+    toast.classList.add('show');
+
+    const removeToast = () => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 500);
+    };
+
+    const timer = setTimeout(removeToast, duration);
+
+    toast.querySelector('.toast__close').onclick = () => {
+      clearTimeout(timer);
+      removeToast();
+    };
   }
-  
-  toast.textContent = message;
-  toast.className = `toast show toast--${type}`;
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3500);
+};
+
+// Initialize Elite Messaging
+EliteMessaging.init();
+
+function showToast(message, type = 'success') {
+  const titles = {
+    'success': 'Action Successful',
+    'error': 'Interruption',
+    'warning': 'Note',
+    'info': 'Information'
+  };
+  EliteMessaging.show(type, titles[type], message);
 }

@@ -179,6 +179,14 @@ export function AdminUsers() {
                 <option value="auditor">Internal Auditor</option>
               </select>
            </div>
+           <div className="select-glass-wrapper">
+              <Filter size={14} className="glass-icon" />
+              <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
+                <option value="">Status: All States</option>
+                <option value="true">State: Authorized</option>
+                <option value="false">State: Denied</option>
+              </select>
+           </div>
            <button className="elite-btn-outline icon-only" onClick={() => fetchUsers()}>
              <RefreshCw size={16} className={loading ? 'spin' : ''} />
            </button>
@@ -325,6 +333,64 @@ export function AdminUsers() {
                  <button type="submit" className="elite-btn" disabled={actionLoading}>{actionLoading ? 'Synchronizing...' : 'Save Changes'}</button>
                </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Password Reset Modal */}
+      {isPasswordOpen && selectedUser && (
+        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setIsPasswordOpen(false)}>
+          <div className="elite-modal glass-panel">
+            <div className="modal-top">
+               <h2 className="couture-text">Secure Credentials</h2>
+               <button className="close-btn" onClick={() => setIsPasswordOpen(false)}><X size={24} /></button>
+            </div>
+            <form className="elite-form" onSubmit={handlePasswordReset}>
+               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
+                 Update security credentials for <strong>{selectedUser.name}</strong>
+               </p>
+               <div className="elite-input-group">
+                 <label className="elite-input-label">New Master Password</label>
+                 <input type="password" className="elite-glass-input" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+               </div>
+               <div className="elite-input-group">
+                 <label className="elite-input-label">Confirm Master Password</label>
+                 <input type="password" className="elite-glass-input" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+               </div>
+               <div className="modal-actions-elite">
+                 <button type="submit" className="elite-btn" disabled={actionLoading}>
+                   {actionLoading ? 'Updating Matrix...' : 'Commit New Password'}
+                 </button>
+               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteOpen && selectedUser && (
+        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setIsDeleteOpen(false)}>
+          <div className="elite-modal glass-panel">
+            <div className="modal-top">
+               <h2 className="couture-text" style={{ color: '#ef4444' }}>Revoke Authority</h2>
+               <button className="close-btn" onClick={() => setIsDeleteOpen(false)}><X size={24} /></button>
+            </div>
+            <div className="elite-form">
+               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '32px', lineHeight: '1.6' }}>
+                 You are about to decommission <strong>{selectedUser.name}</strong>. This action will permanently revoke all system access and cannot be undone.
+               </p>
+               <div className="modal-actions-elite">
+                 <button 
+                   className="elite-btn" 
+                   style={{ background: '#ef4444' }} 
+                   onClick={handleDelete} 
+                   disabled={actionLoading}
+                 >
+                   {actionLoading ? 'Decommissioning...' : 'Confirm Revocation'}
+                 </button>
+                 <button className="elite-btn-outline" onClick={() => setIsDeleteOpen(false)}>Abort Action</button>
+               </div>
+            </div>
           </div>
         </div>
       )}

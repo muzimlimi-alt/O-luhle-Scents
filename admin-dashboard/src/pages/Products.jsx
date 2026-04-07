@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { productsApi, categoriesApi } from '../services/api';
 import { 
   Plus, Search, Filter, Edit2, Trash2, Package, 
@@ -26,7 +26,7 @@ export function Products() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const response = await productsApi.list({
@@ -46,16 +46,16 @@ export function Products() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, sortBy, selectedCategory, selectedStatus, searchTerm]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const data = await categoriesApi.list();
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to resolve category list:', err);
     }
-  };
+  }, []);
 
   // Debounce search effect
   useEffect(() => {
@@ -64,16 +64,16 @@ export function Products() {
       fetchProducts();
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, fetchProducts]);
 
   // Handle other filter changes
   useEffect(() => {
     fetchProducts();
-  }, [page, sortBy, selectedCategory, selectedStatus]);
+  }, [page, sortBy, selectedCategory, selectedStatus, fetchProducts]);
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
 
   const handleCreate = () => {
     setEditingProduct(null);

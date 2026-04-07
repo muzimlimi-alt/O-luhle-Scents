@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database } from 'lucide-react';
+import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database, Landmark } from 'lucide-react';
 import { DateTime } from 'luxon';
 
 export function Inventory() {

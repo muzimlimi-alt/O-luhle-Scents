@@ -23,14 +23,34 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+    const message = data?.message || data?.error || error.message || 'API Communication Error';
+
+    if (status === 401) {
       localStorage.removeItem('oluhle_admin_token');
-      window.location.href = '/login';
+      // Only notify if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        dispatchAdminMessage('error', 'Session Expired', 'Please log in again to continue.');
+        window.location.href = '/login';
+      }
+    } else if (status === 403) {
+      dispatchAdminMessage('error', 'Access Denied', 'You do not have permission for this artisanal operation.');
+    } else if (status >= 500) {
+      dispatchAdminMessage('error', 'Server Interruption', 'The server is currently resting. We are working to restore service.');
+    } else if (!status && error.message === 'Network Error') {
+      dispatchAdminMessage('error', 'Network Failure', 'Unable to reach the server. Please check your connection.');
     }
-    const message = error.response?.data?.message || error.message || 'API Communication Error';
+
     return Promise.reject(new Error(message));
   }
 );
+
+function dispatchAdminMessage(type, title, message) {
+  window.dispatchEvent(new CustomEvent('admin_message', {
+    detail: { type, title, message }
+  }));
+}
 
 /* ─── Endpoints ───────────────────────────────────────────────────────────── */
 

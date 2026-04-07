@@ -45,9 +45,21 @@ model Product {
   category    Category?        @relation(fields: [categoryId], references: [id])
   categoryId  String?          @map("category_id") @db.Uuid
   isActive    Boolean          @default(true) @map("is_active")
-  images      String?          // JSON array of filenames
+  images       String?          // JSON array of filenames
   primaryImage String?         @map("primary_image")
-  supplierId  String?          @map("supplier_id") @db.Uuid
+  cardBadge    String?         @map("card_badge") @db.VarChar(50)
+  supplierId   String?          @map("supplier_id") @db.Uuid
+
+  // NEW: Aromatic & Sensory Fields
+  collection      String?         @db.VarChar(150)
+  type            String?         @db.VarChar(150)
+  oilConcentration String?        @map("oil_concentration") @db.VarChar(150)
+  longevity       String?         @db.VarChar(150)
+  scentFamily     String?         @map("scent_family") @db.VarChar(150)
+  characteristic  String?         @db.VarChar(150)
+  topNotes        String?         @map("top_notes") @db.Text
+  heartNotes      String?         @map("heart_notes") @db.Text
+  baseNotes       String?         @map("base_notes") @db.Text
 
   supplier    Supplier?        @relation(fields: [supplierId], references: [id])
   createdAt   DateTime         @default(now()) @map("created_at")
@@ -67,6 +79,10 @@ model ProductVariant {
   costPrice     Decimal?       @map("cost_price") @db.Decimal(10, 2)
   sku           String         @unique @db.VarChar(100)
   barcode       String?        @db.VarChar(100)
+
+  // NEW: Logistical Fields
+  uom           String         @default("ml") @db.VarChar(20)
+  volume        Int            @default(0)
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   inventory     Inventory?

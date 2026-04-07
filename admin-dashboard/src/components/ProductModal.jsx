@@ -15,8 +15,35 @@ const EMPTY_FORM = {
   supplierId: '',
   description: '',
   isActive: true,
-  tags: ''
+  cardBadge: '',
+  collection: 'Signature',
+  type: 'Extrait de Parfum',
+  oilConcentration: '±20–40%',
+  longevity: '±10–24 hours',
+  scentFamily: 'Woody',
+  characteristic: 'Warm, Masculine, Deep',
+  topNotes: [],
+  heartNotes: [],
+  baseNotes: []
 };
+
+const AROMATIC_NOTES = [
+  "Absinthe", "Aged Cedarwood", "Aged Oak", "Amber", "Ambrette Seed", "Aromatic Thyme", "Artemisia", "Benzoin", "Benzoin Resin", 
+  "Bitter Orange Blossom", "Black Musk", "Blackcurrant Bud", "Blonde Woods", "Blue Chamomile", "Caramelised Amber", "Cashmere Musk", 
+  "Cedarwood", "Clary Sage", "Clean Amber", "Clove Bud", "Cocoa", "Cold Metal", "Cool Stone", "Crushed Sea Salt", "Dark Patchouli", 
+  "Dark Vetiver", "Delicate Mimosa", "Dewy Peony", "Dried Fruits", "Driftwood", "Elemi Resin", "Geranium", "Ginger", "Grapefruit Zest", 
+  "Green Tea", "Honeyed Heliotrope", "Incense", "Iris", "Japanese Cypress", "Labdanum", "Lavender", "Leather", "Lily Of The Valley", 
+  "Magnolia", "Mandarin", "Musk", "Night-Scented Stock", "Nutmeg", "Pale Musks", "Passion Fruit", "Patchouli", "Peony", "Pink Champagne Accord", 
+  "Pink Pepper", "Powdered Violet", "Praline", "Raspberry", "Rosewood", "Saffron", "Saffron Threads", "Shiso Leaf", "Silver Birch", 
+  "Smoky Birch Tar", "Smoky Labdanum", "Smoky Vetiver", "Soft Musk", "Suede", "Taif Rose", "Tobacco Leaf", "Tonka Bean", "Vanilla Absolute", 
+  "Vanilla Orchid", "Vetiver", "Violet Leaf", "White Amber", "White Musk", "White Peach", "White Woods", "Ylang-Ylang", "Aged Oud", 
+  "Ambergris", "Black Cardamom", "Black Pepper", "Bulgarian Rose Absolute", "Cashmeran", "Cinnamon Bark", "Cool Moonflower", 
+  "Creamy Sandalwood", "Crisp Bergamot", "Damask Rose Absolute", "Dark Violet", "Deep Sandalwood", "Golden Amber", "Grey Amber", 
+  "Gunpowder Accord", "Hinoki Wood", "Iris Butter", "Iris Pallida", "Italian Bergamot", "Juicy Peach", "Juniper Berry", 
+  "Night-Blooming Jasmine", "Oakmoss", "Oceanic Ozone", "Orris Root", "Oud Wood", "Pear Blossom", "Powdery Orris Root", 
+  "Ripe Red Berries", "Sage", "Sandalwood", "Smoky Oud", "Sparkling Bergamot", "Sun-Warmed Neroli", "Tuberose", "Turkish Rose", 
+  "Violet", "Warm Vanilla", "White Jasmine", "White Lotus"
+].sort();
 
 const EMPTY_VARIANT = { 
   size: '50ml', 
@@ -25,6 +52,8 @@ const EMPTY_VARIANT = {
   quantity: '0', 
   sku: '', 
   barcode: '',
+  uom: 'ml',
+  volume: '50',
   lowStockThreshold: '5' 
 };
 
@@ -49,7 +78,16 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         supplierId: product.supplierId || '',
         description: product.description || '',
         isActive: product.isActive !== false,
-        tags: product.tags || ''
+        cardBadge: product.cardBadge || '',
+        collection: product.collection || 'Signature',
+        type: product.type || 'Extrait de Parfum',
+        oilConcentration: product.oilConcentration || '',
+        longevity: product.longevity || '',
+        scentFamily: product.scentFamily || 'Woody',
+        characteristic: product.characteristic || '',
+        topNotes: safeParseNotes(product.topNotes),
+        heartNotes: safeParseNotes(product.heartNotes),
+        baseNotes: safeParseNotes(product.baseNotes)
       });
 
       let existing = [];
@@ -80,6 +118,8 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         quantity: v.inventory?.quantity?.toString() ?? v.quantity?.toString() ?? '0',
         sku: v.sku || '',
         barcode: v.barcode || '',
+        uom: v.uom || 'ml',
+        volume: v.volume?.toString() || '',
         lowStockThreshold: v.inventory?.lowStockThreshold?.toString() ?? '5'
       })) || [];
       setVariants(vars.length > 0 ? vars : [{ ...EMPTY_VARIANT }]);
@@ -124,7 +164,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
   const removeVariant = (index) => {
     if (variants.length === 1) return;
-    setVariants(prev => prev.filter((_, i) => i !== index));
+    setVariants(prev => prev.filter((_, idx) => idx !== index));
   };
 
   const updateVariant = (index, field, value) => {
@@ -135,7 +175,67 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
     });
   };
 
-  const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const safeParseNotes = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    try { 
+      const parsed = JSON.parse(val); 
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { 
+      return typeof val === 'string' ? val.split(',').filter(Boolean).map(s => s.trim()) : []; 
+    }
+  };
+
+  const toggleNote = (group, note) => {
+    setFormData(prev => {
+      const current = prev[group] || [];
+      const updated = current.includes(note) 
+        ? current.filter(n => n !== note)
+        : [...current, note];
+      return { ...prev, [group]: updated };
+    });
+  };
+
+  const set = (field, value) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-population Rules
+      if (field === 'type') {
+        if (value === "Extrait de Parfum" || value === "Parfum") {
+          updated.oilConcentration = "±20–40%"; updated.longevity = "±10–24 hours";
+        } else if (value === "Eau de Parfum") {
+          updated.oilConcentration = "±15–20%"; updated.longevity = "±6–10 hours";
+        } else if (value === "Eau de Toilette") {
+          updated.oilConcentration = "±5–15%"; updated.longevity = "±3–6 hours";
+        } else if (value === "Eau de Cologne" || value === "Eau Fraîche") {
+          updated.oilConcentration = value === "Eau de Cologne" ? "±2–4%" : "±1–3%";
+          updated.longevity = "±1–2 hours";
+        } else if (value === "Eau de Senteur") {
+          updated.longevity = "Short, depends on solvents";
+        } else if (value === "Splash & Aftershave") {
+          updated.longevity = "±1–3 hours";
+        } else {
+          updated.oilConcentration = "Varies";
+        }
+      }
+
+      if (field === 'scentFamily') {
+        const charMap = {
+          "Floral": "Sweet, Soft, Feminine",
+          "Citrus": "Fresh, Bright, Uplifting",
+          "Fruity": "Sweet, Juicy, Fun",
+          "Woody": "Warm, Masculine, Deep",
+          "Oriental": "Warm, Exotic, Sensual",
+          "Aquatic": "Clean, Fresh, Airy; not too sweet or heavy",
+          "Herbal": "Fresh, Herbal, Clean"
+        };
+        updated.characteristic = charMap[value] || "N/A";
+      }
+
+      return updated;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -144,7 +244,13 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
     try {
       const data = new FormData();
-      Object.entries(formData).forEach(([k, v]) => data.append(k, v));
+      Object.entries(formData).forEach(([k, v]) => {
+        if (Array.isArray(v)) {
+          data.append(k, JSON.stringify(v));
+        } else {
+          data.append(k, v);
+        }
+      });
 
       const existingNames = images.filter(img => img.existing).map(img => img.name);
       data.append('existingImages', JSON.stringify(existingNames));
@@ -246,14 +352,19 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
               {activeTab === 'details' && (
                 <div className="elite-fade-in section-details">
                   <div className="elite-grid">
+                    <div className="elite-section-divider span-full" style={{ marginTop: 0 }}>
+                      <Info size={14} /> <span>Identity & Status</span>
+                    </div>
+
                     <div className="field-group span-full">
                       <label>Fragrance Name</label>
                       <input 
                         type="text" 
                         value={formData.name} 
-                        onChange={e => set('name', e.target.value)}
+                        onChange={e => set('name', e.target.value.slice(0, 150))}
                         placeholder="e.g. Midnight Silk Oud"
                         required
+                        maxLength={150}
                       />
                     </div>
                     
@@ -262,22 +373,19 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                       <input 
                         type="text" 
                         value={formData.brand} 
-                        onChange={e => set('brand', e.target.value)}
+                        onChange={e => set('brand', e.target.value.slice(0, 100))}
                         placeholder="O'luhle Scents"
+                        maxLength={100}
                       />
                     </div>
 
                     <div className="field-group">
-                      <label>Collection / Category</label>
-                      <select 
-                        value={formData.categoryId} 
-                        onChange={e => set('categoryId', e.target.value)}
-                        required
-                      >
-                        <option value="">Select Gallery Category...</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
+                      <label>Card Badge</label>
+                      <select value={formData.cardBadge} onChange={e => set('cardBadge', e.target.value)}>
+                        <option value="">No Badge</option>
+                        <option value="Bestseller">Bestseller</option>
+                        <option value="New">New</option>
+                        <option value="Popular">Popular</option>
                       </select>
                     </div>
 
@@ -294,26 +402,6 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                       </select>
                     </div>
 
-                    <div className="field-group span-full">
-                      <label>Artisan Story / Description</label>
-                      <textarea 
-                        rows={6}
-                        value={formData.description} 
-                        onChange={e => set('description', e.target.value)}
-                        placeholder="Describe the sensory notes and inspiration behind this creation..."
-                      />
-                    </div>
-
-                    <div className="field-group">
-                      <label>Aromatic Tags (Comma Separated)</label>
-                      <input 
-                        type="text" 
-                        value={formData.tags} 
-                        onChange={e => set('tags', e.target.value)}
-                        placeholder="Woody, Spicy, Earthy"
-                      />
-                    </div>
-
                     <div className="field-group">
                       <label>Visibility Status</label>
                       <div className="elite-status-toggle" onClick={() => set('isActive', !formData.isActive)}>
@@ -322,6 +410,120 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                         <div className={`elite-switch ${formData.isActive ? 'active' : ''}`} />
                       </div>
                     </div>
+
+                    <div className="field-group span-full">
+                      <label>Description (Optional)</label>
+                      <textarea 
+                        rows={3}
+                        value={formData.description} 
+                        onChange={e => set('description', e.target.value)}
+                        placeholder="Describe the sensory notes and inspiration behind this creation..."
+                      />
+                    </div>
+
+                    <div className="elite-section-divider span-full">
+                      <Sparkles size={14} /> <span>Artisan Classification</span>
+                    </div>
+
+                    <div className="field-group">
+                      <label>Artisanal Collection</label>
+                      <select value={formData.collection} onChange={e => set('collection', e.target.value)}>
+                        <option value="Premium">Premium</option>
+                        <option value="Signature">Signature</option>
+                        <option value="Classic">Classic</option>
+                        <option value="Essentials">Essentials</option>
+                      </select>
+                    </div>
+
+                    <div className="field-group">
+                      <label>Product Type</label>
+                      <select value={formData.type} onChange={e => set('type', e.target.value)}>
+                        {["Extrait de Parfum", "Parfum", "Eau de Parfum", "Eau de Toilette", "Eau de Cologne", "Eau Fraîche", "Eau de Senteur", "Splash & Aftershave"].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="field-group">
+                      <label>Oil Concentration (Auto)</label>
+                      <input type="text" value={formData.oilConcentration} readOnly className="read-only" />
+                    </div>
+
+                    <div className="field-group">
+                      <label>Longevity Profile (Auto)</label>
+                      <input type="text" value={formData.longevity} readOnly className="read-only" />
+                    </div>
+
+                    <div className="elite-section-divider span-full">
+                      <Layout size={14} /> <span>Sensory & Aromatic Architecture</span>
+                    </div>
+
+                    <div className="field-group">
+                      <label>Category Hub</label>
+                      <select 
+                        value={formData.categoryId} 
+                        onChange={e => set('categoryId', e.target.value)}
+                        required
+                      >
+                        <option value="">Select Category...</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="field-group">
+                      <label>Scent Family</label>
+                      <select value={formData.scentFamily} onChange={e => set('scentFamily', e.target.value)}>
+                        {["Aquatic", "Floral", "Woody", "Oriental", "Citrus", "Fruity", "Herbal"].map(f => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="field-group span-full">
+                      <label>Classification Characteristic (Auto)</label>
+                      <input type="text" value={formData.characteristic} readOnly className="read-only" />
+                    </div>
+
+                    <div className="span-full aromatic-notes-section">
+                      <div className="note-group">
+                        <label>Top Notes (Immediate Impression)</label>
+                        <div className="checkbox-grid">
+                          {AROMATIC_NOTES.map(note => (
+                            <label key={note} className="checkbox-item">
+                              <input type="checkbox" checked={formData.topNotes?.includes(note)} onChange={() => toggleNote('topNotes', note)} />
+                              <span>{note}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="note-group">
+                        <label>Heart Notes (Main Body)</label>
+                        <div className="checkbox-grid">
+                          {AROMATIC_NOTES.map(note => (
+                            <label key={note} className="checkbox-item">
+                              <input type="checkbox" checked={formData.heartNotes?.includes(note)} onChange={() => toggleNote('heartNotes', note)} />
+                              <span>{note}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="note-group">
+                        <label>Base Notes (Final Longevity)</label>
+                        <div className="checkbox-grid">
+                          {AROMATIC_NOTES.map(note => (
+                            <label key={note} className="checkbox-item">
+                              <input type="checkbox" checked={formData.baseNotes?.includes(note)} onChange={() => toggleNote('baseNotes', note)} />
+                              <span>{note}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -394,8 +596,25 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                         </div>
                         <div className="variant-grid">
                           <div className="field">
-                            <label>Volume / Size</label>
-                            <input type="text" value={v.size} onChange={e => updateVariant(i, 'size', e.target.value)} placeholder="50ml" />
+                            <label>Designation / Size</label>
+                            <select value={v.size} onChange={e => {
+                              const val = e.target.value;
+                              updateVariant(i, 'size', val);
+                              if (val === 'Full Size') updateVariant(i, 'volume', '100');
+                              else if (val === 'Travel Size') updateVariant(i, 'volume', '50');
+                            }}>
+                              <option value="Full Size">Full Size</option>
+                              <option value="Travel Size">Travel Size</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div className="field">
+                            <label>UOM (ml/mg/ea)</label>
+                            <input type="text" value={v.uom} onChange={e => updateVariant(i, 'uom', e.target.value)} placeholder="ml" maxLength={20} />
+                          </div>
+                          <div className="field">
+                            <label>Volume (Numerical)</label>
+                            <input type="number" value={v.volume} onChange={e => updateVariant(i, 'volume', e.target.value)} readOnly={v.size !== 'Other'} className={v.size !== 'Other' ? 'read-only' : ''} />
                           </div>
                           <div className="field">
                             <label>Retail Price (R)</label>
@@ -520,6 +739,21 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           }
           .elite-close-btn:hover { border-color: #b89b6a; color: #b89b6a; }
 
+          .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: #b89b6a; background: rgba(184,155,106,0.05); }
+          .field-group select option { background: #1a1611; font-size: 0.85rem; }
+          .field-group input.read-only { background: rgba(255,255,255,0.02); border-color: rgba(184,155,106,0.05); cursor: not-allowed; color: rgba(184,155,106,0.4); }
+
+          .aromatic-notes-section { margin-top: 24px; display: flex; flex-direction: column; gap: 32px; }
+          .note-group { display: flex; flex-direction: column; gap: 12px; }
+          .checkbox-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; 
+            max-height: 180px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(184,155,106,0.1);
+            scrollbar-width: thin;
+          }
+          .checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: rgba(255,255,255,0.6); cursor: pointer; }
+          .checkbox-item input { width: 14px; height: 14px; accent-color: #b89b6a; }
+          .checkbox-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
           .elite-main-form { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
           .elite-scroll-area { flex: 1; overflow-y: auto; padding: 32px; scrollbar-width: thin; scrollbar-color: rgba(184,155,106,0.2) transparent; }
           .elite-scroll-area::-webkit-scrollbar { width: 5px; }
@@ -527,6 +761,19 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
           .elite-fade-in { animation: eliteFadeSlide 0.4s ease-out; }
           
+          .elite-section-divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 32px 0 16px; padding: 0 4px;
+          }
+          .elite-section-divider span {
+            font-size: 0.65rem; font-weight: 600; color: #b89b6a;
+            text-transform: uppercase; letter-spacing: 0.15em;
+          }
+          .elite-section-divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(to right, rgba(184, 155, 106, 0.2), transparent);
+          }
+
           /* ── Grid & Inputs ── */
           .elite-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
           .field-group { display: flex; flex-direction: column; gap: 8px; }
@@ -592,7 +839,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           .variant-label { font-size: 0.55rem; letter-spacing: 0.25em; color: rgba(184,155,106,0.4); font-weight: 600; }
           .variant-del { background: transparent; border: none; color: rgba(255,255,255,0.2); cursor: pointer; transition: color 0.2s; }
           .variant-del:hover { color: #e04a4a; }
-          .variant-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+          .variant-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
           .variant-grid .field { display: flex; flex-direction: column; gap: 8px; }
           .variant-grid label { font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
           .variant-grid input {

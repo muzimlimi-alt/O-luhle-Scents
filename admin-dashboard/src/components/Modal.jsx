@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 
 export function Modal({ isOpen, onClose, title, children }) {
   useEffect(() => {
@@ -17,7 +17,7 @@ export function Modal({ isOpen, onClose, title, children }) {
   return (
     <AnimatePresence>
       <div className="modal-overlay" onClick={onClose}>
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -33,7 +33,7 @@ export function Modal({ isOpen, onClose, title, children }) {
           <div className="modal-body">
             {children}
           </div>
-        </motion.div>
+        </Motion.div>
 
         <style dangerouslySetInnerHTML={{ __html: `
           .modal-overlay { 

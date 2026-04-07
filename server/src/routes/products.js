@@ -216,7 +216,41 @@ router.get('/low-stock', requireAdmin, async (req, res, next) => {
 // POST /api/products (admin only)
 router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next) => {
   try {
-    const { name, brand, description, categoryId, variants, supplierId, tags } = req.body
+    const { 
+      name, brand, description, categoryId, variants, supplierId, 
+      collection, type, scentFamily, 
+      topNotes, heartNotes, baseNotes, cardBadge 
+    } = req.body
+
+    // Auto-population Logic (Backend Enforcement)
+    let oilConcentration = "Varies";
+    let longevity = "N/A";
+    if (type === "Extrait de Parfum" || type === "Parfum") {
+      oilConcentration = "±20–40%"; longevity = "±10–24 hours";
+    } else if (type === "Eau de Parfum") {
+      oilConcentration = "±15–20%"; longevity = "±6–10 hours";
+    } else if (type === "Eau de Toilette") {
+      oilConcentration = "±5–15%"; longevity = "±3–6 hours";
+    } else if (type === "Eau de Cologne" || type === "Eau Fraîche") {
+      oilConcentration = type === "Eau de Cologne" ? "±2–4%" : "±1–3%";
+      longevity = "±1–2 hours";
+    } else if (type === "Eau de Senteur") {
+      longevity = "Short, depends on solvents";
+    } else if (type === "Splash & Aftershave") {
+      longevity = "±1–3 hours";
+    }
+
+    const characteristicMap = {
+      "Floral": "Sweet, Soft, Feminine",
+      "Citrus": "Fresh, Bright, Uplifting",
+      "Fruity": "Sweet, Juicy, Fun",
+      "Woody": "Warm, Masculine, Deep",
+      "Oriental": "Warm, Exotic, Sensual",
+      "Aquatic": "Clean, Fresh, Airy; not too sweet or heavy",
+      "Herbal": "Fresh, Herbal, Clean"
+    };
+    const characteristic = characteristicMap[scentFamily] || "N/A";
+
     const files = req.files || []
     const filenames = files.map(f => f.filename)
     const primaryImage = filenames.length > 0 ? filenames[0] : null
@@ -224,7 +258,7 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
     const parsedVariants = JSON.parse(variants || '[]')
 
     const product = await prisma.$transaction(async (tx) => {
-      // Defensive UUID handling: Ensure empty strings or "undefined" are passed as null
+      // Defensive UUID handling
       const safeCategoryId = (categoryId && categoryId !== "" && categoryId !== "undefined") ? categoryId : null;
       const safeSupplierId = (supplierId && supplierId !== "" && supplierId !== "undefined") ? supplierId : null;
 
@@ -237,7 +271,17 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
           supplier: safeSupplierId ? { connect: { id: safeSupplierId } } : undefined,
           images: JSON.stringify(filenames),
           primaryImage,
-          isActive: true
+          cardBadge,
+          isActive: true,
+          collection,
+          type,
+          oilConcentration,
+          longevity,
+          scentFamily,
+          characteristic,
+          topNotes,
+          heartNotes,
+          baseNotes
         }
       })
 
@@ -245,14 +289,20 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
         const variantPrice = parseFloat(v.price) || 0;
         const variantCost = (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0;
         
+        let volume = parseInt(v.volume || 0);
+        if (v.size === "Full Size") volume = 100;
+        else if (v.size === "Travel Size") volume = 50;
+
         const variant = await tx.productVariant.create({
           data: {
             productId: p.id,
-            size: v.size || 'Standard',
+            size: v.size || 'Other',
             price: variantPrice,
             costPrice: variantCost,
             sku: v.sku || `SKU-${Date.now()}-${Math.floor(Math.random()*1000)}`,
             barcode: v.barcode || null,
+            uom: v.uom || 'ml',
+            volume
           }
         })
         
@@ -281,7 +331,41 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
 router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, next) => {
   try {
     console.log('[PATCH /api/products/:id] Payload:', { id: req.params.id, body: req.body, files: req.files?.length });
-    const { name, brand, description, categoryId, isActive, variants, tags, existingImages } = req.body
+    const { 
+      name, brand, description, categoryId, isActive, variants, 
+      collection, type, scentFamily, 
+      topNotes, heartNotes, baseNotes, cardBadge,
+      existingImages 
+    } = req.body
+
+    // Auto-population Logic (Backend Enforcement)
+    let oilConcentration = "Varies";
+    let longevity = "N/A";
+    if (type === "Extrait de Parfum" || type === "Parfum") {
+      oilConcentration = "±20–40%"; longevity = "±10–24 hours";
+    } else if (type === "Eau de Parfum") {
+      oilConcentration = "±15–20%"; longevity = "±6–10 hours";
+    } else if (type === "Eau de Toilette") {
+      oilConcentration = "±5–15%"; longevity = "±3–6 hours";
+    } else if (type === "Eau de Cologne" || type === "Eau Fraîche") {
+      oilConcentration = type === "Eau de Cologne" ? "±2–4%" : "±1–3%";
+      longevity = "±1–2 hours";
+    } else if (type === "Eau de Senteur") {
+      longevity = "Short, depends on solvents";
+    } else if (type === "Splash & Aftershave") {
+      longevity = "±1–3 hours";
+    }
+
+    const characteristicMap = {
+      "Floral": "Sweet, Soft, Feminine",
+      "Citrus": "Fresh, Bright, Uplifting",
+      "Fruity": "Sweet, Juicy, Fun",
+      "Woody": "Warm, Masculine, Deep",
+      "Oriental": "Warm, Exotic, Sensual",
+      "Aquatic": "Clean, Fresh, Airy; not too sweet or heavy",
+      "Herbal": "Fresh, Herbal, Clean"
+    };
+    const characteristic = characteristicMap[scentFamily] || "N/A";
     
     // Manage image orchestration
     let currentImages = []
@@ -310,16 +394,28 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
           supplier: safeSupplierId ? { connect: { id: safeSupplierId } } : { disconnect: true },
           isActive: isActive === 'true' || isActive === true,
           images: JSON.stringify(allImages),
-          primaryImage
+          primaryImage,
+          cardBadge,
+          collection,
+          type,
+          oilConcentration,
+          longevity,
+          scentFamily,
+          characteristic,
+          topNotes,
+          heartNotes,
+          baseNotes
         }
       })
 
       // 2. Manage Variants (if provided)
       if (variants) {
         const parsedVariants = JSON.parse(variants)
-        // For simplicity in this modernization, we'll sync by SKU or recreate
-        // production grade: update by ID, delete missing, create new.
         for (const v of parsedVariants) {
+          let volume = v.volume !== undefined ? parseInt(v.volume) : undefined;
+          if (v.size === "Full Size") volume = 100;
+          else if (v.size === "Travel Size") volume = 50;
+
           if (v.id) {
             await tx.productVariant.update({
               where: { id: v.id },
@@ -327,7 +423,9 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
                 size: v.size, 
                 price: parseFloat(v.price) || 0, 
                 costPrice: (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0,
-                barcode: v.barcode || undefined
+                barcode: v.barcode || undefined,
+                uom: v.uom,
+                volume
               }
             })
             if (v.quantity !== undefined || v.lowStockThreshold !== undefined) {
@@ -347,7 +445,9 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
                 price: parseFloat(v.price) || 0,
                 costPrice: (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0,
                 sku: v.sku || `SKU-${Date.now()}`,
-                barcode: v.barcode || null
+                barcode: v.barcode || null,
+                uom: v.uom || 'ml',
+                volume: parseInt(v.volume || 0)
               }
             })
             await tx.inventory.create({

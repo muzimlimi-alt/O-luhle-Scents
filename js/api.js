@@ -43,42 +43,62 @@ export async function apiFetch(path, options = {}) {
   const token = getToken()
   const headers = { ...options.headers }
   
-  // Only set JSON content type if body is not FormData
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
   
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  console.log(`[API] Fetch started: ${path}`)
   try {
     const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
-    console.log(`[API] Fetch finished: ${path} (${res.status})`)
+
+    if (res.status === 401) {
+      clearToken()
+      // Only notify if not already on login page to avoid infinite loops
+      if (!window.location.pathname.includes('login')) {
+        dispatchMessage('error', 'Authentication Required', 'Please sign in to continue.')
+      }
+    }
 
     if (!res.ok) {
-      if (res.status === 401) {
-        console.warn(`[API] Unauthorized (401) at ${path}. Clearing token.`)
-        clearToken()
-      }
-
       let message = `Request failed (${res.status})`
+      let detail = ''
       try {
         const body = await res.json()
         message = body.error || body.message || message
-      } catch (jsonErr) {
-        console.warn(`[API] Failed to parse error JSON from ${path}`)
-      }
+        detail = body.detail || ''
+      } catch (jsonErr) {}
+
       const err = new Error(message)
       err.status = res.status
+      err.detail = detail
+      
+      // Global Interception for 5xx and other critical errors
+      if (res.status >= 500) {
+        dispatchMessage('error', 'System Interruption', 'The server encountered an artisanal error. We are working to restore the scent.')
+      } else if (res.status === 403) {
+        dispatchMessage('error', 'Access Restricted', 'You do not have the necessary permissions for this action.')
+      } else if (res.status === 429) {
+        dispatchMessage('warning', 'Rate Limited', 'Please take a moment to breathe before trying again.')
+      }
+
       throw err
     }
 
     if (res.status === 204) return null
     return await res.json()
   } catch (err) {
-    console.error(`[API] Fetch error for ${path}:`, err.message)
+    if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+      dispatchMessage('error', 'Network Disruption', 'Unable to reach the server. Please check your internet connection.')
+    }
     throw err
   }
+}
+
+function dispatchMessage(type, title, message) {
+  window.dispatchEvent(new CustomEvent('oluhle_message', {
+    detail: { type, title, message }
+  }))
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────

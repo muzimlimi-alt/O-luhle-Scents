@@ -150,6 +150,7 @@ export function Quotes() {
                           <a 
                             href={`/quotes/${q.pdfUrl}`} 
                             target="_blank" 
+                            rel="noreferrer"
                             className="icon-btn" 
                             title="Download PDF"
                             style={{ color: 'var(--color-gold)' }}
