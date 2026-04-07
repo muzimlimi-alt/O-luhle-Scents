@@ -7,171 +7,594 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
   <style>
-    .tracking-page { padding-top: 120px; min-height: 80vh; }
-    .tracking-container { max-width: 700px; margin: 0 auto; }
-    
-    .tracking-header { text-align: center; margin-bottom: 48px; }
-    .tracking-number-badge { 
-      display: inline-block; padding: 8px 16px; background: var(--color-bg-alt); 
-      border-radius: 50px; font-family: var(--font-mono); font-size: 0.9rem; color: var(--color-gold);
+    .tracking-page {
+      padding-top: 120px;
+      min-height: 80vh;
     }
-    
-    /* Progress Bar */
-    .tracking-progress { 
-      display: flex; justify-content: space-between; position: relative; margin-bottom: 60px;
-      padding: 0 10px;
+
+    .tracking-container {
+      max-width: 720px;
+      margin: 0 auto;
     }
+
+    /* ── Empty / Search State ── */
+    .tracking-hero {
+      text-align: center;
+      padding: 48px 0 60px;
+    }
+
+    .tracking-hero__icon {
+      width: 64px;
+      height: 64px;
+      background: var(--color-bg-alt);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+      font-size: 1.5rem;
+      color: var(--color-gold);
+    }
+
+    .tracking-hero h1 {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 400;
+      margin-bottom: 14px;
+      letter-spacing: 0.02em;
+    }
+
+    .tracking-hero p {
+      color: var(--color-text-light);
+      font-size: 0.95rem;
+      max-width: 420px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+
+    .tracking-search {
+      display: flex;
+      gap: 10px;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .tracking-search input {
+      flex: 1;
+      padding: 14px 18px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      background: #fff;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .tracking-search input:focus {
+      border-color: var(--color-gold);
+    }
+
+    .tracking-search .btn {
+      white-space: nowrap;
+      padding: 14px 24px;
+    }
+
+    /* ── Result Header ── */
+    .tracking-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .tracking-number-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: var(--color-bg-alt);
+      border-radius: 50px;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.85rem;
+      color: var(--color-gold);
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .tracking-meta {
+      font-size: 0.85rem;
+      color: var(--color-text-light);
+      line-height: 1.7;
+    }
+
+    .tracking-meta strong {
+      color: var(--color-text);
+    }
+
+    .tracking-courier-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--color-gold);
+      text-decoration: none;
+      margin-top: 8px;
+      transition: color 0.2s;
+    }
+
+    .tracking-courier-link:hover {
+      color: var(--color-gold-dark);
+    }
+
+    /* ── Progress Steps ── */
+    .tracking-card {
+      background: #fff;
+      border: 1px solid var(--color-border-light);
+      padding: 36px 40px;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tracking-progress {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 52px;
+      padding: 0 8px;
+    }
+
     .tracking-progress::before {
-      content: ''; position: absolute; top: 15px; left: 0; right: 0; height: 2px;
-      background: var(--color-border-light); z-index: 1;
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-border-light);
+      z-index: 1;
     }
+
     .tracking-progress-fill {
-      position: absolute; top: 15px; left: 0; height: 2px;
-      background: var(--color-gold); z-index: 2; transition: width 1s ease;
+      position: absolute;
+      top: 15px;
+      left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-gold-dark), var(--color-gold));
+      z-index: 2;
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .step { position: relative; z-index: 3; text-align: center; width: 60px; }
-    .step-dot { 
-      width: 32px; height: 32px; border-radius: 50%; background: var(--color-bg); 
-      border: 2px solid var(--color-border-light); margin: 0 auto 12px;
-      display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+
+    .step {
+      position: relative;
+      z-index: 3;
+      text-align: center;
+      width: 64px;
     }
-    .step.active .step-dot { border-color: var(--color-gold); background: var(--color-bg); }
-    .step.completed .step-dot { background: var(--color-gold); border-color: var(--color-gold); color: #fff; }
-    .step-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-light); }
-    .step.active .step-label { color: var(--color-text); font-weight: 600; }
-    
-    /* Timeline */
-    .timeline { position: relative; padding-left: 32px; margin-top: 40px; }
+
+    .step-dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      transition: all 0.4s ease;
+    }
+
+    .step.active .step-dot {
+      border-color: var(--color-gold);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(184, 155, 106, 0.15);
+    }
+
+    .step.completed .step-dot {
+      background: var(--color-gold);
+      border-color: var(--color-gold);
+      color: #fff;
+    }
+
+    .step-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-muted);
+      line-height: 1.3;
+    }
+
+    .step.active .step-label,
+    .step.completed .step-label {
+      color: var(--color-text-light);
+    }
+
+    .step.active .step-label {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    /* ── Timeline ── */
+    .timeline-section h4 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--color-text-muted);
+      margin-bottom: 24px;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+
     .timeline::before {
-      content: ''; position: absolute; top: 0; bottom: 0; left: 7px; width: 1px;
+      content: '';
+      position: absolute;
+      top: 7px;
+      bottom: 7px;
+      left: 6px;
+      width: 1px;
       background: var(--color-border-light);
     }
-    .timeline-item { position: relative; margin-bottom: 32px; }
-    .timeline-dot { 
-      position: absolute; left: -32px; width: 15px; height: 15px; border-radius: 50%; 
-      background: var(--color-bg); border: 2px solid var(--color-gold);
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
     }
-    .timeline-content { background: var(--color-bg-alt); padding: 16px; border-radius: var(--radius-lg); }
-    .timeline-status { font-family: var(--font-display); font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
-    .timeline-msg { font-size: 0.8rem; color: var(--color-text-light); margin-bottom: 8px; }
-    .timeline-meta { font-size: 0.7rem; color: var(--color-text-muted); display: flex; justify-content: space-between; }
-    
-    .tracking-card { background: #fff; border: 1px solid var(--color-border-light); padding: 32px; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
-    
-    .empty-tracking { text-align: center; padding: 100px 0; }
-    .search-tracking { max-width: 400px; margin: 40px auto 0; display: flex; gap: 8px; }
+
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -28px;
+      top: 4px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--color-gold);
+    }
+
+    .timeline-item:first-child .timeline-dot {
+      background: var(--color-gold);
+    }
+
+    .timeline-content {
+      background: var(--color-bg-alt);
+      padding: 14px 16px;
+      border-radius: var(--radius-lg);
+    }
+
+    .timeline-status {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 3px;
+      color: var(--color-text);
+      text-transform: capitalize;
+    }
+
+    .timeline-msg {
+      font-size: 0.8rem;
+      color: var(--color-text-light);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .timeline-meta {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timeline-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── Empty timeline ── */
+    .timeline-empty {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--color-text-light);
+      font-size: 0.85rem;
+    }
+
+    /* ── New Search (inline) ── */
+    .track-again {
+      text-align: center;
+      margin-top: 32px;
+    }
+
+    .track-again-form {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .track-again-form input {
+      padding: 10px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      outline: none;
+      width: 220px;
+    }
+
+    .track-again-form input:focus {
+      border-color: var(--color-gold);
+    }
+
+    /* ── Not Found State ── */
+    .tracking-not-found {
+      text-align: center;
+      padding: 60px 0;
+    }
+
+    .tracking-not-found__icon {
+      font-size: 2.5rem;
+      color: var(--color-border);
+      margin-bottom: 20px;
+    }
+
+    /* ── Loader ── */
+    .tracking-loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 0;
+      gap: 20px;
+      color: var(--color-text-light);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+      .tracking-card {
+        padding: 24px 20px;
+      }
+
+      .tracking-search {
+        flex-direction: column;
+      }
+
+      .step-label {
+        font-size: 0.6rem;
+      }
+
+      .tracking-hero h1 {
+        font-size: 1.9rem;
+      }
+    }
   </style>
 </head>
 <body>
 
   <header class="header">
     <nav class="navbar">
+      <div class="navbar__left">
+        <div class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="shop.html">Boutique</a>
+          <a href="guide.html">Fragrance Guide</a>
+          <a href="quotes.html">Professional</a>
+          <a href="track.html" class="active">Track</a>
+        </div>
+      </div>
       <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <div class="navbar__right">
+        <div class="nav-icons">
+          <a href="cart.html" class="nav-icon" aria-label="Cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          </a>
+        </div>
+      </div>
     </nav>
   </header>
 
+  <div class="mobile-menu">
+    <a href="index.html">Home</a>
+    <a href="shop.html">Boutique</a>
+    <a href="guide.html">Fragrance Guide</a>
+    <a href="quotes.html">Professional</a>
+    <a href="track.html">Track Order</a>
+    <a href="cart.html">Cart</a>
+  </div>
+
   <main class="tracking-page">
     <div class="container tracking-container">
-      
       <div id="tracking-content">
-        <!-- Main tracking UI will be injected here -->
-        <div class="empty-tracking">
-          <h2>Track Your Shipment</h2>
-          <p style="color:var(--color-text-light);margin-top:12px;">Enter your tracking number below to follow your luxury package.</p>
-          <div class="search-tracking">
-            <input type="text" id="track-input" placeholder="e.g. TCG123456789" style="flex:1;">
-            <button class="btn btn--primary" onclick="handleSearch()">Track</button>
-          </div>
-        </div>
+        <!-- Injected by JS -->
       </div>
-
     </div>
   </main>
 
   <script type="module">
-    import { apiFetch } from './js/api.js';
+    import { getTracking } from './js/api.js';
 
-    window.handleSearch = () => {
-      const num = document.getElementById('track-input').value.trim();
-      if(num) window.location.href = `track.html?number=${num}`;
+    const COURIER_URLS = {
+      'The Courier Guy': 'https://portal.thecourierguy.co.za/track/',
+      'Aramex':          'https://www.aramex.com/track/results?shipmentNumber=',
+      'FedEx':           'https://www.fedex.com/fedextrack/?trknbr=',
+      'SAPO':            'https://trackmyparcel.co.za/track/'
     };
 
-    async function initTracking() {
-      const params = new URLSearchParams(window.location.search);
-      const number = params.get('number');
-      if(!number) return;
+    const STATUS_STEPS = ['PENDING', 'SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+    const STEP_LABELS  = ['Placed', 'Shipped', 'In Transit', 'Out for Delivery', 'Delivered'];
 
-      const content = document.getElementById('tracking-content');
-      content.innerHTML = `
-        <div style="display:flex;justify-content:center;padding:100px;">
-          <div class="loader-spinner"></div>
+    function renderEmpty() {
+      return `
+        <div class="tracking-hero">
+          <div class="tracking-hero__icon">✦</div>
+          <h1>Track Your Shipment</h1>
+          <p>Enter your tracking number to follow your luxury package from our hands to yours.</p>
+          <div class="tracking-search">
+            <input type="text" id="track-input" placeholder="e.g. TCG-123456789" autocomplete="off">
+            <button class="btn btn--primary" onclick="handleSearch()">Track</button>
+          </div>
         </div>
       `;
+    }
 
-      try {
-        const res = await fetch(`/api/tracking/${number}`);
-        if(!res.ok) throw new Error('Tracking number not found');
-        const data = await res.json();
-        renderTracking(data);
-      } catch (err) {
-        content.innerHTML = `
-          <div class="empty-tracking">
-            <h2 style="color:var(--color-error-text);">Not Found</h2>
-            <p style="color:var(--color-text-light);margin-top:12px;">We couldn't find tracking information for "${number}".</p>
-            <div class="search-tracking">
-              <input type="text" id="track-input" placeholder="Enter tracking number" value="${number}" style="flex:1;">
-              <button class="btn btn--primary" onclick="handleSearch()">Track</button>
-            </div>
+    function renderNotFound(number) {
+      return `
+        <div class="tracking-hero">
+          <div class="tracking-hero__icon" style="background:rgba(192,57,43,0.07); color:#c0392b;">✕</div>
+          <h1 style="font-size:1.9rem;">Not Found</h1>
+          <p>We couldn't find a shipment for <strong style="color:var(--color-text);">${escapeHtml(number)}</strong>.<br>
+          Please verify the tracking number and try again.</p>
+          <div class="tracking-search">
+            <input type="text" id="track-input" placeholder="Enter tracking number" value="${escapeHtml(number)}" autocomplete="off">
+            <button class="btn btn--primary" onclick="handleSearch()">Try Again</button>
           </div>
-        `;
-      }
+          <p style="margin-top:20px; font-size:0.8rem; color:var(--color-text-muted);">
+            Tracking numbers are assigned once your order is dispatched. Check your confirmation email.
+          </p>
+        </div>
+      `;
+    }
+
+    function renderLoader() {
+      return `
+        <div class="tracking-loader">
+          <div class="loader-spinner"></div>
+          <span>Locating your package…</span>
+        </div>
+      `;
     }
 
     function renderTracking(data) {
-      const content = document.getElementById('tracking-content');
-      const statusMap = { 'PENDING': 0, 'SHIPPED': 1, 'IN_TRANSIT': 2, 'OUT_FOR_DELIVERY': 3, 'DELIVERED': 4 };
-      const currentStep = statusMap[data.shippingStatus] || 1;
-      const progressPercent = (currentStep / 4) * 100;
+      const currentStep = STATUS_STEPS.indexOf(data.shippingStatus);
+      const activeStep  = currentStep < 0 ? 1 : currentStep;
+      const pct         = (activeStep / (STATUS_STEPS.length - 1)) * 100;
 
-      content.innerHTML = `
+      const steps = STEP_LABELS.map((label, i) => {
+        const isCompleted = i < activeStep;
+        const isActive    = i === activeStep;
+        return `
+          <div class="step ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}">
+            <div class="step-dot">${isCompleted ? '✓' : ''}</div>
+            <div class="step-label">${label}</div>
+          </div>
+        `;
+      }).join('');
+
+      const events = data.events && data.events.length > 0
+        ? data.events.map((ev, idx) => `
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <div class="timeline-status">${ev.status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</div>
+                <div class="timeline-msg">${escapeHtml(ev.message || 'Shipment update processed.')}</div>
+                <div class="timeline-meta">
+                  <span>📍 ${escapeHtml(ev.location || 'O\'luhle Fulfillment Center')}</span>
+                  <span>${new Date(ev.createdAt).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                </div>
+              </div>
+            </div>
+          `).join('')
+        : `<div class="timeline-empty">No shipment events recorded yet. Check back soon.</div>`;
+
+      const courierLink = COURIER_URLS[data.courierName]
+        ? `<a href="${COURIER_URLS[data.courierName]}${encodeURIComponent(data.trackingNumber)}"
+              target="_blank" rel="noopener noreferrer" class="tracking-courier-link">
+              Track on ${escapeHtml(data.courierName)} &rarr;
+           </a>`
+        : '';
+
+      const estDelivery = data.estimatedDelivery
+        ? ` &middot; Est. delivery: <strong>${new Date(data.estimatedDelivery).toLocaleDateString('en-ZA', { dateStyle: 'long' })}</strong>`
+        : '';
+
+      const shippedDate = data.shippedAt
+        ? `Shipped ${new Date(data.shippedAt).toLocaleDateString('en-ZA', { dateStyle: 'medium' })}`
+        : '';
+
+      return `
         <div class="tracking-header">
-          <h2 style="margin-bottom:12px;">Shipment Status</h2>
-          <div class="tracking-number-badge">${data.trackingNumber}</div>
-          <p style="margin-top:16px;font-size:0.85rem;color:var(--color-text-light);">
-            Carried by <strong>${data.courierName}</strong>
-            ${data.estimatedDelivery ? ` · Estimated Delivery: <strong>${new Date(data.estimatedDelivery).toLocaleDateString()}</strong>` : ''}
-          </p>
+          <h2 style="font-family:var(--font-display);font-weight:400;font-size:2rem;margin-bottom:14px;">Shipment Status</h2>
+          <div class="tracking-number-badge">✦ ${escapeHtml(data.trackingNumber)}</div>
+          <div class="tracking-meta">
+            Carried by <strong>${escapeHtml(data.courierName || 'Courier')}</strong>
+            ${shippedDate ? ` &middot; ${shippedDate}` : ''}
+            ${estDelivery}
+          </div>
+          ${courierLink}
         </div>
 
         <div class="tracking-card">
           <div class="tracking-progress">
-             <div class="tracking-progress-fill" style="width: ${progressPercent}%"></div>
-             ${['Placed', 'Shipped', 'In-Transit', 'On Delivery', 'Delivered'].map((step, i) => `
-               <div class="step ${i <= currentStep ? 'completed' : ''} ${i === currentStep ? 'active' : ''}">
-                 <div class="step-dot">${i < currentStep ? '✓' : ''}</div>
-                 <div class="step-label">${step}</div>
-               </div>
-             `).join('')}
+            <div class="tracking-progress-fill" style="width:0%" data-target="${pct}"></div>
+            ${steps}
           </div>
 
-          <h4 style="margin-bottom:24px;text-transform:uppercase;letter-spacing:0.1em;font-size:0.75rem;color:var(--color-text-muted);">Shipment History</h4>
-          <div class="timeline">
-            ${data.events.map(event => `
-              <div class="timeline-item">
-                <div class="timeline-dot"></div>
-                <div class="timeline-content">
-                  <div class="timeline-status">${event.status.replace('_', ' ')}</div>
-                  <div class="timeline-msg">${event.message || 'Processing shipment update.'}</div>
-                  <div class="timeline-meta">
-                    <span>${event.location || 'Johannesburg HUB'}</span>
-                    <span>${new Date(event.createdAt).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            `).join('')}
+          <div class="timeline-section">
+            <h4>Shipment History</h4>
+            <div class="timeline">
+              ${events}
+            </div>
+          </div>
+        </div>
+
+        <div class="track-again">
+          <div class="track-again-form">
+            <input type="text" id="track-input" placeholder="Track another number…" autocomplete="off">
+            <button class="btn btn--secondary" onclick="handleSearch()">Track</button>
           </div>
         </div>
       `;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    window.handleSearch = () => {
+      const input = document.getElementById('track-input');
+      const num = input ? input.value.trim() : '';
+      if (num) window.location.href = `track.html?number=${encodeURIComponent(num)}`;
+    };
+
+    // Allow Enter key in input
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.id === 'track-input') handleSearch();
+    });
+
+    async function initTracking() {
+      const content = document.getElementById('tracking-content');
+      const params  = new URLSearchParams(window.location.search);
+      const number  = params.get('number');
+
+      if (!number) {
+        content.innerHTML = renderEmpty();
+        return;
+      }
+
+      content.innerHTML = renderLoader();
+
+      try {
+        const data = await getTracking(number);
+        content.innerHTML = renderTracking(data);
+
+        // Animate progress fill after render
+        requestAnimationFrame(() => {
+          const fill = document.querySelector('.tracking-progress-fill');
+          if (fill) fill.style.width = fill.dataset.target + '%';
+        });
+      } catch (err) {
+        content.innerHTML = renderNotFound(number);
+      }
     }
 
     initTracking();

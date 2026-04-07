@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(curl -s http://localhost:3000/api/tracking/NONEXISTENT)",
+      "Bash(curl -s -X POST http://localhost:3000/api/quotes -H \"Content-Type: application/json\" -d '{\"contact\":{\"name\":\"Test\",\"email\":\"test@test.com\",\"phone\":\"0821234567\"},\"items\":[],\"notes\":\"\"}')",
+      "Bash(curl -s \"http://localhost:3000/api/products?limit=2\")",
+      "Bash(curl -s \"http://localhost:3000/api/products?limit=1\")",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/tmp/prod.json'\\)\\); print\\(d['products'][0]['variants'][0]['id']\\)\")",
+      "Bash(node -e \"const chunks=[]; process.stdin.on\\('data',c=>chunks.push\\(c\\)\\); process.stdin.on\\('end',\\(\\)=>{ const d=JSON.parse\\(chunks.join\\(''\\)\\); console.log\\(d.products[0].variants[0].id\\); }\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/quotes -H \"Content-Type: application/json\" -d '{\"contact\":{\"name\":\"Test Corp\",\"email\":\"corp@test.com\",\"phone\":\"0821234567\"},\"items\":[{\"variantId\":\"d9a3cc22-2199-4a6c-bc7d-40e57edeebba\",\"quantity\":50}],\"notes\":\"Bulk hotel amenities\"}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/track.html)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/quotes.html)",
+      "WebFetch(domain:id.loccitane.com)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/js/app.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/css/style.css)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/js/api.js)",
+      "Bash(node --check \"c:\\\\Users\\\\muzim\\\\OneDrive\\\\Muzi's Office\\\\Dev-Beast\\\\O'luhle Scents\\\\js\\\\app.js\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/__TRACKED_VAR__)",
+      "Bash(curl -s http://localhost:3000/guide.html)",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"const c=[]; process.stdin.on\\('data',d=>c.push\\(d\\)\\); process.stdin.on\\('end',\\(\\)=>{ const p=JSON.parse\\(c.join\\(''\\)\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\); }\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/guide.html)",
+      "Bash(npx kill-port:*)",
+      "Bash(node src/index.js)",
+      "Bash(start /B node src/index.js)"
+    ]
+  }
+}

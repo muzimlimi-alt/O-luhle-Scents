@@ -52,32 +52,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderProduct(product) {
         document.title = `${product.name} | O'luhle Scents`;
         elements.name.textContent = product.name;
-        elements.brand.textContent = product.brand;
+        elements.brand.textContent = product.brand ? `${product.brand} · ${product.type || 'Extrait de Parfum'}` : (product.type || 'Extrait de Parfum');
         elements.desc.textContent = product.description;
         elements.breadcrumb.textContent = product.name;
         elements.image.src = `images/products/${product.primaryImage || 'placeholder.jpg'}`;
         elements.image.alt = product.name;
+
+        // Insert product badge if it exists
+        const badgeContainer = document.getElementById('detail-badge-container');
+        if (badgeContainer) {
+            badgeContainer.innerHTML = product.cardBadge 
+                ? `<div style="position: absolute; top: 16px; left: 16px; background: #ffffff; color: #000000; font-size: 0.70rem; font-weight: 700; padding: 6px 12px; text-transform: uppercase; letter-spacing: 1px; z-index: 10; border-radius: 2px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">${product.cardBadge}</div>` 
+                : '';
+        }
 
         // Render new sensory details
         if (elements.metaType) elements.metaType.textContent = product.type || 'Extrait de Parfum';
         if (elements.metaConc) elements.metaConc.textContent = product.oilConcentration || 'N/A';
         if (elements.metaLong) elements.metaLong.textContent = product.longevity || 'N/A';
         
+        const familyLabel = document.getElementById('meta-family-label');
         if (elements.metaFamily && product.scentFamily) {
+            if (familyLabel) familyLabel.style.display = 'block';
             elements.metaFamily.parentElement.style.display = 'block';
             elements.metaFamily.textContent = product.scentFamily;
         } else if (elements.metaFamily) {
+            if (familyLabel) familyLabel.style.display = 'none';
             elements.metaFamily.parentElement.style.display = 'none';
         }
 
-        // Render Scent Pyramid
+        // Render Scent Pyramid (Safe JSON Parsing)
+        const parseNotes = (notesData) => {
+            if (!notesData) return '—';
+            try {
+                const parsed = JSON.parse(notesData);
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed.join(', ') : '—';
+            } catch (e) {
+                return notesData || '—';
+            }
+        };
+
         const hasNotes = product.topNotes || product.heartNotes || product.baseNotes;
         if (elements.scentPyramid) {
             if (hasNotes) {
                 elements.scentPyramid.style.display = 'block';
-                if (elements.noteTop) elements.noteTop.textContent = product.topNotes || '—';
-                if (elements.noteHeart) elements.noteHeart.textContent = product.heartNotes || '—';
-                if (elements.noteBase) elements.noteBase.textContent = product.baseNotes || '—';
+                if (elements.noteTop) elements.noteTop.textContent = parseNotes(product.topNotes);
+                if (elements.noteHeart) elements.noteHeart.textContent = parseNotes(product.heartNotes);
+                if (elements.noteBase) elements.noteBase.textContent = parseNotes(product.baseNotes);
             } else {
                 elements.scentPyramid.style.display = 'none';
             }

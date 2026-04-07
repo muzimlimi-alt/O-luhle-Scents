@@ -144,7 +144,10 @@ router.get('/', async (req, res, next) => {
       limit: limitNum,
       products: formattedProducts 
     })
-  } catch (err) { next(err) }
+  } catch (err) {
+    console.error('API GET ERROR TRACE:', err);
+    res.status(500).json({ error: 'Internal server error', msg: err.message, stack: err.stack });
+  }
 })
 
 

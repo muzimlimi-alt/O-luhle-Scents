@@ -54,7 +54,7 @@ const Placeholder = ({ title }) => (
   </div>
 );
 
-import { MessagingProvider } from './context/MessagingContext';
+import { MessagingProvider } from './context/MessagingContext.jsx';
 
 function App() {
   return (

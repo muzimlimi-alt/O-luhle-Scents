@@ -231,8 +231,12 @@ function renderProducts(containerId, products, limit) {
 
   container.innerHTML = items.map(product => {
     const variant = product.variants?.[0] || { price: 0, id: null };
+    const badgeHtml = product.cardBadge ? `<div style="position: absolute; top: 12px; left: 12px; background: #ffffff; color: #000000; font-size: 0.65rem; font-weight: 700; padding: 4px 10px; text-transform: uppercase; letter-spacing: 1px; z-index: 2; border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">${product.cardBadge}</div>` : '';
+    const brandType = product.brand ? `${product.brand} · ${product.type || 'Extrait'}` : (product.type || 'Extrait');
+
     return `
     <div class="product-card reveal">
+      ${badgeHtml}
       <div class="product-card__image">
         <a href="product-detail.html?id=${product.id}">
           <img src="images/products/${product.primaryImage}" alt="${product.name}" onerror="this.src='${getPlaceholderImage(product.name)}'">
@@ -244,7 +248,10 @@ function renderProducts(containerId, products, limit) {
         </div>
       </div>
       <div class="product-card__info">
-        <h4 class="product-card__name">${product.name}</h4>
+        <p class="product-card__brand" style="font-size: 0.70rem; color: var(--color-gold); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">
+          ${brandType}
+        </p>
+        <h4 class="product-card__name"><a href="product-detail.html?id=${product.id}" style="color: inherit; text-decoration: none;">${product.name}</a></h4>
         <div class="product-card__price">From ${formatPrice(variant.price)}</div>
       </div>
     </div>`;

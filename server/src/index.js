@@ -74,8 +74,10 @@ app.use('/js', express.static(path.join(rootDir, 'js')))
 app.use('/images', express.static(path.join(rootDir, 'images')))
 app.use('/extra', express.static(path.join(rootDir, 'extra')))
 
-// Serve top-level web pages
-const webPages = ['cart.html', 'checkout.html', 'checkout-success.html', 'product-detail.html', 'shop.html', 'track.html', 'quotes.html', 'robots.txt', 'sitemap.xml']
+// Serve top-level web pages — also handles any *.html file in root dynamically
+import fs from 'fs'
+
+const webPages = ['cart.html', 'checkout.html', 'checkout-success.html', 'product-detail.html', 'shop.html', 'track.html', 'quotes.html', 'guide.html', 'robots.txt', 'sitemap.xml']
 webPages.forEach(file => {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(rootDir, file)))
 })
@@ -83,12 +85,18 @@ webPages.forEach(file => {
 // --- C. Catch-all Routing ---
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next()
-  
+
   // High-fidelity Dashboard routing for SPA
   if (req.path === '/admin' || req.path.startsWith('/admin/')) {
     return res.sendFile(path.join(dashboardDir, 'index.html'))
   }
-  
+
+  // Serve any top-level .html file that exists (e.g. guide.html, future pages)
+  if (req.path.endsWith('.html')) {
+    const filePath = path.join(rootDir, path.basename(req.path))
+    if (fs.existsSync(filePath)) return res.sendFile(filePath)
+  }
+
   // Default to Storefront entry point
   res.sendFile(path.join(rootDir, 'index.html'))
 })

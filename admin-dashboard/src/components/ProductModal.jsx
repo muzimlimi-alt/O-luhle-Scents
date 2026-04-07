@@ -307,6 +307,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
               <Info size={16} /> General Details
             </button>
             <button 
+              className={`elite-nav-item ${activeTab === 'classification' ? 'active' : ''}`}
+              onClick={() => setActiveTab('classification')}
+            >
+              <Sparkles size={16} /> Classification
+            </button>
+            <button 
               className={`elite-nav-item ${activeTab === 'images' ? 'active' : ''}`}
               onClick={() => setActiveTab('images')}
             >
@@ -421,7 +427,14 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                       />
                     </div>
 
-                    <div className="elite-section-divider span-full">
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'classification' && (
+                <div className="elite-fade-in section-classification">
+                  <div className="elite-grid">
+                    <div className="elite-section-divider span-full" style={{ marginTop: 0 }}>
                       <Sparkles size={14} /> <span>Artisan Classification</span>
                     </div>
 

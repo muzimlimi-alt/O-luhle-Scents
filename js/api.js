@@ -230,3 +230,18 @@ export function adminGetLowStock(threshold = 5) {
 export function adminGetSales(period = 30) {
   return apiFetch(`/api/admin/sales?period=${period}`)
 }
+
+// ── Tracking ──────────────────────────────────────────────────────────────────
+
+export function getTracking(number) {
+  return apiFetch(`/api/tracking/${encodeURIComponent(number)}`)
+}
+
+// ── Quotes ────────────────────────────────────────────────────────────────────
+
+export function submitQuote(payload) {
+  return apiFetch('/api/quotes', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+}

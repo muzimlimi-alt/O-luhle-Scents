@@ -62,7 +62,8 @@
 
       <div class="product-detail__grid">
         <!-- Gallery -->
-        <div class="product-gallery reveal">
+        <div class="product-gallery reveal" style="position: relative;">
+          <div id="detail-badge-container"></div>
           <div class="product-gallery__main">
             <img src="" alt="Product image">
           </div>
@@ -98,40 +99,39 @@
           </div>
 
           <!-- Meta -->
-          <!-- Meta -->
-          <div class="product-meta">
-            <div class="product-meta__item" id="meta-type">
-              <strong>Type:</strong> <span>Extrait de Parfum</span>
+          <details class="product-meta reveal" style="margin-top: 24px; padding: 16px 20px; border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 6px; cursor: pointer;">
+            <summary style="outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--color-gold-dark); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500;">
+              <span>Product Specifications</span> <span style="font-size: 1.2rem; font-weight: 300;">+</span>
+            </summary>
+            <div style="display: grid; grid-template-columns: 100px 1fr; gap: 10px; font-size: 0.85rem; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border-light); color: var(--color-text-light);">
+              <div style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Class:</div> <div id="meta-type" style="margin-bottom: 4px;"><span></span></div>
+              <div style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Strength:</div> <div id="meta-concentration" style="margin-bottom: 4px;"><span></span></div>
+              <div style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Longevity:</div> <div id="meta-longevity" style="margin-bottom: 4px;"><span></span></div>
+              <div id="meta-family-label" style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Category:</div> <div id="meta-family"><span></span></div>
             </div>
-            <div class="product-meta__item" id="meta-concentration">
-              <strong>Concentration:</strong> <span>25-30%</span>
-            </div>
-            <div class="product-meta__item" id="meta-longevity">
-              <strong>Longevity:</strong> <span>10–14 hours</span>
-            </div>
-            <div class="product-meta__item" id="meta-family">
-              <strong>Scent Family:</strong> <span></span>
-            </div>
-          </div>
+          </details>
 
           <!-- Scent Pyramid -->
-          <div class="scent-pyramid reveal" style="margin-top: 32px; border-top: 1px solid var(--color-border); padding-top: 24px;">
-            <p class="section-label">Aromatic Architecture</p>
-            <div class="pyramid-grid" style="display: grid; gap: 16px; margin-top: 16px;">
+          <details class="scent-pyramid reveal" style="margin-top: 16px; padding: 16px 20px; border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 6px; cursor: pointer;">
+            <summary style="outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--color-gold-dark); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500;">
+              <span>Aromatic Architecture</span> <span style="font-size: 1.2rem; font-weight: 300;">+</span>
+            </summary>
+            <div class="pyramid-grid" style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border-light);">
               <div class="pyramid-item" id="note-top">
-                <strong style="font-size: 0.7rem; color: var(--color-gold); text-transform: uppercase; letter-spacing: 0.1em;">Top Notes</strong>
-                <p style="margin: 4px 0 0; color: var(--color-text-light); line-height: 1.4;"></p>
+                <strong style="font-size: 0.7rem; color: var(--color-gold); text-transform: uppercase; letter-spacing: 0.1em; display:block; margin-bottom: 4px;">Top Notes (Immediate)</strong>
+                <p style="margin: 0; color: var(--color-text-light); line-height: 1.5; font-size: 0.85rem;"></p>
               </div>
               <div class="pyramid-item" id="note-heart">
-                <strong style="font-size: 0.7rem; color: var(--color-gold); text-transform: uppercase; letter-spacing: 0.1em;">Heart Notes</strong>
-                <p style="margin: 4px 0 0; color: var(--color-text-light); line-height: 1.4;"></p>
+                <strong style="font-size: 0.7rem; color: var(--color-gold); text-transform: uppercase; letter-spacing: 0.1em; display:block; margin-bottom: 4px;">Heart Notes (Body)</strong>
+                <p style="margin: 0; color: var(--color-text-light); line-height: 1.5; font-size: 0.85rem;"></p>
               </div>
               <div class="pyramid-item" id="note-base">
-                <strong style="font-size: 0.7rem; color: var(--color-gold); text-transform: uppercase; letter-spacing: 0.1em;">Base Notes</strong>
-                <p style="margin: 4px 0 0; color: var(--color-text-light); line-height: 1.4;"></p>
+                <strong style="font-size: 0.7rem; color: var(--color-gold); text-transform: uppercase; letter-spacing: 0.1em; display:block; margin-bottom: 4px;">Base Notes (Longevity)</strong>
+                <p style="margin: 0; color: var(--color-text-light); line-height: 1.5; font-size: 0.85rem;"></p>
               </div>
             </div>
-          </div>
+          </details>
+          <style>details > summary::-webkit-details-marker { display: none; }</style>
         </div>
       </div>
     </div>
