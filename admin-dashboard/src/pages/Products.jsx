@@ -120,7 +120,7 @@ export function Products() {
         </div>
         <div className="header-main">
           <div className="header-titles">
-            <h1 className="atelier-title">Scent Portfolio</h1>
+            <h1 className="atelier-title">O'luhle Products</h1>
             <p className="atelier-subtitle">Curating the finest artisanal fragrances in the O'luhle collection.</p>
           </div>
           <button onClick={handleCreate} className="btn-elite-primary">
@@ -153,7 +153,7 @@ export function Products() {
                onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
              >
                 <option value="all">ALL PORTFOLIO</option>
-                <option value="active">LIVE ON BOUTIQUE</option>
+                <option value="active">LIVE PRODUCTS</option>
                 <option value="inactive">ARCHIVED</option>
              </select>
           </div>
@@ -208,7 +208,7 @@ export function Products() {
                       <div className="status-indicator">
                         {product.isActive !== false ? (
                           <span className="badge-status active">
-                            <Eye size={12} /> LIVE ON BOUTIQUE
+                            <Eye size={12} /> LIVE
                           </span>
                         ) : (
                           <span className="badge-status archived">
@@ -351,25 +351,11 @@ export function Products() {
       />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        :root {
-          --atelier-bg: #0f0e0d;
-          --atelier-card: rgba(22, 21, 19, 0.7);
-          --atelier-gold: #b89b6a;
-          --atelier-gold-low: rgba(184, 155, 106, 0.15);
-          --atelier-border: rgba(184, 155, 106, 0.2);
-          --atelier-text: #e2e1df;
-          --atelier-text-muted: #9a9895;
-          --atelier-success: #27ae60;
-          --atelier-error: #c0392b;
-          --atelier-font-header: 'Outfit', sans-serif;
-          --atelier-font-body: 'Inter', sans-serif;
-        }
-
         .elite-products-container {
           padding: 40px;
           min-height: 100vh;
-          background: radial-gradient(circle at 0% 0%, #1c1a17 0%, #0f0e0d 100%);
-          color: var(--atelier-text);
+          background: var(--color-bg-dark);
+          color: var(--color-text);
           font-family: var(--atelier-font-body);
         }
 
@@ -378,8 +364,8 @@ export function Products() {
         .header-badge {
           display: inline-flex; align-items: center;
           padding: 6px 14px; border-radius: 40px;
-          background: var(--atelier-gold-low); border: 1px solid var(--atelier-border);
-          color: var(--atelier-gold); font-size: 0.65rem; font-weight: 700;
+          background: var(--color-border-light); border: 1px solid var(--color-border);
+          color: var(--color-primary); font-size: 0.65rem; font-weight: 700;
           letter-spacing: 0.2em; margin-bottom: 16px;
         }
         .header-main { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
@@ -387,10 +373,10 @@ export function Products() {
           font-family: var(--atelier-font-header); font-size: 2.8rem; font-weight: 300;
           letter-spacing: -0.02em; line-height: 1.1; margin: 0;
         }
-        .atelier-subtitle { color: var(--atelier-text-muted); font-size: 1rem; margin-top: 10px; max-width: 500px; }
+        .atelier-subtitle { color: var(--color-text-muted); font-size: 1rem; margin-top: 10px; max-width: 500px; }
         
         .btn-elite-primary {
-          background: var(--atelier-gold); color: #000;
+          background: var(--color-primary); color: #000;
           border: none; border-radius: 8px; padding: 14px 28px;
           display: flex; align-items: center; gap: 12px;
           font-family: var(--atelier-font-header); font-size: 0.85rem; font-weight: 600;
@@ -415,14 +401,14 @@ export function Products() {
           display: flex; 
           align-items: center;
         }
-        .search-icon { position: absolute; left: 20px; color: var(--atelier-gold); opacity: 0.6; }
+        .search-icon { position: absolute; left: 20px; color: var(--color-primary); opacity: 0.6; }
         .search-glass-input {
           width: 100%; padding: 14px 20px 14px 54px;
-          background: var(--atelier-card); border: 1.5px solid var(--atelier-border);
-          border-radius: 12px; color: #fff; font-size: 0.9rem;
+          background: var(--color-bg-card); border: 1.5px solid var(--color-border);
+          border-radius: 12px; color: var(--color-text); font-size: 0.9rem;
           transition: all 0.3s; backdrop-filter: blur(10px);
         }
-        .search-glass-input:focus { border-color: var(--atelier-gold); outline: none; box-shadow: 0 0 20px rgba(184,155,106,0.1); }
+        .search-glass-input:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 20px rgba(184,155,106,0.1); }
 
         .filter-group { 
           display: flex; 
@@ -442,17 +428,17 @@ export function Products() {
 
         /* SELECT GLASS */
         .select-glass-wrapper { position: relative; display: flex; align-items: center; }
-        .select-icon { position: absolute; left: 16px; color: var(--atelier-gold); pointer-events: none; opacity: 0.7; }
+        .select-icon { position: absolute; left: 16px; color: var(--color-primary); pointer-events: none; opacity: 0.7; }
         .select-glass {
-          background: var(--atelier-card); border: 1.5px solid var(--atelier-border);
-          border-radius: 12px; color: var(--atelier-text); padding: 14px 20px 14px 44px;
+          background: var(--color-bg-card); border: 1.5px solid var(--color-border);
+          border-radius: 12px; color: var(--color-text); padding: 14px 20px 14px 44px;
           font-size: 0.75rem; letter-spacing: 0.1em; cursor: pointer; transition: all 0.3s;
           appearance: none; -webkit-appearance: none; min-width: 160px; backdrop-filter: blur(10px);
           text-transform: uppercase;
         }
-        .select-glass:hover { border-color: var(--atelier-gold); background: var(--atelier-gold-low); }
-        .select-glass:focus { outline: none; border-color: var(--atelier-gold); }
-        .select-glass option { background: #1a1917; color: #fff; }
+        .select-glass:hover { border-color: var(--color-primary); background: var(--color-border-light); }
+        .select-glass:focus { outline: none; border-color: var(--color-primary); }
+        .select-glass option { background: var(--color-bg-card); color: var(--color-text); }
 
         /* GALLERY GRID */
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); gap: 30px; }
@@ -469,14 +455,14 @@ export function Products() {
         .atelier-card-wrapper:hover { transform: translateY(-5px); }
 
         .elite-glass {
-          background: var(--atelier-card);
-          border: 1.5px solid var(--atelier-border);
+          background: var(--glass-bg);
+          border: 1.5px solid var(--color-border);
           border-radius: 20px;
           backdrop-filter: blur(12px);
           overflow: hidden;
           transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        .atelier-card:hover { border-color: rgba(184,155,106,0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .atelier-card:hover { border-color: var(--color-primary); box-shadow: var(--shadow-lg); }
 
         .card-top { 
           padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;
@@ -490,13 +476,13 @@ export function Products() {
         .badge-status.archived { color: var(--atelier-text-muted); background: rgba(255,255,255,0.05); }
 
         .btn-mini-action {
-          width: 32px; height: 32px; border: 1px solid var(--atelier-border);
-          border-radius: 8px; background: transparent; color: var(--atelier-text-muted);
+          width: 32px; height: 32px; border: 1px solid var(--color-border);
+          border-radius: 8px; background: transparent; color: var(--color-text-muted);
           display: inline-flex; align-items: center; justify-content: center;
           cursor: pointer; transition: all 0.3s; margin-left: 8px;
         }
-        .btn-mini-action:hover { border-color: var(--atelier-gold); color: var(--atelier-gold); background: var(--atelier-gold-low); }
-        .btn-mini-action.danger:hover { border-color: var(--atelier-error); color: var(--atelier-error); background: rgba(192,57,43,0.1); }
+        .btn-mini-action:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-border-light); }
+        .btn-mini-action.danger:hover { border-color: var(--color-error-text); color: var(--color-error-text); background: rgba(192,57,43,0.1); }
 
         .card-content-layout { display: flex; padding: 24px; gap: 24px; }
 
@@ -504,7 +490,7 @@ export function Products() {
         .card-visual-sidebar { width: 180px; flex-shrink: 0; }
         .image-atelier-frame {
           width: 100%; height: 220px; border-radius: 12px; overflow: hidden;
-          background: #1a1917; border: 1px solid var(--atelier-border);
+          background: var(--color-surface); border: 1px solid var(--color-border);
           position: relative; margin-bottom: 16px;
         }
         .image-atelier-frame img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s; }
@@ -518,15 +504,15 @@ export function Products() {
         .sidebar-meta { display: flex; flex-direction: column; gap: 8px; }
         .meta-item { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: var(--atelier-text-muted); }
         .meta-item .label { opacity: 0.6; }
-        .meta-item .value { color: var(--atelier-gold); font-weight: 500; }
+        .meta-item .value { color: var(--color-primary); font-weight: 500; }
 
         /* BODY: CONTENT */
         .card-main-body { flex: 1; }
         .brand-eyebrow { 
           font-size: 0.7rem; font-weight: 700; letter-spacing: 0.25em; 
-          color: var(--atelier-gold); text-transform: uppercase; margin-bottom: 6px; display: block;
+          color: var(--color-primary); text-transform: uppercase; margin-bottom: 6px; display: block;
         }
-        .product-name { font-family: var(--atelier-font-header); font-size: 1.7rem; font-weight: 400; margin: 0 0 12px 0; color: #fff; }
+        .product-name { font-family: var(--atelier-font-header); font-size: 1.7rem; font-weight: 400; margin: 0 0 12px 0; color: var(--color-text-header); }
         
         .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; }
         .atelier-tag { 
@@ -537,13 +523,13 @@ export function Products() {
 
         /* MATRIX TABLE */
         .variant-matrix-container {
-          background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(184,155,106,0.1);
+          background: var(--color-bg-dark); border-radius: 12px; border: 1px solid var(--color-border);
           overflow: hidden;
         }
         .matrix-header { 
-          padding: 10px 16px; border-bottom: 1px solid rgba(184,155,106,0.1);
+          padding: 10px 16px; border-bottom: 1px solid var(--color-border);
           display: flex; align-items: center; gap: 8px; font-size: 0.65rem; font-weight: 700;
-          color: var(--atelier-gold); letter-spacing: 0.1em;
+          color: var(--color-primary); letter-spacing: 0.1em;
         }
         .matrix-scroll { overflow-x: auto; }
         .matrix-table { width: 100%; border-collapse: collapse; }
@@ -551,11 +537,11 @@ export function Products() {
           text-align: left; padding: 10px 16px; font-size: 0.55rem; color: var(--atelier-text-muted);
           text-transform: uppercase; letter-spacing: 0.1em; background: rgba(255,255,255,0.015);
         }
-        .matrix-table td { padding: 12px 16px; font-size: 0.8rem; border-bottom: 1px solid rgba(184,155,106,0.05); }
+        .matrix-table td { padding: 12px 16px; font-size: 0.8rem; border-bottom: 1px solid var(--color-border-light); }
         .matrix-table tr:last-child td { border-bottom: none; }
 
-        .price-primary { color: #fff; font-weight: 600; }
-        .price-cost { color: var(--atelier-text-muted); font-size: 0.75rem; }
+        .price-primary { color: var(--color-text-header); font-weight: 600; }
+        .price-cost { color: var(--color-text-muted); font-size: 0.75rem; }
         
         .stock-level-indicator { display: flex; align-items: center; gap: 6px; }
         .stock-count { font-weight: 700; }
@@ -563,8 +549,8 @@ export function Products() {
         .low-stock-icon { color: #e67e22; }
 
         .sku-cell { display: flex; align-items: center; gap: 6px; }
-        .sku-text { font-family: monospace; font-size: 0.7rem; color: var(--atelier-text-muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .barcode-icon { color: var(--atelier-gold); opacity: 0.5; }
+        .sku-text { font-family: monospace; font-size: 0.7rem; color: var(--color-text-muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .barcode-icon { color: var(--color-primary); opacity: 0.5; }
 
         /* UTILS */
         .opacity-50 { opacity: 0.5; pointer-events: none; }
@@ -572,28 +558,28 @@ export function Products() {
         @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
         .font-outfit { font-family: var(--atelier-font-header); }
         .mr-1 { margin-right: 4px; }
-        .atelier-loading { padding: 100px 0; text-align: center; color: var(--atelier-gold); }
+        .atelier-loading { padding: 100px 0; text-align: center; color: var(--color-primary); }
         .spinner { animation: spin 2s linear infinite; margin-bottom: 15px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
         /* PAGINATION */
         .atelier-pagination {
-          margin-top: 50px; padding: 24px; border-top: 1px solid var(--atelier-border);
+          margin-top: 50px; padding: 24px; border-top: 1px solid var(--color-border);
           display: flex; justify-content: space-between; align-items: center;
-          background: rgba(0,0,0,0.2); border-radius: 20px;
+          background: var(--color-bg-card); border-radius: 20px;
         }
-        .pagination-info { font-size: 0.85rem; color: var(--atelier-text-muted); font-family: var(--atelier-font-header); }
+        .pagination-info { font-size: 0.85rem; color: var(--color-text-muted); font-family: var(--atelier-font-header); }
         .pagination-controls { display: flex; align-items: center; gap: 24px; }
         .btn-pagination {
-          background: transparent; border: 1px solid var(--atelier-border);
-          color: var(--atelier-text); padding: 10px 20px; border-radius: 8px;
+          background: transparent; border: 1px solid var(--color-border);
+          color: var(--color-text); padding: 10px 20px; border-radius: 8px;
           font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em;
           cursor: pointer; transition: all 0.3s;
         }
-        .btn-pagination:not(:disabled):hover { background: var(--atelier-gold); color: #000; border-color: var(--atelier-gold); transform: translateY(-2px); }
+        .btn-pagination:not(:disabled):hover { background: var(--color-primary); color: #000; border-color: var(--color-primary); transform: translateY(-2px); }
         .btn-pagination:disabled { opacity: 0.3; cursor: not-allowed; }
-        .page-summary { font-size: 0.75rem; font-weight: 700; color: var(--atelier-gold); letter-spacing: 0.1em; }
+        .page-summary { font-size: 0.75rem; font-weight: 700; color: var(--color-primary); letter-spacing: 0.1em; }
       `}} />
     </div>
   );

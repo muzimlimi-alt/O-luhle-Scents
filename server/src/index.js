@@ -14,6 +14,7 @@ import trackingRoutes from './routes/tracking.js'
 import quoteRoutes from './routes/quotes.js'
 import settingsRoutes from './routes/settings.js'
 import cartRoutes from './routes/cart.js'
+import newsletterRoutes from './routes/newsletter.js'
 
 
 
@@ -36,9 +37,10 @@ app.use((req, res, next) => {
 })
 
 // PayFast ITN posts as application/x-www-form-urlencoded — must parse before JSON middleware
-app.use('/api/webhooks', express.urlencoded({ extended: false }))
+app.use('/api/webhooks', express.urlencoded({ extended: false, limit: '10mb' }))
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -56,6 +58,7 @@ app.use('/api/tracking', trackingRoutes)
 app.use('/api/quotes', quoteRoutes)
 app.use('/api/admin/settings', settingsRoutes)
 app.use('/api/cart', cartRoutes)
+app.use('/api/newsletter', newsletterRoutes)
 
 
 
@@ -72,6 +75,8 @@ app.use('/admin', express.static(dashboardDir))
 app.use('/css', express.static(path.join(rootDir, 'css')))
 app.use('/js', express.static(path.join(rootDir, 'js')))
 app.use('/images', express.static(path.join(rootDir, 'images')))
+app.use('/images/newsletter', express.static(path.join(rootDir, 'images/newsletter')))
+app.use('/assets', express.static(path.join(rootDir, 'assets')))
 app.use('/extra', express.static(path.join(rootDir, 'extra')))
 
 // Serve top-level web pages — also handles any *.html file in root dynamically

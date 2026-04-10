@@ -131,11 +131,11 @@ export default function Customers() {
         }
 
         .search-glass-wrapper {
-          position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px;
+          position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px;
           padding: 10px 16px; display: flex; align-items: center; flex: 1; max-width: 500px;
         }
         .search-glass-input {
-          background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem;
+          background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem;
         }
 
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
@@ -146,20 +146,20 @@ export default function Customers() {
         .patron-status { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; font-weight: 800; color: var(--color-primary); letter-spacing: 1.5px; }
 
         .patron-info { display: flex; flex-direction: column; gap: 6px; }
-        .patron-name { font-size: 1.3rem; font-weight: 700; color: white; margin: 0; }
+        .patron-name { font-size: 1.3rem; font-weight: 700; color: var(--color-text-header); margin: 0; }
         .patron-email-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--color-text-muted); }
 
         .patron-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
         .box-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; }
-        .box-value { font-weight: 700; color: white; font-size: 0.95rem; }
+        .box-value { font-weight: 700; color: var(--color-text-header); font-size: 0.95rem; }
 
         .patron-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; }
         .footer-meta { font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
-        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
+        .btn-mini-action { background: none; border: none; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
         .btn-mini-action:hover { color: var(--color-primary); }
 
-        .elite-btn-outline.mini { padding: 8px 16px; border: 1px solid var(--color-border); background: none; color: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.8rem; }
-        .elite-btn-outline.mini:hover { background: rgba(255,255,255,0.03); border-color: var(--color-primary); }
+        .elite-btn-outline.mini { padding: 8px 16px; border: 1px solid var(--color-border); background: none; color: var(--color-text); border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.8rem; }
+        .elite-btn-outline.mini:hover { background: var(--color-border-light); border-color: var(--color-primary); }
 
         @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
         .fade-in-blur { animation: eliteFadeIn 0.4s ease-out; }

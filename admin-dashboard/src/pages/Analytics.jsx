@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Percent
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -25,6 +26,7 @@ import { Line } from 'react-chartjs-2';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export function Analytics() {
+  const { theme } = useTheme();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -114,7 +116,36 @@ export function Analytics() {
       <div className="card" style={{ marginBottom: '24px' }}>
         <h3 style={{ marginBottom: '20px' }}>Revenue Growth (Last 30 Days)</h3>
         <div style={{ height: '350px' }}>
-          <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }} />
+          <Line 
+            data={chartData} 
+            options={{ 
+              responsive: true, 
+              maintainAspectRatio: false, 
+              scales: { 
+                y: { 
+                  grid: { 
+                    color: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(184, 155, 106, 0.15)' 
+                  },
+                  ticks: {
+                    color: theme === 'dark' ? 'rgba(232, 226, 216, 0.48)' : '#4a4640'
+                  }
+                }, 
+                x: { 
+                  grid: { display: false },
+                  ticks: {
+                    color: theme === 'dark' ? 'rgba(232, 226, 216, 0.48)' : '#4a4640'
+                  }
+                } 
+              },
+              plugins: {
+                legend: {
+                  labels: {
+                    color: theme === 'dark' ? '#f5f0e8' : '#1a1611'
+                  }
+                }
+              }
+            }} 
+          />
         </div>
       </div>
 

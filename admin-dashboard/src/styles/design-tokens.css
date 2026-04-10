@@ -1,46 +1,75 @@
 :root {
-  /* Classic Oluhle Scents Color Palette - Reverting to admin.html Styling */
+  /* Constant Brand Identity Tokens */
   --color-primary: #b89b6a;      /* Oluhle Gold */
   --color-primary-light: #d4bc91;
   --color-primary-dark: #8c7650;
   
-  --color-bg-dark: #0f0e0c;      /* Legacy background */
-  --color-bg-card: #1a1611;      /* Legacy alt background */
-  --color-bg-nav: #0f0e0c;       /* Legacy sidebar matches main bg */
+  --color-success: #27ae60;
+  --color-warning: #fbbf24;
+  --color-error: #c0392b;
+
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-display: 'Playfair Display', 'Outfit', serif;
+  --font-body: 'Outfit', 'Inter', sans-serif;
+  
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+
+  /* Global Base: Light & Refined */
+  --color-bg-dark: #fbfaf8;      
+  --color-bg-card: #ffffff;      
+  --color-bg-nav: #fbfaf8;       
+  --color-surface: #f3f1ed;
+  
+  --color-text: #2c2824;         
+  --color-text-muted: #5a5650;
+  --color-text-header: #1a1611;
+  
+  --color-border: rgba(184, 155, 106, 0.22);
+  --color-border-light: rgba(184, 155, 106, 0.12);
+  --color-border-focus: rgba(184, 155, 106, 0.4);
+
+  --color-success-text: #064e3b;
+  --color-warning-text: #92400e;
+  --color-error-text: #7f1d1d;
+
+  --shadow-sm: 0 1px 2px rgba(130, 110, 80, 0.08);
+  --shadow-md: 0 8px 24px rgba(130, 110, 80, 0.1);
+  --shadow-lg: 0 15px 40px rgba(130, 110, 80, 0.15);
+  
+  --glass-bg: #ffffff;
+  --color-accent-dark: #6b5632;
+  --color-accent-text: var(--color-accent-dark);
+  --color-sidebar-header: var(--color-primary-dark);
+}
+
+/* Theme Classes */
+
+.theme-dark {
+  --color-bg-dark: #0f0e0c;      
+  --color-bg-card: #1a1611;      
+  --color-bg-nav: #0f0e0c;       
   --color-surface: #1e1a14;
   
-  --color-text: #e8e2d8;         /* Legacy text */
+  --color-text: #e8e2d8;         
   --color-text-muted: rgba(232, 226, 216, 0.48); 
   --color-text-header: #f5f0e8;
   
   --color-border: rgba(184, 155, 106, 0.18);
   --color-border-light: rgba(184, 155, 106, 0.08);
   --color-border-focus: rgba(184, 155, 106, 0.4);
-  
-  /* Status Colors (Classic Variants) */
-  --color-success: #27ae60;
-  --color-success-text: #d1fae5;
-  
-  --color-warning: #fbbf24;
-  --color-warning-text: #fef3c7;
-  
-  --color-error: #c0392b;
-  --color-error-text: #fee2e2;
-  
-  --color-pending: #fbbf24;
-  --color-pending-text: #92400e;
 
-  /* Shadows & Radius (Legacy Values) */
+  --color-success-text: #d1fae5;
+  --color-warning-text: #fef3c7;
+  --color-error-text: #fee2e2;
+
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.7);
-  --radius-sm: 2px;               /* Legacy use of tight corners */
-  --radius-md: 4px;
-  --radius-lg: 8px;
   
-  --transition: all 0.2s ease-in-out;
-  --font-display: 'Playfair Display', 'Outfit', serif;
-  --font-body: 'Outfit', 'Inter', sans-serif;
+  --glass-bg: rgba(26, 22, 17, 0.85);
+  --color-sidebar-header: var(--color-primary);
 }
 
 * {
@@ -48,6 +77,7 @@
   margin: 0;
   padding: 0;
   font-family: var(--font-body);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   -webkit-font-smoothing: antialiased;
 }
 

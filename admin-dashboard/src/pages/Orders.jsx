@@ -233,8 +233,8 @@ export function Orders() {
 
         .search-glass-wrapper {
           position: relative;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid var(--color-border);
+          background: var(--color-bg-card);
+          border: 1.5px solid var(--color-border);
           border-radius: 4px;
           padding: 10px 16px;
           display: flex;
@@ -242,12 +242,12 @@ export function Orders() {
           flex: 1;
         }
         .search-glass-input {
-          background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem;
+          background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem;
         }
 
         .filter-glass-matrix { display: flex; gap: 16px; }
         .select-glass-wrapper {
-          background: rgba(255,255,255,0.03);
+          background: var(--color-bg-card);
           border: 1px solid var(--color-border);
           border-radius: 4px;
           padding: 8px 16px;
@@ -256,7 +256,7 @@ export function Orders() {
           gap: 10px;
         }
         .select-glass-wrapper select {
-          background: none; border: none; color: white; outline: none; cursor: pointer; font-size: 0.85rem;
+          background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem;
         }
 
         .atelier-grid {
@@ -278,44 +278,44 @@ export function Orders() {
         .status-indicator {
           font-size: 0.65rem; padding: 4px 10px; border-radius: 2px; font-weight: 600; letter-spacing: 1px;
         }
-        .status-indicator.pending { background: rgba(184, 155, 106, 0.2); color: var(--color-primary); }
-        .status-indicator.paid { background: rgba(39, 174, 96, 0.2); color: #2ecc71; }
-        .status-indicator.shipped { background: rgba(41, 128, 185, 0.2); color: #3498db; }
+        .status-indicator.pending { background: var(--color-border-light); color: var(--color-primary); }
+        .status-indicator.paid { background: rgba(39, 174, 96, 0.1); color: #2ecc71; }
+        .status-indicator.shipped { background: rgba(41, 128, 185, 0.1); color: #3498db; }
 
         .order-patron { display: flex; align-items: center; gap: 16px; }
         .patron-avatar { width: 44px; height: 44px; background: rgba(184,155,106,0.1); border: 1px solid var(--color-border-alt); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); }
-        .patron-name { display: block; font-weight: 600; font-size: 0.95rem; }
+        .patron-name { display: block; font-weight: 600; font-size: 0.95rem; color: var(--color-text-header); }
         .patron-email { display: block; font-size: 0.75rem; color: var(--color-text-muted); }
 
         .order-metrics { 
           display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);
         }
         .metric-label { display: block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: 4px; }
-        .metric-value { font-weight: 700; color: white; }
+        .metric-value { font-weight: 700; color: var(--color-text-header); }
 
         .order-tracking { font-size: 0.8rem; }
         .tracking-label { display: block; font-size: 0.65rem; color: var(--color-text-muted); margin-bottom: 2px; }
         .tracking-value { color: var(--color-primary); font-family: monospace; }
 
         .order-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; }
-        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
+        .btn-mini-action { background: none; border: none; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
         .btn-mini-action:hover { color: var(--color-primary); }
 
         .elite-btn-ship { background: var(--color-primary); color: #000; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: var(--transition); }
         .elite-btn-ship:hover { filter: brightness(1.2); transform: translateY(-2px); }
 
-        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.92); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: eliteFadeIn 0.4s ease-out; }
-        .elite-modal { width: 100%; max-width: 440px; padding: 40px; position: relative; }
+        .elite-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: eliteFadeIn 0.4s ease-out; }
+        .elite-modal { width: 100%; max-width: 440px; padding: 40px; position: relative; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; box-shadow: var(--shadow-lg); }
         .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
         
-        .elite-glass-input { width: 100%; background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: white; outline: none; transition: var(--transition); font-size: 0.9rem; }
-        .elite-glass-input:focus { border-color: var(--color-primary); background: rgba(184,155,106,0.05); }
+        .elite-glass-input { width: 100%; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: var(--color-text); outline: none; transition: var(--transition); font-size: 0.9rem; }
+        .elite-glass-input:focus { border-color: var(--color-primary); background: var(--color-border-light); }
 
         .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
         .elite-btn { background: var(--color-primary); color: #000; padding: 14px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; transition: var(--transition); }
         .elite-btn:hover { filter: brightness(1.2); }
-        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: white; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
-        .elite-btn-outline:hover { background: rgba(255,255,255,0.05); }
+        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
+        .elite-btn-outline:hover { background: var(--color-border-light); }
 
         @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
 

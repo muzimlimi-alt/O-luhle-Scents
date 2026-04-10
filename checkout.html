@@ -129,6 +129,16 @@
             <p style="color:var(--color-text-light);font-size:0.75rem;">Supports PayFast, Yoco, or Stripe</p>
           </div>-->
 
+          <!-- Newsletter Opt-In -->
+          <label class="newsletter-optin" id="newsletter-optin-label" style="display:flex;align-items:flex-start;gap:12px;padding:16px 20px;background:var(--color-bg-alt);border:1px solid var(--color-border-light);border-radius:var(--radius-lg);margin:24px 0;cursor:pointer;">
+            <input type="checkbox" id="newsletter-optin" name="newsletter-optin" checked
+              style="margin-top:3px;accent-color:var(--color-gold);width:15px;height:15px;flex-shrink:0;">
+            <span style="font-size:0.82rem;color:var(--color-text-light);line-height:1.6;">
+              <strong style="display:block;color:var(--color-text);font-size:0.85rem;margin-bottom:2px;">Join the O'luhle Circle</strong>
+              Receive new arrivals, exclusive offers, and fragrance stories. Unsubscribe at any time.
+            </span>
+          </label>
+
           <button class="btn btn--primary btn--full btn--lg mt-md" id="place-order-btn" type="button">
             Place Order
           </button>
@@ -161,7 +171,7 @@
   <!-- Minimal Footer -->
   <footer style="padding:32px 0;text-align:center;color:var(--color-text-light);font-size:0.75rem;border-top:1px solid var(--color-border-light);">
     <div class="container">
-      <p>&copy; 2026 O'luhle Scents · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a> · <button class="checkout-footer-legal js-open-legal">Legal &amp; More</button> · <button class="checkout-footer-legal js-open-cookies">Cookie Settings</button></p>
+      <p>&copy; 2026 O'luhle Scents · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a> <br> <button class="checkout-footer-legal js-open-legal">Legal &amp; More</button>  ·  <button class="checkout-footer-legal js-open-cookies">Cookie Settings</button></p>
       <p style="margin-top:6px;opacity:0.6;">Site by <a href="https://culchar.co.za" target="_blank" rel="noopener noreferrer" style="color:var(--color-gold-dark);text-decoration:none;">Cul.Char</a></p>
     </div>
   </footer>
@@ -350,12 +360,15 @@
         btn.textContent = 'Processing…';
 
         try {
+          const newsletterOptIn = document.getElementById('newsletter-optin')?.checked || false
           const data = await createOrder({
             items: cart.map(i => ({ variantId: i.variantId, quantity: parseInt(i.qty || i.quantity) })),
             contact: { email, phone },
             shipping: { firstName, lastName, street, city, province, postalCode, country: 'South Africa' },
             shippingMethod,
+            newsletterOptIn,
           });
+
 
           // Logic for clearing cart: 
           // We clear it here because the user is successfully handing off to PayFast.

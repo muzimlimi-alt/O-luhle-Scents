@@ -404,16 +404,16 @@ export function AdminUsers() {
         .elite-banner.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
 
         .atelier-discovery { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; gap: 24px; }
-        .search-glass-wrapper { position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; flex: 1; max-width: 400px; }
-        .search-glass-input { background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
+        .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; flex: 1; max-width: 400px; }
+        .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
         .filter-glass-matrix { display: flex; gap: 12px; }
-        .select-glass-wrapper { background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
-        .select-glass-wrapper select { background: none; border: none; color: white; outline: none; cursor: pointer; font-size: 0.85rem; }
+        .select-glass-wrapper { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
+        .select-glass-wrapper select { background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem; }
 
-        .table-glass-container { background: rgba(15,14,13,0.5); backdrop-filter: blur(20px); border: 1px solid var(--color-border); border-radius: 4px; padding: 0; overflow: hidden; }
-        .modern-table.elite-glass-table thead tr { background: rgba(255,255,255,0.02); }
-        .modern-table.elite-glass-table th { padding: 20px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--color-text-muted); font-weight: 700; }
-        .modern-table.elite-glass-table td { padding: 20px; border-bottom: 1px solid var(--color-border-alt); border-top: none; }
+        .table-glass-container { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; padding: 0; overflow: hidden; }
+        .modern-table.elite-glass-table thead tr { background: var(--color-surface); }
+        .modern-table.elite-glass-table th { padding: 20px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--color-text-muted); font-weight: 700; border-bottom: 2px solid var(--color-border); }
+        .modern-table.elite-glass-table td { padding: 20px; border-bottom: 1px solid var(--color-border-light); border-top: none; }
         
         .user-profile-cell { display: flex; align-items: center; gap: 16px; }
         .avatar-box { width: 44px; height: 44px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #000; }
@@ -421,11 +421,11 @@ export function AdminUsers() {
         .avatar-box.staff { background: #555; color: white; }
         
         .profile-info { display: flex; flex-direction: column; }
-        .profile-name { font-weight: 700; color: white; font-size: 0.95rem; }
+        .profile-name { font-weight: 700; color: var(--color-text-header); font-size: 0.95rem; }
         .profile-email { font-size: 0.75rem; color: var(--color-text-muted); }
 
-        .role-badge-elite { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; background: rgba(255,255,255,0.05); color: white; font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; border-radius: 2px; }
-        .role-badge-elite.admin { border-left: 2px solid var(--color-primary); color: var(--color-primary); background: rgba(184,155,106,0.1); }
+        .role-badge-elite { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; background: var(--color-surface); color: var(--color-text); font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; border-radius: 2px; }
+        .role-badge-elite.admin { border-left: 2px solid var(--color-primary); color: var(--color-primary-dark); background: var(--color-border-light); }
         
         .status-pill-elite { display: inline-flex; align-items: center; gap: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; }
         .status-pill-elite.active { color: #2ecc71; }
@@ -437,12 +437,12 @@ export function AdminUsers() {
         .btn-mini-action.delete:hover { color: #e74c3c; }
         .btn-mini-action.secure:hover { color: var(--color-primary); }
 
-        .elite-pagination { display: flex; justify-content: space-between; align-items: center; padding: 24px; background: rgba(0,0,0,0.2); }
+        .elite-pagination { display: flex; justify-content: space-between; align-items: center; padding: 24px; background: var(--color-surface); border-top: 1px solid var(--color-border); }
         .pagination-intel { font-size: 0.8rem; color: var(--color-text-muted); }
-        .elite-page-btn { background: none; border: 1px solid var(--color-border); color: white; padding: 6px 16px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
-        .elite-page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+        .elite-page-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 6px 16px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
+        .elite-page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-border-light); }
         .elite-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .current-page { font-size: 0.8rem; font-weight: 700; color: white; }
+        .current-page { font-size: 0.8rem; font-weight: 700; color: var(--color-text-header); }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }

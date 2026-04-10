@@ -90,8 +90,8 @@ export function Invoices() {
     )},
     { key: 'orderCustomer', label: 'Customer', render: (_, row) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <User size={10} />
+        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-surface)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <User size={10} color="var(--color-primary)" />
         </div>
         {row.order?.customer?.name || 'Guest'}
       </div>

@@ -16,7 +16,6 @@ const EMPTY_FORM = {
   description: '',
   isActive: true,
   cardBadge: '',
-  collection: 'Signature',
   type: 'Extrait de Parfum',
   oilConcentration: '±20–40%',
   longevity: '±10–24 hours',
@@ -195,6 +194,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
       return { ...prev, [group]: updated };
     });
   };
+
+  const [noteSearch, setNoteSearch] = useState('');
+
+  const filteredNotes = AROMATIC_NOTES.filter(n => 
+    n.toLowerCase().includes(noteSearch.toLowerCase())
+  );
 
   const set = (field, value) => {
     setFormData(prev => {
@@ -439,16 +444,6 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                     </div>
 
                     <div className="field-group">
-                      <label>Artisanal Collection</label>
-                      <select value={formData.collection} onChange={e => set('collection', e.target.value)}>
-                        <option value="Premium">Premium</option>
-                        <option value="Signature">Signature</option>
-                        <option value="Classic">Classic</option>
-                        <option value="Essentials">Essentials</option>
-                      </select>
-                    </div>
-
-                    <div className="field-group">
                       <label>Product Type</label>
                       <select value={formData.type} onChange={e => set('type', e.target.value)}>
                         {["Extrait de Parfum", "Parfum", "Eau de Parfum", "Eau de Toilette", "Eau de Cologne", "Eau Fraîche", "Eau de Senteur", "Splash & Aftershave"].map(t => (
@@ -500,39 +495,54 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                     </div>
 
                     <div className="span-full aromatic-notes-section">
-                      <div className="note-group">
-                        <label>Top Notes (Immediate Impression)</label>
-                        <div className="checkbox-grid">
-                          {AROMATIC_NOTES.map(note => (
-                            <label key={note} className="checkbox-item">
-                              <input type="checkbox" checked={formData.topNotes?.includes(note)} onChange={() => toggleNote('topNotes', note)} />
-                              <span>{note}</span>
-                            </label>
-                          ))}
+                      <div className="note-group search-header">
+                        <label>Scent Architecture (Top, Heart & Base)</label>
+                        <div className="note-search-wrapper">
+                          <input 
+                            type="text" 
+                            placeholder="Quick search for a scent note..." 
+                            value={noteSearch}
+                            onChange={(e) => setNoteSearch(e.target.value)}
+                            className="note-search-input"
+                          />
                         </div>
                       </div>
 
-                      <div className="note-group">
-                        <label>Heart Notes (Main Body)</label>
-                        <div className="checkbox-grid">
-                          {AROMATIC_NOTES.map(note => (
-                            <label key={note} className="checkbox-item">
-                              <input type="checkbox" checked={formData.heartNotes?.includes(note)} onChange={() => toggleNote('heartNotes', note)} />
-                              <span>{note}</span>
-                            </label>
-                          ))}
+                      <div className="scent-architecture-container">
+                        <div className="architecture-column">
+                          <label className="column-head">Top Notes</label>
+                          <div className="architecture-grid">
+                            {filteredNotes.map(note => (
+                              <label key={note} className={`note-chip ${formData.topNotes?.includes(note) ? 'selected' : ''}`}>
+                                <input type="checkbox" checked={formData.topNotes?.includes(note)} onChange={() => toggleNote('topNotes', note)} />
+                                <span>{note}</span>
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="note-group">
-                        <label>Base Notes (Final Longevity)</label>
-                        <div className="checkbox-grid">
-                          {AROMATIC_NOTES.map(note => (
-                            <label key={note} className="checkbox-item">
-                              <input type="checkbox" checked={formData.baseNotes?.includes(note)} onChange={() => toggleNote('baseNotes', note)} />
-                              <span>{note}</span>
-                            </label>
-                          ))}
+                        <div className="architecture-column">
+                          <label className="column-head">Heart Notes</label>
+                          <div className="architecture-grid">
+                            {filteredNotes.map(note => (
+                              <label key={note} className={`note-chip ${formData.heartNotes?.includes(note) ? 'selected' : ''}`}>
+                                <input type="checkbox" checked={formData.heartNotes?.includes(note)} onChange={() => toggleNote('heartNotes', note)} />
+                                <span>{note}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="architecture-column">
+                          <label className="column-head">Base Notes</label>
+                          <div className="architecture-grid">
+                            {filteredNotes.map(note => (
+                              <label key={note} className={`note-chip ${formData.baseNotes?.includes(note) ? 'selected' : ''}`}>
+                                <input type="checkbox" checked={formData.baseNotes?.includes(note)} onChange={() => toggleNote('baseNotes', note)} />
+                                <span>{note}</span>
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -593,7 +603,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                 <div className="elite-fade-in section-inventory">
                   <div className="elite-asset-header">
                     <h3>Variation Matrix</h3>
-                    <button type="button" className="elite-btn-outline mini" onClick={addVariant}>
+                    <button type="button" className="elite-btn-modern-variant" onClick={addVariant}>
                       <Plus size={14} /> New Variation
                     </button>
                   </div>
@@ -632,14 +642,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                           <div className="field">
                             <label>Retail Price (R)</label>
                             <div className="input-with-icon">
-                              <DollarSign size={12} />
                               <input type="number" step="0.01" value={v.price} onChange={e => updateVariant(i, 'price', e.target.value)} placeholder="1250" />
                             </div>
                           </div>
                           <div className="field">
                             <label>Cost Price (R)</label>
                             <div className="input-with-icon">
-                              <DollarSign size={12} />
                               <input type="number" step="0.01" value={v.costPrice} onChange={e => updateVariant(i, 'costPrice', e.target.value)} placeholder="450" />
                             </div>
                           </div>
@@ -681,7 +689,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         <style>{`
           .elite-overlay {
             position: fixed; inset: 0; z-index: 3000;
-            background: rgba(8, 7, 6, 0.92);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(24px) saturate(180%);
             display: flex; align-items: center; justify-content: center;
             padding: 24px;
@@ -690,81 +698,81 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           
           .elite-modal {
             display: flex; width: 100%; max-width: 1100px; height: 100%; max-height: 820px;
-            background: #11100f;
-            border: 1px solid rgba(184, 155, 106, 0.25);
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
             border-radius: 4px; overflow: hidden;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(184,155,106,0.05);
+            box-shadow: var(--shadow-lg);
             animation: eliteSlideScale 0.5s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           /* ── Sidebar ── */
           .elite-sidebar {
-            width: 260px; background: rgba(0,0,0,0.3);
-            border-right: 1px solid rgba(184,155,106,0.15);
+            width: 260px; background: var(--color-bg-dark);
+            border-right: 1px solid var(--color-border);
             display: flex; flex-direction: column;
             flex-shrink: 0;
           }
           .elite-sidebar-top { padding: 32px 24px; text-align: center; }
           .elite-emblem {
             width: 80px; height: 80px; margin: 0 auto 20px;
-            border-radius: 2px; border: 1px solid rgba(184,155,106,0.25);
+            border-radius: 2px; border: 1px solid var(--color-border);
             display: flex; align-items: center; justify-content: center;
-            color: #b89b6a; background: rgba(184,155,106,0.03);
+            color: var(--color-primary); background: var(--color-border-light);
             overflow: hidden;
           }
           .elite-emblem-img { width: 100%; height: 100%; object-fit: cover; }
           .elite-status-badge {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 6px 12px; border-radius: 100px;
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-            font-size: 0.65rem; color: rgba(255,255,255,0.45); letter-spacing: 0.05em;
+            background: var(--color-surface); border: 1px solid var(--color-border-light);
+            font-size: 0.65rem; color: var(--color-text-muted); letter-spacing: 0.05em;
           }
-          .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #333; }
-          .status-dot.active { background: #b89b6a; box-shadow: 0 0 8px #b89b6a; }
+          .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-border); }
+          .status-dot.active { background: var(--color-primary); box-shadow: 0 0 8px var(--color-primary); }
 
           .elite-nav { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
           .elite-nav-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 16px; border-radius: 2px; border: none;
-            background: transparent; color: rgba(255,255,255,0.3);
+            background: transparent; color: var(--color-text-muted);
             font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
             cursor: pointer; transition: all 0.25s; text-align: left;
           }
-          .elite-nav-item:hover { color: rgba(255,255,255,0.7); background: rgba(184,155,106,0.05); }
-          .elite-nav-item.active { color: #b89b6a; background: rgba(184,155,106,0.08); }
+          .elite-nav-item:hover { color: var(--color-text); background: var(--color-border-light); }
+          .elite-nav-item.active { color: var(--color-primary); background: var(--color-border-light); }
 
-          .elite-sidebar-footer { padding: 24px; border-top: 1px solid rgba(255,255,255,0.03); }
-          .elite-id-label { font-size: 0.5rem; letter-spacing: 0.2em; color: rgba(184,155,106,0.4); margin-bottom: 4px; }
-          .elite-id-value { font-family: monospace; font-size: 0.7rem; color: rgba(255,255,255,0.2); }
+          .elite-sidebar-footer { padding: 24px; border-top: 1px solid var(--color-border-light); }
+          .elite-id-label { font-size: 0.5rem; letter-spacing: 0.2em; color: var(--color-primary); opacity: 0.6; margin-bottom: 4px; }
+          .elite-id-value { font-family: monospace; font-size: 0.7rem; color: var(--color-text-muted); }
 
           /* ── Workspace ── */
           .elite-workspace { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
           .elite-header {
-            padding: 24px 32px; border-bottom: 1px solid rgba(184,155,106,0.12);
+            padding: 24px 32px; border-bottom: 1px solid var(--color-border);
             display: flex; align-items: flex-start; justify-content: space-between;
           }
-          .elite-eyebrow { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: #b89b6a; opacity: 0.6; display: block; margin-bottom: 4px; }
-          .elite-header-title h2 { font-size: 1.4rem; font-weight: 300; letter-spacing: 0.1em; color: #e8dcc8; margin: 0; text-transform: uppercase; }
+          .elite-eyebrow { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--color-primary); opacity: 0.6; display: block; margin-bottom: 4px; }
+          .elite-header-title h2 { font-size: 1.4rem; font-weight: 300; letter-spacing: 0.1em; color: var(--color-text-header); margin: 0; text-transform: uppercase; }
           .elite-close-btn { 
-            width: 40px; height: 40px; border-radius: 2px; background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4);
+            width: 40px; height: 40px; border-radius: 2px; background: var(--color-surface);
+            border: 1px solid var(--color-border); color: var(--color-text-muted);
             display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
           }
-          .elite-close-btn:hover { border-color: #b89b6a; color: #b89b6a; }
+          .elite-close-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
-          .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: #b89b6a; background: rgba(184,155,106,0.05); }
-          .field-group select option { background: #1a1611; font-size: 0.85rem; }
-          .field-group input.read-only { background: rgba(255,255,255,0.02); border-color: rgba(184,155,106,0.05); cursor: not-allowed; color: rgba(184,155,106,0.4); }
+          .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--color-primary); background: var(--color-border-light); }
+          .field-group select option { background: var(--color-bg-card); color: var(--color-text); font-size: 0.85rem; }
+          .field-group input.read-only { background: var(--color-surface); border-color: var(--color-border-light); cursor: not-allowed; color: var(--color-text-muted); }
 
           .aromatic-notes-section { margin-top: 24px; display: flex; flex-direction: column; gap: 32px; }
           .note-group { display: flex; flex-direction: column; gap: 12px; }
           .checkbox-grid { 
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; 
-            max-height: 180px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(184,155,106,0.1);
+            max-height: 180px; overflow-y: auto; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border);
             scrollbar-width: thin;
           }
-          .checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: rgba(255,255,255,0.6); cursor: pointer; }
-          .checkbox-item input { width: 14px; height: 14px; accent-color: #b89b6a; }
+          .checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: var(--color-text); cursor: pointer; }
+          .checkbox-item input { width: 14px; height: 14px; accent-color: var(--color-primary); }
           .checkbox-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
           .elite-main-form { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -779,7 +787,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
             margin: 32px 0 16px; padding: 0 4px;
           }
           .elite-section-divider span {
-            font-size: 0.65rem; font-weight: 600; color: #b89b6a;
+            font-size: 0.65rem; font-weight: 600; color: var(--color-primary);
             text-transform: uppercase; letter-spacing: 0.15em;
           }
           .elite-section-divider::after {
@@ -791,41 +799,41 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           .elite-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
           .field-group { display: flex; flex-direction: column; gap: 8px; }
           .field-group.span-full { grid-column: 1 / -1; }
-          .field-group label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(184,155,106,0.6); }
+          .field-group label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-primary); opacity: 0.7; }
           .field-group input, .field-group select, .field-group textarea {
-            background: rgba(255,255,255,0.04); border: 1px solid rgba(184,155,106,0.15);
-            padding: 12px 16px; border-radius: 2px; color: #ddd; font-size: 0.85rem; outline: none;
+            background: var(--color-bg-card); border: 1.5px solid var(--color-border);
+            padding: 12px 16px; border-radius: 2px; color: var(--color-text); font-size: 0.85rem; outline: none;
             transition: all 0.3s; font-family: inherit;
           }
-          .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: #b89b6a; background: rgba(184,155,106,0.05); }
-          .field-group select option { background: #1a1611; }
+          .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--color-primary); background: var(--color-border-light); }
+          .field-group select option { background: var(--color-bg-card); color: var(--color-text); }
 
           .elite-status-toggle {
             display: flex; align-items: center; gap: 12px;
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(184,155,106,0.1);
+            background: var(--color-surface); border: 1px solid var(--color-border);
             padding: 10px 16px; border-radius: 2px; cursor: pointer; transition: all 0.3s;
           }
-          .elite-status-toggle:hover { border-color: rgba(184,155,106,0.4); }
-          .elite-status-toggle span { font-size: 0.72rem; color: rgba(255,255,255,0.5); flex: 1; letter-spacing: 0.05em; }
-          .elite-switch { width: 32px; height: 16px; border-radius: 20px; background: rgba(255,255,255,0.1); position: relative; transition: 0.3s; }
-          .elite-switch::after { content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #555; top: 3px; left: 3px; transition: 0.3s; }
-          .elite-switch.active { background: #b89b6a; }
+          .elite-status-toggle:hover { border-color: var(--color-primary); }
+          .elite-status-toggle span { font-size: 0.72rem; color: var(--color-text); flex: 1; letter-spacing: 0.05em; }
+          .elite-switch { width: 32px; height: 16px; border-radius: 20px; background: var(--color-border); position: relative; transition: 0.3s; }
+          .elite-switch::after { content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #999; top: 3px; left: 3px; transition: 0.3s; }
+          .elite-switch.active { background: var(--color-primary); }
           .elite-switch.active::after { transform: translateX(16px); background: #fff; }
 
           /* ── Images ── */
           .elite-asset-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-          .elite-asset-header h3 { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: #b89b6a; margin: 0; }
-          .elite-asset-header p { font-size: 0.72rem; color: rgba(255,255,255,0.3); margin: 4px 0 0; }
+          .elite-asset-header h3 { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--color-primary); margin: 0; }
+          .elite-asset-header p { font-size: 0.72rem; color: var(--color-text-muted); margin: 4px 0 0; }
           
           .elite-uploader { padding: 4px; }
           .elite-image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
           .elite-asset-card {
-            position: relative; aspect-ratio: 1; border-radius: 2px; border: 1px solid rgba(184,155,106,0.2);
-            background: #000; overflow: hidden;
+            position: relative; aspect-ratio: 1; border-radius: 2px; border: 1px solid var(--color-border);
+            background: var(--color-bg-dark); overflow: hidden;
           }
           .elite-asset-card img { width: 100%; height: 100%; object-fit: cover; }
           .primary-tag {
-            position: absolute; top: 0; left: 0; right: 0; background: #b89b6a; color: #111;
+            position: absolute; top: 0; left: 0; right: 0; background: var(--color-primary); color: #111;
             font-size: 0.5rem; font-weight: 800; text-align: center; padding: 4px; letter-spacing: 0.1em; z-index: 2;
           }
           .asset-overlay {
@@ -847,45 +855,77 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
           /* ── Inventory ── */
           .elite-variant-list { display: flex; flex-direction: column; gap: 32px; }
-          .elite-variant-item { border: 1px solid rgba(184,155,106,0.12); padding: 24px; border-radius: 2px; background: rgba(255,255,255,0.01); }
+          .elite-variant-item { border: 1px solid var(--color-border); padding: 24px; border-radius: 2px; background: var(--color-bg-card); }
           .variant-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-          .variant-label { font-size: 0.55rem; letter-spacing: 0.25em; color: rgba(184,155,106,0.4); font-weight: 600; }
-          .variant-del { background: transparent; border: none; color: rgba(255,255,255,0.2); cursor: pointer; transition: color 0.2s; }
-          .variant-del:hover { color: #e04a4a; }
+          .variant-label { font-size: 0.55rem; letter-spacing: 0.25em; color: var(--color-primary); font-weight: 600; opacity: 0.6; }
+          .variant-del { background: transparent; border: none; color: var(--color-text-muted); cursor: pointer; transition: color 0.2s; }
+          .variant-del:hover { color: var(--color-error); }
           .variant-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
           .variant-grid .field { display: flex; flex-direction: column; gap: 8px; }
-          .variant-grid label { font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
-          .variant-grid input {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-            padding: 10px 14px; border-radius: 2px; color: #ddd; font-size: 0.8rem; outline: none; transition: 0.3s;
+          .variant-grid label { font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-primary); opacity: 0.7; }
+          .variant-grid input, .variant-grid select {
+            background: var(--color-bg-card); border: 1px solid var(--color-border);
+            padding: 10px 14px; border-radius: 2px; color: var(--color-text); font-size: 0.8rem; outline: none; transition: 0.3s;
           }
-          .variant-grid input:focus { border-color: rgba(184,155,106,0.4); }
+          .variant-grid input:focus, .variant-grid select:focus { border-color: var(--color-primary); }
           .input-with-icon { position: relative; }
-          .input-with-icon svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(184,155,106,0.5); }
-          .input-with-icon input { padding-left: 28px; }
+          .input-with-icon input { width: 100%; }
 
           /* ── Footer ── */
           .elite-actions {
-            padding: 24px 32px; background: #0c0b0a; border-top: 1px solid rgba(184,155,106,0.12);
+            padding: 24px 32px; background: var(--color-bg-dark); border-top: 1px solid var(--color-border);
             display: flex; align-items: center; justify-content: flex-end; gap: 20px;
           }
-          .elite-btn-cancel { background: transparent; border: none; color: rgba(255,255,255,0.35); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: color 0.2s; }
-          .elite-btn-cancel:hover { color: rgba(255,255,255,0.6); }
+          .elite-btn-cancel { background: transparent; border: none; color: var(--color-text-muted); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: color 0.2s; }
+          .elite-btn-cancel:hover { color: var(--color-text); }
           .elite-btn-save {
-            background: #b89b6a; color: #111; border: none; padding: 14px 40px; border-radius: 2px;
+            background: var(--color-primary); color: #111; border: none; padding: 14px 40px; border-radius: 2px;
             font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
             cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 12px;
-            box-shadow: 0 10px 30px rgba(184,155,106,0.15);
+            box-shadow: var(--shadow-md);
           }
-          .elite-btn-save:hover:not(:disabled) { background: #d4b47e; transform: translateY(-2px); box-shadow: 0 15px 40px rgba(184,155,106,0.25); }
+          .elite-btn-save:hover:not(:disabled) { background: var(--color-primary-light); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
           .elite-btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
           .spin { animation: eliteSpin 1s linear infinite; }
 
-          .elite-error {
-            display: flex; align-items: center; gap: 12px; padding: 16px 24px;
-            background: rgba(180,40,30,0.1); border: 1px solid rgba(180,40,30,0.3);
-            border-radius: 2px; color: #e57373; font-size: 0.8rem; margin-bottom: 24px;
+          /* New Search & Note Styling */
+          .note-search-wrapper { margin-top: 8px; }
+          .note-search-input {
+            width: 100%; background: var(--color-surface); border: 1.5px solid var(--color-border);
+            padding: 10px 16px; border-radius: 2px; color: var(--color-text); font-size: 0.8rem; outline: none; transition: all 0.3s;
           }
+          .note-search-input:focus { border-color: var(--color-primary); background: var(--color-bg-card); }
+
+          .scent-architecture-container {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            margin-top: 24px; min-height: 400px;
+          }
+          .architecture-column { 
+            display: flex; flex-direction: column; gap: 12px; 
+            background: var(--color-surface); border: 1px solid var(--color-border);
+            padding: 16px; border-radius: 2px;
+          }
+          .column-head { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-primary); font-weight: 700; border-bottom: 1px solid var(--color-border-light); padding-bottom: 8px; margin-bottom: 4px; }
+          .architecture-grid { 
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+            scrollbar-width: thin; scrollbar-color: var(--color-primary) transparent;
+            max-height: 350px;
+          }
+          .note-chip { 
+            display: flex; align-items: center; gap: 8px; padding: 6px 12px; 
+            font-size: 0.7rem; color: var(--color-text-muted); cursor: pointer; border-radius: 2px; transition: 0.2s;
+            border: 1px solid transparent;
+          }
+          .note-chip:hover { background: var(--color-border-light); color: var(--color-text); }
+          .note-chip.selected { background: var(--color-primary); color: #111; border-color: var(--color-primary); }
+          .note-chip input { display: none; }
+
+          .elite-btn-modern-variant {
+            background: var(--color-primary); color: #111; border: none; padding: 8px 16px; border-radius: 2px;
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+            cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px;
+          }
+          .elite-btn-modern-variant:hover { background: var(--color-primary-light); transform: translateY(-1px); }
 
           @keyframes eliteFadeIn { from { opacity: 0; } to { opacity: 1; } }
           @keyframes eliteSlideScale { from { opacity: 0; transform: scale(0.96) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
@@ -893,11 +933,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           @keyframes eliteSpin { to { transform: rotate(360deg); } }
 
           @media (max-width: 1024px) {
-            .elite-modal { flex-direction: column; max-height: 95vh; }
-            .elite-sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid rgba(184,155,106,0.15); }
+            .elite-modal { flex-direction: column; max-height: 95vh; overflow-y: auto; }
+            .elite-sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--color-border); }
             .elite-nav { flex-direction: row; overflow-x: auto; padding: 8px; }
             .elite-sidebar-top, .elite-sidebar-footer { display: none; }
             .variant-grid { grid-template-columns: 1fr 1fr; }
+            .scent-architecture-container { grid-template-columns: 1fr; }
           }
         `}</style>
       </div>

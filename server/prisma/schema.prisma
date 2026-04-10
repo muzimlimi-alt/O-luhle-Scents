@@ -20,6 +20,7 @@ model AdminUser {
   updatedAt    DateTime       @updatedAt @map("updated_at")
   sessions     AdminSession[]
   auditLogs    AuditLog[]
+  newsletterCampaigns NewsletterCampaign[]
 
   @@map("admin_users")
 }
@@ -399,4 +400,36 @@ model Category {
   products  Product[]
 
   @@map("categories")
+}
+
+// ── 26. SUBSCRIBERS ──────────────────────────────────────────────────────────
+model Subscriber {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique @db.VarChar(150)
+  status           String    @default("active") @db.VarChar(20)  // active | unsubscribed
+  source           String    @default("frontend") @db.VarChar(50) // frontend | checkout | admin
+  unsubscribeToken String?   @unique @map("unsubscribe_token") @db.VarChar(128)
+  tokenExpiresAt   DateTime? @map("token_expires_at")             // token TTL (90 days)
+  addedBy          String?   @map("added_by") @db.VarChar(150)   // admin name/id who created entry
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("subscribers")
+}
+
+// ── 27. NEWSLETTER_CAMPAIGNS ──────────────────────────────────────────────────
+model NewsletterCampaign {
+  id          String     @id @default(uuid()) @db.Uuid
+  subject     String     @db.VarChar(200)
+  contentHtml String     @map("content_html") @db.Text
+  status      String     @default("draft") @db.VarChar(20) // draft, sent, failed
+  sentAt      DateTime?  @map("sent_at")
+  sentCount   Int        @default(0) @map("sent_count")
+  attachments Json?      // Store { filename, path, mimetype, size }
+  adminUserId String?    @map("admin_user_id") @db.Uuid
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@map("newsletter_campaigns")
 }

@@ -102,18 +102,18 @@ export function Suppliers() {
               </div>
 
               <div className="partner-info">
-                <h3 className="partner-name">{s.name}</h3>
+                <h3 className="supplier-identity-fixed">{s.name}</h3>
                 <span className="partner-domain">FRAGRANCE DISTRIBUTION</span>
               </div>
 
               <div className="partner-contacts">
                 <div className="contact-glass">
                   <Mail size={14} />
-                  <a href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a>
+                  <a href={`mailto:${s.contactEmail}`} style={{ color: '#1a1611' }}>{s.contactEmail}</a>
                 </div>
                 <div className="contact-glass">
                   <Phone size={14} />
-                  <span>{s.phone || 'No direct dial'}</span>
+                  <span style={{ color: '#1a1611' }}>{s.phone || 'No direct dial'}</span>
                 </div>
               </div>
 
@@ -199,8 +199,8 @@ export function Suppliers() {
         .elite-btn-plus:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 8px 20px rgba(184,155,106,0.25); }
 
         .atelier-discovery { margin-bottom: 40px; }
-        .search-glass-wrapper { position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; max-width: 500px; }
-        .search-glass-input { background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
+        .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; max-width: 500px; }
+        .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
 
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 32px; }
         
@@ -208,20 +208,19 @@ export function Suppliers() {
         .partner-card-header { display: flex; justify-content: space-between; align-items: center; }
         .partner-avatar { width: 56px; height: 56px; background: rgba(184,155,106,0.1); border: 1px solid var(--color-border-alt); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
         .partner-status { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; font-weight: 800; color: var(--color-primary); letter-spacing: 1.5px; }
-
         .partner-info { display: flex; flex-direction: column; gap: 4px; }
-        .partner-name { font-size: 1.4rem; font-weight: 700; color: white; margin: 0; }
-        .partner-domain { font-size: 0.65rem; letter-spacing: 2px; color: var(--color-text-muted); font-weight: 600; }
-
+        .supplier-identity-fixed { font-size: 1.4rem; font-weight: 700; margin: 0; color: #1a1611 !important; }
+        .partner-domain { font-size: 0.65rem; letter-spacing: 2px; color: var(--color-accent-dark) !important; font-weight: 700 !important; }
+ 
         .partner-contacts { display: flex; flex-direction: column; gap: 12px; }
-        .contact-glass { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--color-border-alt); border-radius: 4px; font-size: 0.9rem; color: white; }
-        .contact-glass a { color: inherit; text-decoration: none; transition: var(--transition); }
+        .contact-glass { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; font-size: 0.9rem; font-weight: 600 !important; }
+        .contact-glass a { color: #1a1611 !important; text-decoration: none; transition: var(--transition); font-weight: 700 !important; }
         .contact-glass a:hover { color: var(--color-primary); }
-        .contact-glass svg { color: var(--color-text-muted); }
+        .contact-glass svg { color: var(--color-accent-dark); }
 
         .partner-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--color-border); }
         .footer-meta { font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
-        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
+        .btn-mini-action { background: none; border: none; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
         .btn-mini-action:hover { color: var(--color-primary); }
 
         .elite-loading { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 100px 0; color: var(--color-text-muted); }
@@ -232,15 +231,15 @@ export function Suppliers() {
         .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.92); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: eliteFadeIn 0.4s ease-out; }
         .elite-modal { width: 100%; max-width: 480px; padding: 40px; position: relative; }
         .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        .close-btn { background: none; border: none; color: white; cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        .close-btn { background: none; border: none; color: var(--color-text-header); cursor: pointer; opacity: 0.5; transition: 0.2s; }
         .close-btn:hover { opacity: 1; }
 
-        .elite-glass-input { width: 100%; background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: white; outline: none; transition: var(--transition); font-size: 0.9rem; }
+        .elite-glass-input { width: 100%; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: var(--color-text); outline: none; transition: var(--transition); font-size: 0.9rem; }
         .elite-glass-input:focus { border-color: var(--color-primary); background: rgba(184,155,106,0.05); }
 
         .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
         .elite-btn { background: var(--color-primary); color: #000; padding: 14px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; transition: var(--transition); }
-        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: white; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
+        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
 
         @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
         .animate-fade-in { animation: eliteFadeIn 0.4s ease-out; }

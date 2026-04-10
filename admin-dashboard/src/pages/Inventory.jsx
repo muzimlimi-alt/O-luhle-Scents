@@ -68,21 +68,21 @@ export function Inventory() {
       </div>
 
       <div className="atelier-stats-grid">
-         <div className="elite-glass inventory-kpi">
-           <div className="kpi-top">
-             <Database size={20} color="var(--color-primary)" />
-             <span className="kpi-label">Master Catalog SKUs</span>
-           </div>
-           <h3 className="kpi-value">{items.length}</h3>
-         </div>
-         <div className="elite-glass inventory-kpi error">
-           <div className="kpi-top">
-             <AlertCircle size={20} color="#e74c3c" />
-             <span className="kpi-label">Depleted Reserves</span>
-           </div>
-           <h3 className="kpi-value">{items.filter(i => i.quantity <= i.lowStockThreshold).length}</h3>
-         </div>
-      </div>
+          <div className="elite-glass inventory-kpi">
+            <div className="kpi-top">
+              <Database size={20} color="var(--color-primary)" />
+              <span className="kpi-label">Master Catalog SKUs</span>
+            </div>
+            <h3 className="reservoir-count-absolute">{items.length}</h3>
+          </div>
+          <div className="elite-glass inventory-kpi error">
+            <div className="kpi-top">
+              <AlertCircle size={20} color="#e74c3c" />
+              <span className="kpi-label">Depleted Reserves</span>
+            </div>
+            <h3 className="reservoir-count-absolute">{items.filter(i => i.quantity <= i.lowStockThreshold).length}</h3>
+          </div>
+        </div>
 
       {activeTab === 'levels' ? (
         <div className="atelier-grid fade-in-blur">
@@ -92,7 +92,7 @@ export function Inventory() {
               <div key={item.id} className="elite-glass inventory-card">
                 <div className="inventory-card-top">
                   <div className="variant-info">
-                    <span className="variant-name">{item.variant?.product?.name}</span>
+                    <span className="variant-title-absolute">{item.variant?.product?.name}</span>
                     <span className="variant-size">{item.variant?.size}</span>
                   </div>
                   <span className={`status-indicator ${isLow ? 'error' : 'optimal'}`}>
@@ -100,16 +100,16 @@ export function Inventory() {
                   </span>
                 </div>
 
-                <div className="inventory-metrics">
-                  <div className="metric-glass">
-                    <span className="metric-label">Residual Stock</span>
-                    <span className="metric-value">{item.quantity} Units</span>
+                  <div className="inventory-metrics">
+                    <div className="metric-glass">
+                      <span className="metric-label">Residual Stock</span>
+                      <span className="metric-value-direct" style={{ color: '#1a1611' }}>{item.quantity} Units</span>
+                    </div>
+                    <div className="metric-glass">
+                      <span className="metric-label">Low Threshold</span>
+                      <span className="metric-value-direct" style={{ color: '#1a1611' }}>{item.lowStockThreshold} Units</span>
+                    </div>
                   </div>
-                  <div className="metric-glass">
-                    <span className="metric-label">Low Threshold</span>
-                    <span className="metric-value">{item.lowStockThreshold} Units</span>
-                  </div>
-                </div>
 
                 <div className="inventory-footer">
                   <span className="supplier-tag">
@@ -162,41 +162,48 @@ export function Inventory() {
         
         .discovery-matrix { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; gap: 24px; }
         
-        .tab-glass-panel { background: rgba(255,255,255,0.03); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 4px; display: flex; gap: 4px; }
+        .tab-glass-panel { background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 4px; display: flex; gap: 4px; }
         .tab-glass-btn { background: none; border: none; color: var(--color-text-muted); padding: 8px 16px; border-radius: 2px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
         .tab-glass-btn.active { background: var(--color-primary); color: #000; }
-        .tab-glass-btn:hover:not(.active) { color: white; background: rgba(255,255,255,0.05); }
+        .tab-glass-btn:hover:not(.active) { color: var(--color-text); background: var(--color-border-light); }
 
-        .search-glass-wrapper { position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; flex: 1; max-width: 400px; }
-        .search-glass-input { background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.85rem; }
+        .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; flex: 1; max-width: 400px; }
+        .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.85rem; }
 
         .atelier-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 40px; }
         .inventory-kpi { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
         .inventory-kpi.error { border-color: rgba(231, 76, 60, 0.3); }
         .kpi-top { display: flex; align-items: center; gap: 12px; }
-        .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-muted); font-weight: 600; }
-        .kpi-value { font-size: 2rem; font-weight: 700; color: white; font-family: var(--font-display); }
+        .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--color-text-muted) !important; font-weight: 800 !important; }
+        .reservoir-count-absolute { 
+          font-size: 2.5rem; font-weight: 800; font-family: var(--font-display); 
+          line-height: 1; margin: 0; color: #1a1611 !important; 
+        }
+        .variant-name-primary { 
+          font-weight: 700; font-size: 1.1rem; color: #1a1611 !important; 
+        }
 
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
         
         .inventory-card { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
         .inventory-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .variant-info { display: flex; flex-direction: column; }
-        .variant-name { font-weight: 700; font-size: 1.1rem; color: white; }
-        .variant-size { font-size: 0.75rem; color: var(--color-primary); text-transform: uppercase; font-weight: 600; }
-        
+        .variant-title-absolute { 
+          font-weight: 700; font-size: 1.1rem; color: #1a1611 !important; 
+        }
+        .variant-size { font-size: 0.75rem; color: var(--color-accent-dark) !important; text-transform: uppercase; font-weight: 800 !important; letter-spacing: 0.5px; }
         .status-indicator { font-size: 0.6rem; padding: 3px 8px; border-radius: 2px; font-weight: 700; letter-spacing: 1px; }
         .status-indicator.optimal { background: rgba(39, 174, 96, 0.15); color: #2ecc71; }
         .status-indicator.error { background: rgba(231, 76, 60, 0.15); color: #e74c3c; }
 
         .inventory-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .metric-glass { padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--color-border-alt); border-radius: 4px; }
-        .metric-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; }
-        .metric-value { font-weight: 700; font-size: 0.95rem; color: white; }
+        .metric-glass { padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: 4px; }
+        .metric-label { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--color-text-muted) !important; margin-bottom: 4px; font-weight: 800 !important; letter-spacing: 0.5px; }
+        .metric-value-direct { font-weight: 700; font-size: 1rem; }
 
         .inventory-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-border); }
         .supplier-tag { font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px; }
-        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; }
+        .btn-mini-action { background: none; border: none; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; transition: var(--transition); }
         .btn-mini-action:hover { color: var(--color-primary); }
 
         .movement-card { padding: 24px; display: flex; flex-direction: column; gap: 16px; border-left: 2px solid var(--color-border); }

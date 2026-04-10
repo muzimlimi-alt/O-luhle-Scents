@@ -988,3 +988,169 @@
   .legal-panel__title { font-size: 1.5rem; }
   .legal-contact-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   NEWSLETTER SECTION — O'luhle Circle Subscription
+   ============================================================ */
+
+.newsletter {
+  background: var(--color-dark);
+  text-align: center;
+  color: #fff;
+}
+
+.newsletter .section-label {
+  color: var(--color-gold-light);
+}
+
+.newsletter h2 {
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.newsletter > .container > .reveal > p {
+  color: rgba(255,255,255,0.55);
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+/* Form row */
+.newsletter__form {
+  display: flex;
+  gap: 0;
+  max-width: 520px;
+  margin: 32px auto 0;
+  border: 1px solid rgba(184, 155, 106, 0.35);
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.04);
+  transition: border-color 0.3s ease;
+}
+
+.newsletter__form:focus-within {
+  border-color: var(--color-gold);
+}
+
+.newsletter__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #fff;
+  padding: 15px 20px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 300;
+  outline: none;
+  min-width: 0;
+}
+
+.newsletter__input::placeholder {
+  color: rgba(255,255,255,0.35);
+}
+
+.newsletter__btn {
+  flex-shrink: 0;
+  background: var(--color-gold);
+  color: #fff;
+  border: none;
+  padding: 15px 28px;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.3s ease, opacity 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  position: relative;
+}
+
+.newsletter__btn:hover:not(:disabled) {
+  background: var(--color-gold-dark);
+}
+
+.newsletter__btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Button loading spinner */
+.newsletter__btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: nws-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes nws-spin { to { transform: rotate(360deg); } }
+
+/* Feedback message */
+.newsletter__feedback {
+  max-width: 520px;
+  margin: 14px auto 0;
+  padding: 12px 18px;
+  border-radius: 2px;
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.55;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: nws-fb-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes nws-fb-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.newsletter__feedback--success {
+  background: rgba(39, 174, 96, 0.15);
+  border: 1px solid rgba(39, 174, 96, 0.4);
+  color: #5ddf8e;
+}
+
+.newsletter__feedback--warning {
+  background: rgba(243, 156, 18, 0.12);
+  border: 1px solid rgba(243, 156, 18, 0.35);
+  color: #f5c55d;
+}
+
+.newsletter__feedback--error {
+  background: rgba(217, 83, 79, 0.12);
+  border: 1px solid rgba(217, 83, 79, 0.35);
+  color: #f17575;
+}
+
+.newsletter__feedback svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Mobile */
+@media (max-width: 560px) {
+  .newsletter__form {
+    flex-direction: column;
+    border-radius: 4px;
+  }
+
+  .newsletter__btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px;
+  }
+
+  .newsletter__input {
+    width: 100%;
+    text-align: center;
+    padding: 14px 16px;
+  }
+}
+

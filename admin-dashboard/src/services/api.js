@@ -152,4 +152,35 @@ export const adminOpsApi = {
   }
 };
 
+export const newsletterApi = {
+  subscribers: {
+    list: (params) => api.get('/newsletter/subscribers', { params }),
+    create: (data) => api.post('/newsletter/subscribers', data),
+    updateStatus: (id, status) => api.patch(`/newsletter/subscribers/${id}`, { status }),
+    delete: (id) => api.delete(`/newsletter/subscribers/${id}`),
+    bulkAction: (data) => api.post('/newsletter/subscribers/bulk', data),
+  },
+  campaigns: {
+    list: (params) => api.get('/newsletter/campaigns', { params }),
+    create: (data) => api.post('/newsletter/campaigns', data),
+    update: (id, data) => api.patch(`/newsletter/campaigns/${id}`, data),
+    delete: (id) => api.delete(`/newsletter/campaigns/${id}`),
+    send: (id) => api.post(`/newsletter/campaigns/${id}/send`),
+    uploadAttachment: (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return api.post('/newsletter/campaigns/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+    uploadImage: (file) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      return api.post('/newsletter/campaigns/image-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    }
+  }
+};
+
 export default api;

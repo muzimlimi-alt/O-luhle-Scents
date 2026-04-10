@@ -22,6 +22,7 @@ import { Settings } from './pages/Settings';
 import { Preferences } from './pages/Preferences';
 import { Config } from './pages/Config';
 import { Login } from './pages/Login';
+import { Newsletters } from './pages/Newsletters';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
 
@@ -84,6 +85,7 @@ function App() {
               <Route path="suppliers" element={<Suppliers />} />
               <Route path="purchases" element={<Purchases />} />
               <Route path="notifications" element={<Notifications />} />
+              <Route path="newsletters" element={<Newsletters />} />
               <Route path="admin-users" element={<AdminUsers />} />
               <Route path="audit-logs" element={<AuditLogs />} />
               <Route path="preferences" element={<Preferences />} />

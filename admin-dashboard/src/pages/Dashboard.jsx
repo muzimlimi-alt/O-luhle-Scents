@@ -143,7 +143,28 @@ export function Dashboard() {
         <div className="card">
           <h3 style={{ marginBottom: '20px' }}>Revenue Analytics</h3>
           <div style={{ height: '300px' }}>
-            <Bar data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+            <Bar 
+              data={chartData} 
+              options={{ 
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    grid: { color: 'rgba(184, 155, 106, 0.1)' },
+                    ticks: { color: '#5a5650' }
+                  },
+                  x: {
+                    grid: { display: false },
+                    ticks: { color: '#5a5650' }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    labels: { color: '#1a1611', font: { weight: '600' } }
+                  }
+                }
+              }} 
+            />
           </div>
         </div>
 

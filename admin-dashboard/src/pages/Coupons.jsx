@@ -105,8 +105,8 @@ export function Coupons() {
         .admin-form .form-group { margin-bottom: 16px; }
         .admin-form label { display: block; font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 6px; }
         .admin-form input, .admin-form select { 
-          width: 100%; padding: 10px; background: var(--color-bg-dark); border: 1px solid var(--color-border); 
-          border-radius: 8px; color: white; outline: none; 
+          width: 100%; padding: 10px; background: var(--color-surface); border: 1px solid var(--color-border); 
+          border-radius: 8px; color: var(--color-text); outline: none; 
         }
         .admin-form input:focus { border-color: var(--color-primary); }
       `}} />

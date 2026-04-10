@@ -126,20 +126,20 @@ export default function Payments() {
         }
 
         .search-glass-wrapper {
-          position: relative; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px;
+          position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px;
           padding: 10px 16px; display: flex; align-items: center; flex: 1;
         }
         .search-glass-input {
-          background: none; border: none; color: white; width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem;
+          background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem;
         }
 
         .filter-glass-matrix { display: flex; gap: 16px; }
         .select-glass-wrapper {
-          background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 4px;
+          background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px;
           padding: 8px 16px; display: flex; align-items: center; gap: 10px;
         }
         .select-glass-wrapper select {
-          background: none; border: none; color: white; outline: none; cursor: pointer; font-size: 0.85rem;
+          background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem;
         }
 
         .atelier-grid {
@@ -155,21 +155,21 @@ export default function Payments() {
 
         .status-indicator.paid { background: rgba(39, 174, 96, 0.15); color: #2ecc71; font-size: 0.6rem; padding: 3px 8px; border-radius: 2px; font-weight: 700; }
 
-        .payment-acquisition { padding: 16px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid var(--color-border-alt); }
+        .payment-acquisition { padding: 16px; background: var(--color-surface); border-radius: 4px; border: 1px solid var(--color-border-alt); }
         .acquisition-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; }
-        .acquisition-name { display: block; font-weight: 600; font-size: 1rem; }
+        .acquisition-name { display: block; font-weight: 600; font-size: 1rem; color: var(--color-text-header); }
         .acquisition-order { display: block; font-size: 0.75rem; color: var(--color-primary); font-family: var(--font-display); }
 
         .payment-valuation { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 0; border-bottom: 1px solid var(--color-border); }
         .block-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--color-text-muted); }
-        .block-value { font-size: 1.4rem; font-weight: 700; font-family: var(--font-display); color: white; }
+        .block-value { font-size: 1.4rem; font-weight: 700; font-family: var(--font-display); color: var(--color-text-header); }
         
         .method-block { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--color-text-muted); font-weight: 500; }
 
         .payment-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; }
         .footer-time { font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px; }
         
-        .btn-mini-action { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
+        .btn-mini-action { background: none; border: none; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
         .btn-mini-action:hover { color: var(--color-primary); }
 
         .elite-loading { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 100px 0; color: var(--color-text-muted); }

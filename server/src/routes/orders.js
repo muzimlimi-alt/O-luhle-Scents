@@ -3,10 +3,38 @@ import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
 import { buildSignature, buildPaymentPayload } from '../utils/payfast.js'
+import { sendNewsletterConfirmation } from '../utils/email.js'
 
 import { calculateShipping } from '../lib/shippingService.js'
 
 const router = Router()
+
+// ── Checkout newsletter opt-in helper ─────────────────────────────────────────
+// Called fire-and-forget after order response is sent. Never throws.
+async function handleCheckoutNewsletterOptIn(email) {
+  try {
+    const token   = crypto.randomBytes(32).toString('hex')
+    const expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
+
+    const sub = await prisma.subscriber.upsert({
+      where:  { email },
+      create: { email, status: 'active', source: 'checkout', unsubscribeToken: token, tokenExpiresAt: expires },
+      update: {
+        status: 'active',       // re-activate if previously unsubscribed
+        source: 'checkout',
+      },
+    })
+
+    // Only send a confirmation email to brand-new subscribers (their token === what we generated)
+    if (sub.unsubscribeToken === token) {
+      sendNewsletterConfirmation(email, token).catch(e =>
+        console.warn('[Newsletter/Checkout] Confirmation email failed:', e.message)
+      )
+    }
+  } catch (err) {
+    console.warn('[Newsletter/Checkout] Opt-in upsert failed:', err.message)
+  }
+}
 
 // GET /api/shipping/estimate
 router.get('/shipping/estimate', async (req, res, next) => {
@@ -20,7 +48,7 @@ router.get('/shipping/estimate', async (req, res, next) => {
 // POST /api/orders  — create order + return PayFast payment data
 router.post('/', async (req, res, next) => {
   try {
-    const { items, contact, shipping, shippingMethod } = req.body
+    const { items, contact, shipping, shippingMethod, newsletterOptIn } = req.body
 
     // 1. Basic validation
     if (!items?.length) return res.status(400).json({ error: 'Cart is empty' })
@@ -113,7 +141,15 @@ router.post('/', async (req, res, next) => {
     })
 
     res.status(201).json({ orderId: order.id, payfastUrl, payfastData })
+
+    // ── Newsletter opt-in (Instruction 3) ────────────────────────────────────
+    // Fire-and-forget: response already sent, so this never blocks or crashes it
+    if (newsletterOptIn && contact?.email) {
+      handleCheckoutNewsletterOptIn(contact.email.trim().toLowerCase())
+    }
+
   } catch (err) {
+
     if (err.status === 400) return res.status(400).json({ error: err.message })
     next(err)
   }

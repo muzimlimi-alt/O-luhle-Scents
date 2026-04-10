@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>O'luhle Scents — Luxury Fragrances</title>
+  <title>O'luhle Scents | Luxury Fragrances</title>
   <meta name="description" content="Discover the art of fine fragrance. O'luhle Scents offers premium extrait de parfum crafted for those who appreciate luxury.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
   <!-- Apply saved theme before first paint to prevent flash -->
   <script>(function(){try{var t=JSON.parse(localStorage.getItem('oluhle_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
-  <link rel="stylesheet" crossorigin href="/assets/index-TTwR8OII.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-CvPAgPL5.css">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
           <a href="index.html" class="active">Home</a>
           <a href="shop.html">Shop</a>
           <a href="shop.html?cat=premium">Collections</a>
+          <a href="guide.html">Guide</a>
           <a href="#about">About</a>
         </div>
       </div>
@@ -62,6 +63,9 @@
     <a href="shop.html">Shop All</a>
     <a href="shop.html?cat=premium">Premium Collection</a>
     <a href="shop.html?cat=signature">Signature Collection</a>
+    <a href="guide.html">Guide</a>
+    <a href="quotes.html">Professional</a>
+    <a href="track.html">Track Order</a>
     <a href="#about" onclick="toggleMobileMenu()">About Us</a>
     <a href="cart.html">Cart</a>
     <div class="mobile-menu__footer">
@@ -180,10 +184,9 @@
     <div class="container">
       <div class="brand-story__inner">
         <div class="brand-story__image reveal">
-          <div style="width:100%;height:100%;background:linear-gradient(135deg, #e8e0d4, #d4cbbf);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#b89b6a" stroke-width="1"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-            <span style="font-family:var(--font-display);color:#b89b6a;font-size:1.2rem;font-style:italic;">Officina Del Toca</span>
-          </div>
+          <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;">
+            <source src="/assets/Yugen_perfume_video_202604062340-C3jRQB0X-C3jRQB0X.mp4" type="video/mp4">
+          </video>
         </div>
         <div class="brand-story__text reveal">
           <p class="section-label">Our Story</p>
@@ -191,6 +194,7 @@
           <p>O'luhle Scents brings you an exclusive collection from Officina Del Toca — a house dedicated to the ancient art of perfumery. Each fragrance is an extrait de parfum, the purest and most concentrated form of perfume.</p>
           <p>Our collection spans from the bold and captivating Premium range to the vibrant Essentials, ensuring there is a scent for every personality and occasion. Every bottle is a work of art, designed to evoke emotion and leave a lasting impression.</p>
           <p>Based in South Africa, we are committed to making luxury accessible without compromise. From our meticulous sourcing to our elegant packaging, every detail reflects our passion for excellence.</p>
+          <a href="guide.html" class="btn btn--outline-dark mt-sm">Discover your Fragrance</a> 
           <a href="shop.html" class="btn btn--outline-dark mt-sm">Discover the Collection</a>
         </div>
       </div>
@@ -204,13 +208,25 @@
         <p class="section-label" style="color:var(--color-gold-light);">Stay Connected</p>
         <h2>Join the O'luhle Circle</h2>
         <p>Be the first to discover new arrivals, exclusive offers, and fragrance guides.</p>
-        <div class="newsletter__form">
-          <input type="email" class="newsletter__input" placeholder="Enter your email address">
-          <button class="newsletter__btn">Subscribe</button>
+        <div class="newsletter__form" id="newsletter-form">
+          <input
+            type="email"
+            id="newsletter-email"
+            class="newsletter__input"
+            placeholder="Enter your email address"
+            autocomplete="email"
+            aria-label="Email address for newsletter subscription"
+          >
+          <button class="newsletter__btn" id="newsletter-btn" aria-label="Subscribe to newsletter">
+            <span class="newsletter__btn-text">Subscribe</span>
+            <span class="newsletter__btn-spinner" aria-hidden="true" hidden></span>
+          </button>
         </div>
+        <div id="newsletter-feedback" class="newsletter__feedback" role="alert" aria-live="polite" hidden></div>
       </div>
     </div>
   </section>
+
 
   <!-- Footer -->
   <footer class="footer">
@@ -228,27 +244,27 @@
         <div class="reveal reveal-delay-1">
           <h4>Shop</h4>
           <div class="footer__links">
-            <a href="shop.html" aria-label="Shop all fragrances">All Fragrances</a>
-            <a href="shop.html?cat=premium" aria-label="Shop premium collection">Premium Collection</a>
-            <a href="shop.html?cat=signature" aria-label="Shop signature collection">Signature Collection</a>
-            <a href="shop.html?cat=essentials" aria-label="Shop essentials collection">Essentials</a>
+            <a href="shop.html" aria-label="Shop all fragrances">All Fragrances</a><br>
+            <a href="shop.html?cat=premium" aria-label="Shop premium collection">Premium Collection</a><br>
+            <a href="shop.html?cat=signature" aria-label="Shop signature collection">Signature Collection</a><br>
+            <a href="shop.html?cat=essentials" aria-label="Shop essentials collection">Essentials</a><br>
           </div>
         </div>
         <div class="reveal reveal-delay-2">
           <h4>Support</h4>
           <div class="footer__links">
-            <a href="support.html#shipping" aria-label="View shipping and delivery information">Shipping & Delivery</a>
-            <a href="support.html#returns" aria-label="View returns and exchanges policy">Returns & Exchanges</a>
-            <a href="support.html#faq" aria-label="Frequently asked questions">FAQ</a>
-            <a href="contact.html" aria-label="Contact us">Contact Us</a>
+            <a href="guide.html" aria-label="View Fragrance Guide">Fragrance Guide</a><br>
+            <a href="track.html" aria-label="Track Order">Track Order</a><br>
+            <a href="quotes.html" aria-label="Request A Quote">Request A Quote</a><br>
+            <a href="contact.html" aria-label="Contact us">Contact Us</a><br>
           </div>
         </div>
         <div class="reveal reveal-delay-3">
           <h4>Contact</h4>
           <div class="footer__links">
-            <a href="tel:0761112096" class="footer__contact-link" aria-label="Call us">076 111 2096</a>
-            <a href="mailto:info@oluhlescents.co.za" aria-label="Email us">info@oluhlescents.co.za</a>
-            <a href="#" style="pointer-events:none;">South Africa</a>
+            <a href="tel:0761112096" class="footer__contact-link" aria-label="Call us">076 111 2096</a><br>
+            <a href="mailto:info@oluhlescents.co.za" aria-label="Email us">info@oluhlescents.co.za</a><br>
+            <a href="#" style="pointer-events:none;">South Africa</a><br>
           </div>
         </div>
       </div>
@@ -294,5 +310,7 @@
   <script src="js/app.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
+  <script src="js/newsletter.js"></script>
 </body>
 </html>
+

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { Search, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import '../styles/design-tokens.css';
@@ -21,6 +22,7 @@ export function DashboardLayout() {
               <input type="text" placeholder="Global search..." />
            </div>
            
+           <ThemeToggle />
            <div className="user-profile-classic">
               <div className="user-info-text">
                  <p className="user-name">{user?.name || 'Administrator'}</p>
@@ -79,20 +81,29 @@ export function DashboardLayout() {
           display: flex;
           align-items: center;
           background: var(--color-surface);
-          border: 1px solid var(--color-border);
+          border: 1.5px solid var(--color-border);
           padding: 6px 12px;
           border-radius: 4px;
-          color: var(--color-text-muted);
+          color: var(--color-primary);
           width: 240px;
+          transition: var(--transition);
+        }
+        .search-bar-classic:focus-within {
+          border-color: var(--color-primary);
+          box-shadow: 0 0 10px rgba(184, 155, 106, 0.1);
         }
         .search-bar-classic input {
           background: none;
           border: none;
-          color: white;
+          color: var(--color-text-header);
           font-size: 0.85rem;
           margin-left: 10px;
           outline: none;
           width: 100%;
+        }
+        .search-bar-classic input::placeholder {
+          color: var(--color-text-muted);
+          opacity: 1; /* Ensure visibility in Light Mode */
         }
 
         .user-profile-classic {

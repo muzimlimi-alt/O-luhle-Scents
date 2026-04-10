@@ -28,7 +28,7 @@ export function AuditLogs() {
   const columns = [
     { key: 'adminUser', label: 'Admin User', render: (val) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <User size={12} color="var(--color-primary)" />
         </div>
         <div>
@@ -43,7 +43,7 @@ export function AuditLogs() {
       </div>
     )},
     { key: 'entity', label: 'Entity Type', render: (val) => (
-      <span style={{ fontSize: '0.7rem', padding: '2px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', border: '1px solid var(--color-border)', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: '0.7rem', padding: '2px 8px', background: 'var(--color-bg-card)', borderRadius: '2px', border: '1.5px solid var(--color-border)', textTransform: 'uppercase', color: 'var(--color-text-header)', fontWeight: 800, letterSpacing: '1px' }}>
         {val}
       </span>
     )},

@@ -16,7 +16,8 @@ import {
   UserCog, 
   ScrollText, 
   Settings, 
-  LogOut 
+  LogOut,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,6 +35,7 @@ const sidebarLinks = [
   { path: '/suppliers', label: 'Suppliers', icon: <Truck size={18} /> },
   { path: '/purchases', label: 'Purchases', icon: <PurchaseIcon size={18} /> },
   { path: '/admin-users', label: 'Admin Users', icon: <UserCog size={18} /> },
+  { path: '/newsletters', label: 'Newsletters', icon: <Mail size={18} /> },
   { path: '/audit-logs', label: 'Audit Logs', icon: <ScrollText size={18} /> },
   { path: '/config', label: 'System Config', icon: <Settings size={18} /> },
 ];
@@ -78,7 +80,7 @@ export function Sidebar() {
           font-size: 0.65rem;
           letter-spacing: 0.15em;
           text-transform: uppercase;
-          color: var(--color-text-muted);
+          color: var(--color-sidebar-header);
           margin: 0;
         }
         .nav-label {

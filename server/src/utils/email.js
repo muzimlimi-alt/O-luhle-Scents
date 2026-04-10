@@ -1,46 +1,60 @@
 /**
  * O'luhle Scents — Email Service
  *
- * Uses Resend (https://resend.com) — add your API key to .env:
- *   RESEND_API_KEY="re_xxxxxxxxxxxx"
+ * Uses Nodemailer — configure your .env with:
+ *   EMAIL_USER="you@gmail.com"
+ *   EMAIL_PASS="your_app_password"
  *   EMAIL_FROM="O'luhle Scents <orders@yourdomain.com>"
- *
- * Install: npm install resend  (inside server/)
- *
- * Emails are sent fire-and-forget; a send failure NEVER crashes the
- * calling route — it only logs a warning.
  */
 
-let resend = null
+import nodemailer from 'nodemailer'
 
-async function getResend() {
-  if (resend) return resend
-  if (!process.env.RESEND_API_KEY) return null
-  try {
-    const { Resend } = await import('resend')
-    resend = new Resend(process.env.RESEND_API_KEY)
-  } catch {
-    console.warn('[Email] Resend package not installed — run: npm install resend')
+let transporter = null
+
+function getTransporter() {
+  if (transporter) return transporter
+  
+  const user = process.env.EMAIL_USER
+  const pass = process.env.EMAIL_PASS
+
+  if (!user || !pass) {
+     console.warn('[Email] EMAIL_USER or EMAIL_PASS not set in .env. Emails will not be sent.')
+     return null
   }
-  return resend
+
+  transporter = nodemailer.createTransport({
+    service: 'gmail', // You can change this or define a custom SMTP host in .env
+    auth: {
+      user: user,
+      pass: pass,
+    },
+  })
+  
+  return transporter
 }
 
 const FROM = process.env.EMAIL_FROM || "O'luhle Scents <orders@oluhle.co.za>"
 
 // ── Safe send wrapper ─────────────────────────────────────────────────────────
 async function send({ to, subject, html }) {
-  const client = await getResend()
-  if (!client) {
-    console.warn('[Email] No RESEND_API_KEY — email not sent:', subject)
+  const mailer = getTransporter()
+  if (!mailer) {
+    console.warn('[Email] No mailer configured — email not sent:', subject)
     return
   }
   try {
-    await client.emails.send({ from: FROM, to, subject, html })
-    console.log(`[Email] Sent "${subject}" to ${to}`)
+    const info = await mailer.sendMail({
+      from: FROM,
+      to,
+      subject,
+      html
+    })
+    console.log(`[Email] Sent "${subject}" to ${to} (MessageId: ${info.messageId})`)
   } catch (err) {
     console.error('[Email] Send failed:', err.message)
   }
 }
+
 
 // ── Shared template shell ─────────────────────────────────────────────────────
 function emailShell(title, bodyHtml) {
@@ -213,5 +227,116 @@ export async function sendShippingUpdate(order) {
     to:      order.email,
     subject: `Your O'luhle Scents order has shipped ✦`,
     html:    emailShell(`Order Shipped — O'luhle Scents`, body),
+  })
+}
+
+// ── 3. Newsletter subscription confirmation ───────────────────────────────────
+// Sent immediately after a successful subscription (any source).
+// Contains the subscriber's personal unsubscribe link.
+export async function sendNewsletterConfirmation(email, unsubscribeToken) {
+  const BASE = process.env.SERVER_URL || 'http://localhost:3000'
+  const unsubUrl = `${BASE}/unsubscribe.html?token=${unsubscribeToken}`
+
+  const body = `
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="display:inline-block;width:56px;height:56px;background:#f7f3ee;border-radius:50%;line-height:56px;font-size:24px;">✦</div>
+    </div>
+
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:22px;margin:0 0 8px;text-align:center;letter-spacing:0.02em;">
+      Welcome to the O'luhle Circle
+    </h2>
+    <p style="color:#888;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;text-align:center;margin:0 0 28px;">
+      Extrait de Parfum — Exclusivity Awaits
+    </p>
+
+    <p style="color:#555;font-size:14px;line-height:1.8;margin:0 0 20px;">
+      Thank you for joining us. As a member of the O'luhle Circle, you'll be the first to know about
+      new fragrance releases, curated collections, and exclusive member-only offers.
+    </p>
+
+    <div style="background:#f7f3ee;border-left:3px solid #b89b6a;padding:20px 24px;border-radius:0 6px 6px 0;margin:24px 0;">
+      <p style="color:#444;font-size:14px;line-height:1.7;margin:0;">
+        <strong style="color:#1a1a1a;">What to expect:</strong><br>
+        New arrivals &nbsp;·&nbsp; Seasonal offers &nbsp;·&nbsp; Fragrance stories &nbsp;·&nbsp; Member early access
+      </p>
+    </div>
+
+    <p style="color:#555;font-size:14px;line-height:1.8;margin:24px 0 32px;">
+      In the meantime, explore our current collection and discover your perfect scent.
+    </p>
+
+    <div style="text-align:center;margin-bottom:32px;">
+      <a href="${BASE}/shop.html"
+         style="display:inline-block;background:#1a1a1a;color:#fff;text-decoration:none;
+                padding:14px 36px;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;
+                border-radius:2px;font-family:Georgia,serif;">
+        Explore the Collection
+      </a>
+    </div>
+
+    <div style="border-top:1px solid #e8e0d4;padding-top:20px;text-align:center;">
+      <p style="font-size:11px;color:#bbb;margin:0;line-height:1.7;">
+        You're receiving this because you subscribed at
+        <a href="${BASE}" style="color:#b89b6a;text-decoration:none;">oluhlescents.co.za</a>.<br>
+        Changed your mind?
+        <a href="${unsubUrl}"
+           style="color:#b89b6a;text-decoration:underline;font-size:11px;">
+          Unsubscribe from the O'luhle Circle
+        </a>
+      </p>
+    </div>`
+
+  await send({
+    to:      email,
+    subject: `Welcome to the O'luhle Circle ✦`,
+    html:    emailShell(`Welcome to the O'luhle Circle`, body),
+  })
+}
+
+// ── 4. Newsletter Campaign Broadcast ────────────────────────────────────────────
+// Sent during campaign broadcast. Contains custom HTML and attachments.
+export async function sendCampaignBroadcast(email, unsubscribeToken, campaign) {
+  const mailer = getTransporter()
+  if (!mailer) {
+    throw new Error('Nodemailer not configured')
+  }
+
+  const BASE = process.env.SERVER_URL || 'http://localhost:3000'
+  const unsubUrl = `${BASE}/unsubscribe.html?token=${unsubscribeToken}`
+  
+  // Format attachments for Nodemailer
+  let formattedAttachments = []
+  if (campaign.attachments && Array.isArray(campaign.attachments)) {
+    formattedAttachments = campaign.attachments.map(att => ({
+      filename: att.filename,
+      path: att.path,
+      contentType: att.mimetype
+    }))
+  }
+
+  const bodyInner = campaign.contentHtml || ''
+  
+  // Custom shell for broadcasts to include the unsubscribe link securely at the bottom
+  const body = `
+    ${bodyInner}
+    <div style="border-top:1px solid #e8e0d4;padding-top:20px;margin-top:40px;text-align:center;">
+      <p style="font-size:11px;color:#bbb;margin:0;line-height:1.7;">
+        You're receiving this because you subscribed at
+        <a href="${BASE}" style="color:#b89b6a;text-decoration:none;">oluhlescents.co.za</a>.<br>
+        Changed your mind?
+        <a href="${unsubUrl}"
+           style="color:#b89b6a;text-decoration:underline;font-size:11px;">
+          Unsubscribe from the O'luhle Circle
+        </a>
+      </p>
+    </div>
+  `
+
+  await mailer.sendMail({
+    from: FROM,
+    to: email,
+    subject: campaign.subject,
+    html: emailShell(campaign.subject, body),
+    attachments: formattedAttachments
   })
 }
