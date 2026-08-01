@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
 import { sendNewsletterConfirmation } from '../utils/email.js'
 import { requireAdmin } from '../middleware/auth.js'
+import { newsletterLimiter } from '../middleware/rateLimit.js'
 
 const router = Router()
 
@@ -25,7 +26,7 @@ function tokenExpiry() {
 // POST /api/newsletter/subscribe
 // Body: { email: string, source?: string, addedBy?: string }
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', newsletterLimiter, async (req, res) => {
   try {
     const rawEmail = req.body?.email
     const source   = req.body?.source || 'frontend'   // frontend | checkout | admin

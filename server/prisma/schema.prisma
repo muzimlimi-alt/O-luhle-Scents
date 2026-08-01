@@ -34,6 +34,8 @@ model AdminSession {
   expiresAt   DateTime? @map("expires_at")
   createdAt   DateTime  @default(now()) @map("created_at")
 
+  @@index([adminUserId])
+  @@index([expiresAt])
   @@map("admin_sessions")
 }
 
@@ -67,6 +69,8 @@ model Product {
   updatedAt   DateTime         @updatedAt @map("updated_at")
   variants    ProductVariant[]
 
+  @@index([categoryId, isActive])
+  @@index([isActive, createdAt])
   @@map("products")
 }
 
@@ -92,6 +96,7 @@ model ProductVariant {
   purchaseItems PurchaseItem[]
   quoteItems    QuoteItem[]
 
+  @@index([productId])
   @@map("product_variants")
 }
 
@@ -118,6 +123,8 @@ model InventoryLog {
   referenceId     String?        @map("reference_id") @db.Uuid // link to order/purchase
   createdAt       DateTime       @default(now()) @map("created_at")
 
+  @@index([variantId, createdAt])
+  @@index([referenceId])
   @@map("inventory_logs")
 }
 
@@ -151,6 +158,7 @@ model Address {
   updatedAt  DateTime @updatedAt @map("updated_at")
   orders     Order[]
 
+  @@index([customerId])
   @@map("addresses")
 }
 
@@ -186,6 +194,10 @@ model Order {
   invoices          Invoice[]
   abandonedEmailSent Boolean     @default(false) @map("abandoned_email_sent")
 
+  @@index([status, createdAt])
+  @@index([paymentStatus, createdAt])
+  @@index([customerId, createdAt])
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -199,6 +211,8 @@ model OrderItem {
   quantity        Int
   priceAtPurchase Decimal        @map("price_at_purchase") @db.Decimal(10, 2)
 
+  @@index([orderId])
+  @@index([variantId])
   @@map("order_items")
 }
 
@@ -209,11 +223,12 @@ model Payment {
   order                Order     @relation(fields: [orderId], references: [id])
   paymentMethod        String?   @map("payment_method") @db.VarChar(50)
   paymentStatus        String?   @map("payment_status") @db.VarChar(30)
-  transactionReference String?   @map("transaction_reference") @db.VarChar(150)
+  transactionReference String?   @unique @map("transaction_reference") @db.VarChar(150)
   amount               Decimal?  @db.Decimal(10, 2)
   paidAt               DateTime? @map("paid_at")
   createdAt            DateTime  @default(now()) @map("created_at")
 
+  @@index([orderId])
   @@map("payments")
 }
 
@@ -227,6 +242,7 @@ model Invoice {
   pdfUrl        String?  @map("pdf_url")
   createdAt     DateTime @default(now()) @map("created_at")
 
+  @@index([orderId])
   @@map("invoices")
 }
 
@@ -308,6 +324,9 @@ model AuditLog {
   details     Json?
   createdAt   DateTime   @default(now()) @map("created_at")
 
+  @@index([entity, entityId])
+  @@index([adminUserId, createdAt])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -354,6 +373,7 @@ model LogisticsEvent {
   location  String?  @db.VarChar(150)
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([orderId, createdAt])
   @@map("logistics_events")
 }
 
@@ -373,6 +393,8 @@ model Quote {
   items        QuoteItem[]
   order        Order?
 
+  @@index([customerId, status])
+  @@index([status, expiryDate])
   @@map("quotes")
 }
 
@@ -414,6 +436,7 @@ model Subscriber {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
+  @@index([status])
   @@map("subscribers")
 }
 

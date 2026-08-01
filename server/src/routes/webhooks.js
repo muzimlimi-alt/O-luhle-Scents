@@ -12,10 +12,14 @@ const router = Router()
 router.post('/payfast', async (req, res) => {
   try {
     const pfData = req.body
-    const pfIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+    // req.ip resolves correctly through the reverse proxy — see app.set('trust proxy', 1) in index.js
+    const pfIp = req.ip
 
-    // 1. Security check: IP range (Wait: proxy might change this, but good for production)
-    // if (!isPayfastIP(pfIp)) return res.status(403).send('Forbidden: Not a PayFast IP')
+    // 1. Security check: IP range
+    if (!isPayfastIP(pfIp)) {
+      console.error(`[ITN] Rejected: ${pfIp} is not a PayFast IP`)
+      return res.status(403).send('Forbidden: Not a PayFast IP')
+    }
 
     // 2. Verify signature
     const expectedSig = buildSignature(pfData, process.env.PAYFAST_PASSPHRASE || null, true)
@@ -34,11 +38,36 @@ router.post('/payfast', async (req, res) => {
     // 3. Process Success
     const orderId = pfData.m_payment_id
     if (pfData.payment_status === 'COMPLETE') {
+      // Reconcile paid amount against our own record before touching anything.
+      // The signature check proves the ITN wasn't tampered with; this catches
+      // PayFast-side discrepancies (partial payment, currency mismatch, wrong
+      // amount). Checked outside the transaction so the mismatch notification
+      // is never rolled back.
+      const orderForCheck = await prisma.order.findUnique({ where: { id: orderId } })
+      if (orderForCheck && orderForCheck.paymentStatus !== 'paid') {
+        const expected = Number(orderForCheck.totalAmount)
+        const received = Number(pfData.amount_gross)
+        // Number(undefined) is NaN, and every NaN comparison is false — a
+        // missing/malformed amount_gross would otherwise silently pass this
+        // check instead of failing it. Treat "can't parse the amount" as a
+        // mismatch, not a pass.
+        if (!Number.isFinite(received) || Math.abs(expected - received) > 0.01) {
+          console.error(`[ITN] Amount mismatch on order ${orderId}: expected ${expected}, received ${received}`)
+          await prisma.notification.create({
+            data: {
+              type: 'PAYMENT_MISMATCH',
+              message: `Order ${orderId}: expected R${expected.toFixed(2)}, PayFast reported R${received.toFixed(2)}.`
+            }
+          })
+          return res.status(400).send('Amount mismatch')
+        }
+      }
+
       await prisma.$transaction(async (tx) => {
         const order = await tx.order.findUnique({
           where: { id: orderId },
-          include: { 
-            items: { include: { variant: { include: { product: true } } } } 
+          include: {
+            items: { include: { variant: { include: { product: true } } } }
           }
         })
 

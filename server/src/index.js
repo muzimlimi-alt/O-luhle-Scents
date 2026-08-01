@@ -30,6 +30,16 @@ dotenv.config({ path: path.join(__dirname, '../.env') })
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Trust exactly one reverse-proxy hop (Azure App Service / nginx in front of
+// this process) so req.ip resolves the real client IP instead of the proxy's.
+// Only in production: with no real proxy in front (local dev, or this port
+// reachable directly), a raw client fully controls X-Forwarded-For, so
+// trusting it would let anyone spoof req.ip — including into PayFast's own
+// IP range, defeating the ITN IP allowlist in webhooks.js entirely.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1)
+}
+
 // Enforce UTF-8 encoding
 app.use((req, res, next) => {
   res.charset = 'utf-8';

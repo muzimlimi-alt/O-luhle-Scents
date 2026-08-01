@@ -68,10 +68,10 @@ router.post('/', async (req, res, next) => {
     let subtotal = 0
     const finalItems = items.map(cartItem => {
       const variant = variants.find(v => v.id === cartItem.variantId)
-      if (!variant) throw new Error('Variant not found')
+      if (!variant) throw Object.assign(new Error('Variant not found'), { status: 400 })
       
       // Stock check
-      if (variant.inventory.quantity < cartItem.quantity) {
+      if ((variant.inventory?.quantity || 0) < cartItem.quantity) {
         throw Object.assign(new Error(`Insufficent stock for ${variant.product.name}`), { status: 400 })
       }
 

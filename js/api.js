@@ -161,16 +161,6 @@ export async function login(email, password) {
   return data
 }
 
-export async function register(payload) {
-  const data = await apiFetch('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
-  setToken(data.token)
-  setUser(data.user)
-  return data
-}
-
 export function logout() {
   clearToken()
 }

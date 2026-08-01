@@ -2,41 +2,12 @@ import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '../lib/prisma.js'
+import { loginLimiter } from '../middleware/rateLimit.js'
 
 const router = Router()
 
-// POST /api/auth/register
-router.post('/register', async (req, res, next) => {
-  try {
-    const { email, password, firstName, lastName, phone } = req.body
-
-    if (!email || !password || !firstName || !lastName) {
-      return res.status(400).json({ error: 'email, password, firstName and lastName are required' })
-    }
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' })
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12)
-    const user = await prisma.user.create({
-      data: { email: email.toLowerCase().trim(), passwordHash, firstName, lastName, phone },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true },
-    })
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    )
-
-    res.status(201).json({ token, user })
-  } catch (err) {
-    next(err)
-  }
-})
-
 // POST /api/auth/login — Admin specifically
-router.post('/login', async (req, res, next) => {
+router.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body
     if (!email || !password) {
