@@ -24,7 +24,7 @@
   </div>
 
   <!-- Header -->
-  <header class="header has-announcement">
+  <header class="header has-announcement" data-hero-nav>
     <nav class="navbar">
       <div class="navbar__left">
         <div class="hamburger" aria-label="Menu">
@@ -79,6 +79,11 @@
 
   <!-- Hero Section -->
   <section class="hero">
+    <div class="hero__media">
+      <img class="hero__media-img" hidden alt="" loading="eager" fetchpriority="high" decoding="async">
+      <video class="hero__media-video" hidden muted loop playsinline preload="none" aria-hidden="true"></video>
+    </div>
+    <div class="hero__scrim"></div>
     <div class="hero__bg"></div>
     <div class="hero__particles"></div>
     <div class="hero__content">

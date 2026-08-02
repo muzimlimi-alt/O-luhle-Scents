@@ -1,8 +1,42 @@
 import { Router } from 'express'
+import multer from 'multer'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import fs from 'fs'
 import sanitizeHtml from 'sanitize-html'
 import prisma from '../lib/prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
 import configStore from '../lib/configStore.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const uploadDir = path.join(__dirname, '../../../images/site')
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const timestamp = Date.now()
+    const originalName = file.originalname.replace(/\s+/g, '_')
+    cb(null, `${timestamp}_${originalName}`)
+  }
+})
+
+// Hero background media can be a still image or a short video — both land
+// in the same field/endpoint, distinguished later by file extension.
+const upload = multer({
+  storage,
+  limits: { fileSize: 40 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp|mp4|webm|mov|quicktime/
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+    const mimetype = allowedTypes.test(file.mimetype)
+    if (extname && mimetype) return cb(null, true)
+    cb(new Error('Only images (jpg, png, webp) or videos (mp4, webm, mov) are allowed'))
+  }
+})
 
 const router = Router()
 
@@ -31,6 +65,17 @@ router.get('/public', async (req, res, next) => {
     const map = Object.fromEntries(rows.map(r => [r.key, r.value]))
     res.set('Cache-Control', 'public, max-age=60')
     res.json(map)
+  } catch (err) { next(err) }
+})
+
+// POST /api/admin/settings/upload-image — admin: upload a site-content image
+// or video (e.g. the hero background). Returns a public URL; the caller
+// still has to save it against a settings key via POST / like any other
+// content field.
+router.post('/upload-image', requireAdmin, upload.single('image'), (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image file provided' })
+    res.json({ url: `/images/site/${req.file.filename}` })
   } catch (err) { next(err) }
 })
 

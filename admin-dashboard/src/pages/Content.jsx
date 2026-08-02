@@ -9,6 +9,8 @@ import {
   AlertCircle,
   CheckCircle2,
   ExternalLink,
+  Upload,
+  X,
 } from 'lucide-react';
 
 // react-quill@2 still calls the legacy ReactDOM.findDOMNode, which React 19
@@ -33,6 +35,7 @@ export function Content() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [uploadingKey, setUploadingKey] = useState(null);
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -88,6 +91,20 @@ export function Content() {
     }
   };
 
+  const handleImageUpload = async (key, file) => {
+    if (!file) return;
+    setUploadingKey(key);
+    setMessage(null);
+    try {
+      const { url } = await settingsApi.uploadImage(file);
+      handleChange(key, url);
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Image upload failed: ' + err.message });
+    } finally {
+      setUploadingKey(null);
+    }
+  };
+
   const val = (key) => settings[key]?.value || '';
 
   const Field = ({ label, k, placeholder, warning }) => (
@@ -118,6 +135,47 @@ export function Content() {
       {warning && <div className="content-warning">{warning}</div>}
     </div>
   );
+
+  const isVideoUrl = (url) => /\.(mp4|webm|mov)(\?.*)?$/i.test(url || '');
+
+  const MediaField = ({ label, k, hint }) => {
+    const isUploading = uploadingKey === k;
+    const current = val(k);
+    return (
+      <div className="input-group">
+        <label className="input-label">{label}</label>
+        {current && (
+          <div className="image-preview">
+            {isVideoUrl(current) ? (
+              <video src={current} muted loop autoPlay playsInline />
+            ) : (
+              <img src={current} alt="" />
+            )}
+            <button
+              type="button"
+              className="image-preview__remove"
+              onClick={() => handleChange(k, '')}
+              aria-label={`Remove ${label}`}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+        <label className={`image-upload-btn${isUploading ? ' image-upload-btn--busy' : ''}`}>
+          {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+          {isUploading ? 'Uploading...' : current ? 'Replace Media' : 'Upload Image or Video'}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+            onChange={e => handleImageUpload(k, e.target.files[0])}
+            disabled={isUploading}
+            style={{ display: 'none' }}
+          />
+        </label>
+        {hint && <div className="content-warning">{hint}</div>}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -158,6 +216,11 @@ export function Content() {
         <div className="card content-card">
           <div className="card-header"><h3 className="card-title">Hero</h3></div>
           <div className="card-body">
+            <MediaField
+              label="Hero Background Media"
+              k="hero_media_url"
+              hint="Image or short video (a wide, moody shot works best — 2400×1350px or larger for photos, under ~15s for video). A dark gradient overlay is applied automatically so the hero text stays readable. Video autoplays muted and loops; visitors with reduced-motion enabled see a static frame instead. Leave empty to use the default dark gradient background."
+            />
             <Field label="Tagline" k="hero_tagline" />
             <Field label="Title" k="hero_title" />
             <Field label="Title (emphasis)" k="hero_title_em" />
@@ -290,6 +353,13 @@ export function Content() {
         .char-count { float: right; font-weight: 400; opacity: 0.6; }
         .char-count--over { opacity: 1; color: #e0554f; font-weight: 600; }
         .content-warning { display: flex; align-items: center; background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.15); padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; color: var(--color-text-muted); margin: 4px 0 12px; }
+        .image-preview { position: relative; margin-bottom: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-bg-alt, #1a1a1a); }
+        .image-preview img, .image-preview video { width: 100%; height: 160px; object-fit: cover; display: block; }
+        .image-preview__remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: #fff; border: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+        .image-preview__remove:hover { background: rgba(0,0,0,0.85); }
+        .image-upload-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px dashed var(--color-border); border-radius: 6px; font-size: 0.8rem; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s; }
+        .image-upload-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .image-upload-btn--busy { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
         .ql-editor { min-height: 160px; background: #fff; color: #1a1a1a; }
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

@@ -157,6 +157,30 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
   box-shadow: var(--shadow-sm);
 }
 
+/* Transparent-over-hero nav — only on pages that opt in via [data-hero-nav]
+   (currently just index.html), and only before .scrolled is toggled by the
+   IntersectionObserver in js/app.js once the hero scrolls out of view. */
+[data-hero-nav]:not(.scrolled) .navbar {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+
+[data-hero-nav]:not(.scrolled) .nav-links a,
+[data-hero-nav]:not(.scrolled) .navbar__logo,
+[data-hero-nav]:not(.scrolled) .nav-icon,
+[data-hero-nav]:not(.scrolled) .currency-selector {
+  color: #fff;
+}
+
+[data-hero-nav]:not(.scrolled) .navbar__logo em { color: var(--color-gold-light); }
+[data-hero-nav]:not(.scrolled) .nav-links a::after { background: var(--color-gold-light); }
+[data-hero-nav]:not(.scrolled) .nav-icon:hover { color: var(--color-gold-light); }
+[data-hero-nav]:not(.scrolled) .hamburger span { background: #fff; }
+[data-hero-nav]:not(.scrolled) .currency-select { border-bottom-color: rgba(255,255,255,0.3) !important; }
+
 .navbar__left,
 .navbar__right {
   display: flex;
@@ -338,6 +362,36 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
   padding-top: var(--header-height);
 }
 
+.hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hero__media-img,
+.hero__media-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.hero__media-img[hidden],
+.hero__media-video[hidden] { display: none; }
+
+/* Sits above the optional photo/video (or the plain gradient, when no media
+   is configured) and holds WCAG AA contrast for the hero text regardless of
+   how bright the uploaded media is. */
+.hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(8,7,6,0.62) 0%, rgba(8,7,6,0.42) 45%, rgba(8,7,6,0.72) 100%);
+  pointer-events: none;
+}
+
 .hero__bg {
   position: absolute;
   inset: 0;
@@ -456,6 +510,17 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
 @keyframes scrollPulse {
   0%, 100% { opacity: 0.4; transform: scaleY(0.6); }
   50% { opacity: 1; transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__tagline, .hero__title, .hero__subtitle, .hero__cta, .hero__scroll {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .hero__scroll-line { animation: none; }
+  .hero__particle { animation: none; opacity: 0; }
+  .navbar, .header { transition: none; }
 }
 
 /* --- Buttons --- */

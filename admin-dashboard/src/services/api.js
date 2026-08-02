@@ -89,6 +89,13 @@ export const quotesApi = {
 export const settingsApi = {
   list: () => api.get('/admin/settings'),
   update: (settings) => api.post('/admin/settings', { settings }),
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/admin/settings/upload-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 

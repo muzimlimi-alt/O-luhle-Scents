@@ -335,6 +335,31 @@ function initScrollReveal() {
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
+// Toggles `.header.scrolled` once the hero scrolls out from behind the fixed
+// nav — this is what flips the navbar from transparent-over-hero to the
+// existing ivory/blur surface. No-ops on pages without a `.hero` section
+// (or without the [data-hero-nav] opt-in), so it's safe to call from every
+// page's DOMContentLoaded. Uses an IntersectionObserver (matching the
+// .reveal pattern above) rather than a raw scroll listener: the hero itself
+// is observed with the root shrunk by the header's rendered height (which
+// already accounts for the announcement bar's push-down), so the callback
+// only fires once the hero has actually scrolled out from under the nav —
+// not on the first pixel of scroll.
+function initHeaderScrollState() {
+  const header = document.querySelector('.header[data-hero-nav]');
+  const hero = document.querySelector('.hero');
+  if (!header || !hero) return;
+
+  const headerBottom = Math.round(header.getBoundingClientRect().bottom) || 72;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      header.classList.toggle('scrolled', !entry.isIntersecting);
+    });
+  }, { rootMargin: `-${headerBottom}px 0px 0px 0px`, threshold: 0 });
+
+  observer.observe(hero);
+}
+
 async function handleCurrencyChange(e) {
   const newCurrency = e.target.value;
   currentCurrency = newCurrency;
@@ -418,6 +443,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     currencySelect.value = currentCurrency;
     currencySelect.addEventListener('change', handleCurrencyChange);
   }
+
+  initHeaderScrollState();
 
   // Initial load
   if (document.getElementById('shop-products')) {
