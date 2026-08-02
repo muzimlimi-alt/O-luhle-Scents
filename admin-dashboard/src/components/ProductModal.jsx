@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
 import { adminOpsApi } from '../services/api';
-import { Modal } from './Modal';
+import { Drawer } from './Drawer';
 
 const PRODUCT_FAMILIES = [
   { value: 'PERFUME', label: 'Perfume' },
@@ -366,7 +366,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
   const isEdit = !!product;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} raw>
+    <Drawer isOpen={isOpen} onClose={onClose} raw>
       <div className="elite-modal">
 
         {/* ── Visual Sidebar ── */}
@@ -875,12 +875,15 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
         <style>{`
           .elite-modal {
-            display: flex; width: 100%; max-width: 1100px; height: 100%; max-height: 820px;
+            display: flex; width: 1100px; max-width: 92vw; height: 100%;
             background: var(--color-bg-card);
-            border: 1px solid var(--color-border);
-            border-radius: 4px; overflow: hidden;
-            box-shadow: var(--shadow-lg);
-            animation: eliteSlideScale 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            border-left: 1px solid var(--color-border);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg, -8px 0 30px rgba(0,0,0,0.3));
+            animation: eliteDrawerSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .elite-modal { animation-duration: 0.01s; }
           }
 
           /* ── Sidebar ── */
@@ -1127,21 +1130,38 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           .elite-btn-modern-variant:hover { background: var(--color-primary-light); transform: translateY(-1px); }
 
           @keyframes eliteFadeIn { from { opacity: 0; } to { opacity: 1; } }
-          @keyframes eliteSlideScale { from { opacity: 0; transform: scale(0.96) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+          @keyframes eliteDrawerSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
           @keyframes eliteFadeSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
           @keyframes eliteSpin { to { transform: rotate(360deg); } }
 
           @media (max-width: 1024px) {
-            .elite-modal { flex-direction: column; max-height: 95vh; overflow-y: auto; }
+            .elite-modal { flex-direction: column; overflow-y: auto; width: 100vw; max-width: 100vw; }
             .elite-sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--color-border); }
             .elite-nav { flex-direction: row; overflow-x: auto; padding: 8px; }
             .elite-sidebar-top, .elite-sidebar-footer { display: none; }
             .variant-grid { grid-template-columns: 1fr 1fr; }
             .scent-architecture-container { grid-template-columns: 1fr; }
           }
+
+          @media (max-width: 640px) {
+            .elite-header { padding: 16px 20px; }
+            .elite-eyebrow { display: none; }
+            .elite-header-title h2 { font-size: 1.1rem; }
+            .elite-close-btn { width: 44px; height: 44px; }
+            .elite-scroll-area { padding: 16px; }
+            .elite-grid { grid-template-columns: 1fr; gap: 16px; }
+            .alt-supplier-add { grid-template-columns: 1fr; }
+            .alt-supplier-row { flex-wrap: wrap; row-gap: 6px; }
+            .variant-grid { grid-template-columns: 1fr; gap: 16px; }
+            .elite-variant-item { padding: 16px; }
+            .elite-actions { padding: 16px 20px; flex-direction: column-reverse; gap: 12px; }
+            .elite-btn-cancel { width: 100%; padding: 12px; text-align: center; }
+            .elite-btn-save { width: 100%; justify-content: center; padding: 14px 20px; }
+            .elite-nav-item { padding: 10px 14px; font-size: 0.68rem; white-space: nowrap; }
+          }
         `}</style>
       </div>
-    </Modal>
+    </Drawer>
   );
 };
 

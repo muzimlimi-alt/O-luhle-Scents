@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import {
   Truck,
   Plus,
@@ -137,7 +137,7 @@ export function Suppliers() {
         </div>
       )}
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Register Partner" maxWidth={480}>
+      <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title="Register Partner" width={480}>
         <form onSubmit={handleSubmit} className="elite-form">
           <div className="elite-input-group">
             <label className="elite-input-label">Company Nomenclature</label>
@@ -179,7 +179,7 @@ export function Suppliers() {
             <button type="button" className="elite-btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-suppliers-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }

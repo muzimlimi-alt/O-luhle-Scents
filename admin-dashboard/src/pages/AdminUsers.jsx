@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
 import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import {
   UserPlus, Shield, ShieldCheck, Edit2, Trash2, Key, Search, Filter,
   MoreVertical, X, Check, AlertCircle, RefreshCw, Lock, Unlock, UserCog
@@ -263,7 +264,7 @@ export function AdminUsers() {
       </div>
 
       {/* --- MODALS --- */}
-      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="New Principal" maxWidth={480}>
+      <Drawer isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="New Principal" width={480}>
         <form className="elite-form" onSubmit={handleCreate}>
           <div className="elite-input-group">
             <label className="elite-input-label">Full Nomenclature</label>
@@ -291,10 +292,10 @@ export function AdminUsers() {
             <button type="button" className="elite-btn-outline" onClick={() => setIsCreateOpen(false)}>Cancel</button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
-      {/* Edit Modal (Account Settings) */}
-      <Modal isOpen={isEditOpen && !!selectedUser} onClose={() => setIsEditOpen(false)} title="Account Settings" maxWidth={480}>
+      {/* Edit Drawer (Account Settings) */}
+      <Drawer isOpen={isEditOpen && !!selectedUser} onClose={() => setIsEditOpen(false)} title="Account Settings" width={480}>
         {selectedUser && (
           <form className="elite-form" onSubmit={handleUpdate}>
              <div className="elite-input-group">
@@ -322,10 +323,10 @@ export function AdminUsers() {
              </div>
           </form>
         )}
-      </Modal>
+      </Drawer>
 
-      {/* Password Reset Modal */}
-      <Modal isOpen={isPasswordOpen && !!selectedUser} onClose={() => setIsPasswordOpen(false)} title="Secure Credentials" maxWidth={480}>
+      {/* Password Reset Drawer */}
+      <Drawer isOpen={isPasswordOpen && !!selectedUser} onClose={() => setIsPasswordOpen(false)} title="Secure Credentials" width={480}>
         {selectedUser && (
           <form className="elite-form" onSubmit={handlePasswordReset}>
              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
@@ -346,9 +347,9 @@ export function AdminUsers() {
              </div>
           </form>
         )}
-      </Modal>
+      </Drawer>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal — stays centered: a destructive confirm needs to feel like a stop */}
       <Modal isOpen={isDeleteOpen && !!selectedUser} onClose={() => setIsDeleteOpen(false)} title="Revoke Authority" maxWidth={440}>
         {selectedUser && (
           <div className="elite-form">
@@ -433,6 +434,20 @@ export function AdminUsers() {
         .elite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
         .elite-btn-outline:hover { background: var(--color-border-light); }
+
+        @media (max-width: 900px) {
+          .atelier-discovery { flex-direction: column; align-items: stretch; }
+          .search-glass-wrapper { max-width: none; }
+          .filter-glass-matrix { flex-wrap: wrap; }
+          .select-glass-wrapper { flex: 1 1 160px; }
+        }
+        @media (max-width: 640px) {
+          .elite-governance-container { padding: 20px; }
+          .atelier-header { flex-direction: column; align-items: stretch; gap: 16px; margin-bottom: 32px; }
+          .elite-btn-plus { justify-content: center; }
+          .elite-pagination { flex-direction: column; gap: 12px; align-items: stretch; text-align: center; }
+          .pagination-controls { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        }
       `}} />
     </div>
   );

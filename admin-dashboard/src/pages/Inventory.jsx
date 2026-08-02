@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database, Landmark, PlusCircle, ArrowLeft } from 'lucide-react';
 import { DateTime } from 'luxon';
 
@@ -273,7 +273,7 @@ export function Inventory() {
         </div>
       )}
 
-      <Modal isOpen={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Stock" maxWidth={440}>
+      <Drawer isOpen={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Stock" width={440}>
         <p className="adjust-subtitle">{adjustTarget?.variant?.product?.name} ({adjustTarget?.variant?.size}) — currently {adjustTarget?.quantity} on hand</p>
 
         <form onSubmit={submitAdjust} className="elite-form">
@@ -321,7 +321,7 @@ export function Inventory() {
             <button type="button" className="elite-btn-outline" onClick={() => setAdjustTarget(null)}>Cancel</button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-inventory-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }

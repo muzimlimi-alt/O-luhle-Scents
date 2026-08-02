@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi, productsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
-import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import { ShoppingCart, Eye, Truck, Barcode, Plus, Trash2, PackageCheck, Sparkles } from 'lucide-react';
 
 const EMPTY_ITEM = { variantId: '', quantity: '1', costPrice: '' };
@@ -200,7 +200,7 @@ export function Purchases() {
         />
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="New Purchase Order" maxWidth={560}>
+      <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title="New Purchase Order" width={560}>
         <form onSubmit={handleSubmit} className="po-form">
           <div className="po-row">
             <div className="po-field">
@@ -242,7 +242,7 @@ export function Purchases() {
             </button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .suggested-reorders { margin-bottom: 24px; }

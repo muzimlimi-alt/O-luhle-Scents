@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { categoriesApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
-import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import { FolderTree, Plus, Edit2, Archive, CornerDownRight } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', description: '', parentId: '', displayOrder: '0' };
@@ -132,7 +132,7 @@ export function Categories() {
         />
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Category' : 'New Category'} maxWidth={480}>
+      <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Category' : 'New Category'} width={480}>
         <form onSubmit={handleSubmit} className="cat-form">
           <div className="cat-field">
             <label>Name</label>
@@ -160,7 +160,7 @@ export function Categories() {
             </button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .cat-form { display: flex; flex-direction: column; gap: 16px; }

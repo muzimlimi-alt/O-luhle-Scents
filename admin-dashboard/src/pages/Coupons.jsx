@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { Plus, Ticket, Calendar, Trash2 } from 'lucide-react';
-import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 
 export function Coupons() {
   const [coupons, setCoupons] = useState([]);
@@ -65,7 +65,7 @@ export function Coupons() {
 
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Coupon">
+      <Drawer isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Coupon" width={480}>
         <form className="admin-form">
           <div className="form-group">
             <label>Coupon Code *</label>
@@ -99,7 +99,7 @@ export function Coupons() {
             <button type="button" className="btn btn--outline" onClick={() => setIsModalOpen(false)}>Cancel</button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .admin-form .form-group { margin-bottom: 16px; }

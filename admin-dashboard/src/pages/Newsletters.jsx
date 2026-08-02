@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { newsletterApi } from '../services/api';
 import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import {
   Users, Mail, Plus, Search, Filter, Trash2,
   RefreshCw, CheckCircle, XCircle, Send, Paperclip, Edit2
@@ -441,6 +442,7 @@ export function Newsletters() {
             {subLoading ? (
                <div className="text-center" style={{ padding: '40px', color: 'var(--atelier-gold)' }}>Loading...</div>
             ) : (
+              <div className="table-responsive">
               <table className="matrix-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
@@ -478,12 +480,13 @@ export function Newsletters() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
-            <div className="atelier-pagination" style={{ marginTop: '20px', borderTop: '1px solid var(--atelier-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '20px' }}>
+            <div className="atelier-pagination" style={{ marginTop: '20px', borderTop: '1px solid var(--atelier-border)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '20px' }}>
               <div className="pagination-info" style={{ fontSize: '0.85rem', color: 'var(--atelier-text-muted)', fontFamily: 'var(--atelier-font-header)' }}>
                 Showing {subscribers.length} of {subTotal} Subscribers
               </div>
-              <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                 <button className="btn-pagination" disabled={subPage <= 1} onClick={() => setSubPage(subPage - 1)}>PREVIOUS</button>
                 <div className="page-summary" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--atelier-gold)', letterSpacing: '0.1em' }}>PAGE {subPage} OF {subTotalPages || 1}</div>
                 <button className="btn-pagination" disabled={subPage >= subTotalPages} onClick={() => setSubPage(subPage + 1)}>NEXT</button>
@@ -550,9 +553,9 @@ export function Newsletters() {
              ))}
            </div>
            
-          <div className="atelier-pagination" style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="atelier-pagination" style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
              <div className="pagination-info" style={{ color: 'var(--atelier-text-muted)', fontSize: '0.85rem' }}>Total: {campTotal} | Page {campPage} of {campTotalPages || 1}</div>
-             <div style={{ display: 'flex', gap: '10px' }}>
+             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                <button className="btn-pagination" disabled={campPage <= 1} onClick={() => setCampPage(campPage - 1)}>PREVIOUS</button>
                <button className="btn-pagination" disabled={campPage >= campTotalPages} onClick={() => setCampPage(campPage + 1)}>NEXT</button>
              </div>
@@ -561,7 +564,7 @@ export function Newsletters() {
       )}
 
       {/* SUBSCRIBER MODAL */}
-      <Modal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} title="Add Subscriber" maxWidth={400}>
+      <Drawer isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} title="Add Subscriber" width={440}>
         <form onSubmit={handleAddSubscriber}>
           <div className="form-group" style={{ marginBottom: '20px' }}>
             <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>EMAIL ADDRESS</label>
@@ -579,16 +582,16 @@ export function Newsletters() {
               {subError}
             </div>
           )}
-          <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <div className="modal-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button type="button" className="btn-pagination" onClick={() => setIsSubModalOpen(false)}>CANCEL</button>
             <button type="submit" className="btn-elite-primary">ADD SUBSCRIBER</button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
-      {/* CAMPAIGN MODAL — raw mode: Quill's own layout/toolbar don't fit the generic title/body chrome */}
-      <Modal isOpen={isCampModalOpen} onClose={() => setIsCampModalOpen(false)} raw>
-        <div className="campaign-modal-panel elite-glass" style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+      {/* CAMPAIGN DRAWER — raw mode: Quill's own layout/toolbar don't fit the generic title/body chrome */}
+      <Drawer isOpen={isCampModalOpen} onClose={() => setIsCampModalOpen(false)} raw>
+        <div className="campaign-modal-panel elite-glass">
           <h2 className="atelier-title" style={{ fontSize: '2rem', marginBottom: '24px' }}>
             {campForm.id ? 'Edit Campaign' : 'Compose Newsletters'}
           </h2>
@@ -649,7 +652,7 @@ export function Newsletters() {
             </label>
           </div>
 
-          <div className="modal-actions" style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', borderTop: '1px solid rgba(184,155,106,0.2)', paddingTop: '24px' }}>
+          <div className="modal-actions" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end', borderTop: '1px solid rgba(184,155,106,0.2)', paddingTop: '24px' }}>
             <button type="button" className="btn-pagination" onClick={() => setIsCampModalOpen(false)}>CLOSE</button>
             <button type="button" className="btn-pagination" style={{ color: 'var(--atelier-gold)' }} onClick={handleSaveCampaign} disabled={isSaving || isSending}>
               {isSaving ? 'SAVING...' : 'SAVE DRAFT'}
@@ -659,9 +662,9 @@ export function Newsletters() {
             </button>
           </div>
         </div>
-      </Modal>
+      </Drawer>
 
-      {/* CONFIRMATION MODAL */}
+      {/* CONFIRMATION MODAL — stays centered: a destructive confirm needs to feel like a stop */}
       <Modal isOpen={!!deleteConfirmTarget} onClose={() => setDeleteConfirmTarget(null)} title="Are you sure?" maxWidth={400}>
         {deleteConfirmTarget && (
           <div style={{ textAlign: 'center' }}>
@@ -669,7 +672,7 @@ export function Newsletters() {
             <p style={{ color: 'var(--atelier-text-muted)', fontSize: '0.9rem', marginBottom: '30px' }}>
               This action cannot be undone. This {deleteConfirmTarget.type} will be permanently deleted from the database.
             </p>
-            <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <div className="modal-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
               <button type="button" className="btn-pagination" onClick={() => setDeleteConfirmTarget(null)}>CANCEL</button>
               <button type="button" className="btn-elite-primary" style={{ background: 'var(--atelier-error)' }} onClick={confirmDelete}>YES, DELETE IT</button>
             </div>
@@ -737,7 +740,7 @@ export function Newsletters() {
         }
         .search-glass-input:focus { border-color: var(--color-primary); outline: none; }
         
-        .filter-group { display: flex; gap: 12px; }
+        .filter-group { display: flex; gap: 12px; flex-wrap: wrap; }
         .select-glass-wrapper { position: relative; display: flex; align-items: center; }
         .select-icon { position: absolute; left: 16px; color: var(--color-primary); pointer-events: none; opacity: 0.7; }
         .select-glass {
@@ -774,7 +777,15 @@ export function Newsletters() {
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
         .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
 
-        .campaign-modal-panel { padding: 40px; }
+        .campaign-modal-panel {
+          padding: 40px; width: 800px; max-width: 90vw; height: 100%;
+          overflow-y: auto; border-radius: 0; border-top: none; border-bottom: none; border-right: none;
+          animation: drawerSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes drawerSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @media (prefers-reduced-motion: reduce) {
+          .campaign-modal-panel { animation-duration: 0.01s; }
+        }
 
         .btn-pagination {
           background: transparent; border: 1px solid var(--atelier-border);
@@ -796,7 +807,7 @@ export function Newsletters() {
           .search-glass-container { max-width: none; }
           .tab-buttons { flex-wrap: wrap; }
           .atelier-grid { grid-template-columns: 1fr; }
-          .campaign-modal-panel { padding: 24px; }
+          .campaign-modal-panel { padding: 24px; width: 100vw; max-width: 100vw; }
         }
       `}} />
     </div>

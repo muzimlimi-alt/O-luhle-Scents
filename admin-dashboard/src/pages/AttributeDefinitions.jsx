@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import { SlidersHorizontal, Plus, Trash2, Layers } from 'lucide-react';
 
 const FAMILIES = ['PERFUME', 'CANDLE', 'HOME_FRAGRANCE', 'ACCESSORY', 'GIFT_SET'];
@@ -117,7 +117,7 @@ export function AttributeDefinitions() {
         </div>
       ))}
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="New Attribute" maxWidth={480}>
+      <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title="New Attribute" width={480}>
         <form onSubmit={handleSubmit} className="attr-form">
           <div className="attr-field">
             <label>Family</label>
@@ -161,7 +161,7 @@ export function AttributeDefinitions() {
             </button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .attr-list { display: flex; flex-direction: column; gap: 8px; }

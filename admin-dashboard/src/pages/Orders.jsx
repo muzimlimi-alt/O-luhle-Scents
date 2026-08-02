@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ordersApi, adminOpsApi } from '../services/api';
-import { Modal } from '../components/Modal';
+import { Drawer } from '../components/Drawer';
 import { ShoppingBag, Eye, User, Search, Truck, Filter, ChevronRight, Hash, Clock, Landmark, RotateCcw } from 'lucide-react';
 
 const COURIERS = [
@@ -225,7 +225,7 @@ export function Orders() {
         )}
       </div>
 
-      <Modal isOpen={showFulfillModal} onClose={() => setShowFulfillModal(false)} title="Logistics Dispatch" maxWidth={440}>
+      <Drawer isOpen={showFulfillModal} onClose={() => setShowFulfillModal(false)} title="Logistics Dispatch" width={440}>
         <form onSubmit={handleFulfill} className="elite-form">
            <div className="elite-input-group">
              <label className="elite-input-label">Select Logistics Courier</label>
@@ -258,9 +258,9 @@ export function Orders() {
              <button type="button" className="elite-btn-outline" onClick={() => setShowFulfillModal(false)}>Cancel</button>
            </div>
         </form>
-      </Modal>
+      </Drawer>
 
-      <Modal isOpen={!!returnOrder} onClose={() => setReturnOrder(null)} title="Process Return" maxWidth={560}>
+      <Drawer isOpen={!!returnOrder} onClose={() => setReturnOrder(null)} title="Process Return" width={560}>
         <p className="return-subtitle">{returnOrder && `Order #${returnOrder.id.substring(0, 8).toUpperCase()} — ${returnOrder.shippingAddress ? `${returnOrder.customer?.name || 'Guest'}` : ''}`}</p>
 
         <form onSubmit={handleSubmitReturns} className="elite-form">
@@ -306,7 +306,7 @@ export function Orders() {
             <button type="button" className="elite-btn-outline" onClick={() => setReturnOrder(null)}>Cancel</button>
           </div>
         </form>
-      </Modal>
+      </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-orders-container { 
@@ -407,7 +407,11 @@ export function Orders() {
         .return-line-fields { display: grid; grid-template-columns: 80px 1fr 1fr; gap: 10px; }
         .return-line-fields input, .return-line-fields select {
           background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
-          padding: 8px 10px; color: var(--color-text); font-size: 0.8rem;
+          padding: 8px 10px; color: var(--color-text); font-size: 0.8rem; min-width: 0; width: 100%;
+        }
+        @media (max-width: 480px) {
+          .return-line-fields { grid-template-columns: 1fr; }
+          .return-line-header { flex-direction: column; align-items: flex-start; gap: 4px; }
         }
         .return-fulfilled { font-size: 0.75rem; color: var(--color-text-muted); font-style: italic; margin: 0; }
         

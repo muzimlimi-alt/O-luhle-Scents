@@ -2,25 +2,17 @@ import React, { useEffect, useRef, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
-
-// Every open Modal instance registers itself here so ESC/Tab only ever
-// act on the top-most one, and scroll-lock/inert only lift when the
-// last one closes (two modals can be mounted briefly during a swap).
-let modalStack = [];
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-function prefersReducedMotion() {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
+import { FOCUSABLE_SELECTOR, pushOverlay, popOverlay, isTopOverlay, prefersReducedMotion } from './overlayStack';
 
 /**
- * Shared accessible dialog. Two modes:
+ * Centered, focus-locked dialog — reserved for destructive confirmations
+ * and anything that needs to feel like a stop rather than a workspace.
+ * For create/edit forms, use the Drawer component instead.
+ *
+ * Two modes:
  *  - default (pass `title`): standard title/body chrome.
  *  - raw (pass `raw`): renders `children` as-is inside the a11y wrapper,
- *    for consumers with their own internal layout (e.g. ProductModal's
- *    tabbed editor) that shouldn't be forced into the generic chrome.
+ *    for consumers with their own internal layout.
  */
 export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth = 600 }) {
   const id = useId();
@@ -30,16 +22,7 @@ export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth 
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    modalStack.push(id);
-    if (modalStack.length === 1) {
-      document.body.style.overflow = 'hidden';
-      const root = document.getElementById('root');
-      if (root) {
-        root.setAttribute('inert', '');
-        root.setAttribute('aria-hidden', 'true');
-      }
-    }
-
+    pushOverlay(id);
     triggerRef.current = document.activeElement;
     const raf = requestAnimationFrame(() => {
       const el = panelRef.current?.querySelector(FOCUSABLE_SELECTOR);
@@ -47,7 +30,7 @@ export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth 
     });
 
     const handleKeyDown = (e) => {
-      if (modalStack[modalStack.length - 1] !== id) return; // not the top-most modal
+      if (!isTopOverlay(id)) return;
 
       if (e.key === 'Escape') {
         e.stopPropagation();
@@ -75,16 +58,7 @@ export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth 
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener('keydown', handleKeyDown, true);
-      modalStack = modalStack.filter((x) => x !== id);
-
-      if (modalStack.length === 0) {
-        document.body.style.overflow = 'auto';
-        const root = document.getElementById('root');
-        if (root) {
-          root.removeAttribute('inert');
-          root.removeAttribute('aria-hidden');
-        }
-      }
+      popOverlay(id);
       triggerRef.current?.focus?.();
     };
   }, [isOpen, id, onClose]);
@@ -154,16 +128,24 @@ export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth 
             width: 100%; box-shadow: var(--shadow-md); max-height: 90vh; overflow-y: auto;
           }
           .modal-header {
-            padding: 24px; border-bottom: 1px solid var(--color-border);
-            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 24px; border-bottom: 1px solid var(--color-border);
+            display: flex; justify-content: space-between; align-items: center; gap: 16px;
           }
-          .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--color-primary); }
+          .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--color-primary); word-break: break-word; }
           .modal-close {
             background: none; border: none; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s;
+            width: 44px; height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin: -10px;
           }
           .modal-close:hover { color: var(--color-error-text); }
-          .modal-body { padding: 24px; }
+          .modal-body { padding: 24px; -webkit-overflow-scrolling: touch; }
           [inert] { pointer-events: none; }
+          @media (max-width: 480px) {
+            .modal-overlay { padding: 12px; }
+            .modal-header { padding: 16px; }
+            .modal-body { padding: 16px; }
+            .modal-title { font-size: 1.1rem; }
+          }
         `}} />
       </div>
     </AnimatePresence>
