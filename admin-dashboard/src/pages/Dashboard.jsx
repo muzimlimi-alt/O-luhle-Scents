@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { metricsApi } from '../services/api';
-import { 
-  Users, 
-  ShoppingCart, 
-  Wallet, 
+import {
+  Users,
+  ShoppingCart,
+  Wallet,
   AlertTriangle,
   TrendingUp,
   Zap,
-  Mail
+  Mail,
+  Package,
+  Ban
 } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import { 
@@ -28,6 +30,8 @@ export function Dashboard() {
     orders: 0,
     customers: 0,
     lowStock: 0,
+    outOfStock: 0,
+    stockValue: 0,
     recentOrders: [],
     predictions: [],
     abandoned: []
@@ -50,6 +54,8 @@ export function Dashboard() {
             orders: metrics.orders || 0,
             customers: metrics.customers || 0,
             lowStock: metrics.lowStock || 0,
+            outOfStock: metrics.outOfStock || 0,
+            stockValue: metrics.stockValue || 0,
             recentOrders: metrics.recentOrders || [],
             predictions: predictions || [],
             abandoned: abandoned || []
@@ -134,12 +140,34 @@ export function Dashboard() {
             </div>
           </div>
           <h3 className="kpi-value" style={{ color: data.lowStock > 0 ? 'var(--color-error-text)' : '' }}>{data.lowStock}</h3>
-          <p className="kpi-subtext">{data.lowStock > 0 ? 'Stock < 5 units' : 'Inventory healthy'}</p>
+          <p className="kpi-subtext">{data.lowStock > 0 ? 'At or below reorder level' : 'Inventory healthy'}</p>
+        </div>
+
+        <div className="kpi-card" style={{ borderColor: data.outOfStock > 0 ? 'rgba(192, 57, 43, 0.4)' : '' }}>
+          <div className="kpi-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <span className="kpi-label">Out of Stock</span>
+            <div className="kpi-icon-wrap icon--stock">
+              <Ban size={20} />
+            </div>
+          </div>
+          <h3 className="kpi-value" style={{ color: data.outOfStock > 0 ? 'var(--color-error-text)' : '' }}>{data.outOfStock}</h3>
+          <p className="kpi-subtext">Available stock at zero</p>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <span className="kpi-label">Stock Value</span>
+            <div className="kpi-icon-wrap icon--revenue">
+              <Package size={20} />
+            </div>
+          </div>
+          <h3 className="kpi-value">R{data.stockValue.toLocaleString()}</h3>
+          <p className="kpi-subtext">On-hand units at cost price</p>
         </div>
       </div>
 
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '24px' }}>
+      <div className="dashboard-charts-grid">
         <div className="card">
           <h3 style={{ marginBottom: '20px' }}>Revenue Analytics</h3>
           <div style={{ height: '300px' }}>
@@ -222,6 +250,13 @@ export function Dashboard() {
            {data.abandoned.length === 0 && <p style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)' }}>No abandoned carts found.</p>}
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .dashboard-charts-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; margin-bottom: 24px; }
+        @media (max-width: 900px) {
+          .dashboard-charts-grid { grid-template-columns: 1fr; }
+        }
+      `}} />
     </div>
   );
 }

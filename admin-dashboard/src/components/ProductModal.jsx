@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Plus, Trash2, GripVertical, AlertCircle, Loader2,
-  Upload, Sparkles, Camera, ImagePlus, Settings, 
-  Package, DollarSign, Info, Eye, EyeOff, Layout
+  Upload, Sparkles, Camera, ImagePlus, Settings,
+  Package, DollarSign, Info, Layout, Boxes, Truck
 } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
+import { adminOpsApi } from '../services/api';
+
+const PRODUCT_FAMILIES = [
+  { value: 'PERFUME', label: 'Perfume' },
+  { value: 'CANDLE', label: 'Candle' },
+  { value: 'HOME_FRAGRANCE', label: 'Home Fragrance' },
+  { value: 'ACCESSORY', label: 'Accessory' },
+  { value: 'GIFT_SET', label: 'Gift Set' },
+];
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
 
@@ -14,7 +23,8 @@ const EMPTY_FORM = {
   categoryId: '',
   supplierId: '',
   description: '',
-  isActive: true,
+  status: 'ACTIVE',
+  family: 'PERFUME',
   cardBadge: '',
   type: 'Extrait de Parfum',
   oilConcentration: '±20–40%',
@@ -44,16 +54,17 @@ const AROMATIC_NOTES = [
   "Violet", "Warm Vanilla", "White Jasmine", "White Lotus"
 ].sort();
 
-const EMPTY_VARIANT = { 
-  size: '50ml', 
-  price: '', 
-  costPrice: '', 
-  quantity: '0', 
-  sku: '', 
+const EMPTY_VARIANT = {
+  size: '50ml',
+  price: '',
+  costPrice: '',
+  quantity: '0',
+  sku: '',
   barcode: '',
   uom: 'ml',
   volume: '50',
-  lowStockThreshold: '5' 
+  weightGrams: '',
+  lowStockThreshold: '5'
 };
 
 const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppliers = [], onSave }) => {
@@ -66,6 +77,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
+  // PIM: family-driven attributes (e.g. Candle -> Wax Type) and alternative suppliers
+  const [attributeDefs, setAttributeDefs] = useState([]);
+  const [attributeValues, setAttributeValues] = useState({}); // { [definitionId]: value }
+  const [altSuppliers, setAltSuppliers] = useState([]);
+  const [newAltSupplier, setNewAltSupplier] = useState({ supplierId: '', supplierSku: '', leadTimeDays: '', minOrderQty: '' });
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -76,9 +93,9 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         categoryId: (product.category && typeof product.category === 'object') ? product.category.id : (product.categoryId || ''),
         supplierId: product.supplierId || '',
         description: product.description || '',
-        isActive: product.isActive !== false,
+        status: product.status || 'ACTIVE',
+        family: product.family || 'PERFUME',
         cardBadge: product.cardBadge || '',
-        collection: product.collection || 'Signature',
         type: product.type || 'Extrait de Parfum',
         oilConcentration: product.oilConcentration || '',
         longevity: product.longevity || '',
@@ -87,6 +104,13 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         topNotes: safeParseNotes(product.topNotes),
         heartNotes: safeParseNotes(product.heartNotes),
         baseNotes: safeParseNotes(product.baseNotes)
+      });
+
+      // Media library records (alt text) are keyed by filename so they can be
+      // merged onto the legacy images array without changing how it's stored.
+      const mediaByFilename = {};
+      (product.media || []).forEach(pm => {
+        mediaByFilename[pm.media.storageKey] = { mediaId: pm.mediaId, altText: pm.media.altText || '' };
       });
 
       let existing = [];
@@ -100,7 +124,9 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
               id: name,
               url: `${API_ORIGIN}/images/products/${name}`,
               existing: true,
-              name
+              name,
+              mediaId: mediaByFilename[name]?.mediaId || null,
+              altText: mediaByFilename[name]?.altText || ''
             }));
           }
         }
@@ -119,9 +145,16 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         barcode: v.barcode || '',
         uom: v.uom || 'ml',
         volume: v.volume?.toString() || '',
+        weightGrams: v.weightGrams?.toString() || '',
         lowStockThreshold: v.inventory?.lowStockThreshold?.toString() ?? '5'
       })) || [];
       setVariants(vars.length > 0 ? vars : [{ ...EMPTY_VARIANT }]);
+
+      const existingAttrs = {};
+      (product.attributeValues || []).forEach(av => { existingAttrs[av.definitionId] = av.value; });
+      setAttributeValues(existingAttrs);
+
+      adminOpsApi.productSuppliers.list(product.id).then(setAltSuppliers).catch(() => setAltSuppliers([]));
     } else {
       setFormData({
         ...EMPTY_FORM,
@@ -129,11 +162,46 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
       });
       setImages([]);
       setVariants([{ ...EMPTY_VARIANT }]);
+      setAttributeValues({});
+      setAltSuppliers([]);
     }
 
     setError(null);
     setActiveTab('details');
   }, [product, isOpen, categories]);
+
+  // Load the attribute set for whichever family is currently selected —
+  // re-fetches whenever the admin switches Perfume <-> Candle etc.
+  useEffect(() => {
+    if (!isOpen) return;
+    adminOpsApi.attributeDefinitions.list(formData.family)
+      .then(setAttributeDefs)
+      .catch(() => setAttributeDefs([]));
+  }, [isOpen, formData.family]);
+
+  const setAttributeValue = (definitionId, value) => {
+    setAttributeValues(prev => ({ ...prev, [definitionId]: value }));
+  };
+
+  const addAltSupplier = async () => {
+    if (!newAltSupplier.supplierId || !product?.id) return;
+    try {
+      const created = await adminOpsApi.productSuppliers.create(product.id, newAltSupplier);
+      setAltSuppliers(prev => [...prev, created]);
+      setNewAltSupplier({ supplierId: '', supplierSku: '', leadTimeDays: '', minOrderQty: '' });
+    } catch (err) {
+      alert('Failed to add supplier: ' + err.message);
+    }
+  };
+
+  const removeAltSupplier = async (id) => {
+    try {
+      await adminOpsApi.productSuppliers.delete(id);
+      setAltSuppliers(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      alert('Failed to remove supplier: ' + err.message);
+    }
+  };
 
   const addFiles = (files) => {
     const newImages = Array.from(files).map(file => ({
@@ -157,6 +225,19 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
   const removeImage = (id) => {
     setImages(prev => prev.filter(img => img.id !== id));
+  };
+
+  const updateAltText = (img, value) => {
+    setImages(prev => prev.map(i => i.id === img.id ? { ...i, altText: value } : i));
+  };
+
+  const saveAltText = async (img) => {
+    if (!img.mediaId) return; // brand-new, unsaved images have no MediaAsset yet
+    try {
+      await adminOpsApi.media.updateAltText(img.mediaId, img.altText);
+    } catch (err) {
+      console.warn('Failed to save alt text:', err.message);
+    }
   };
 
   const addVariant = () => setVariants(prev => [...prev, { ...EMPTY_VARIANT }]);
@@ -270,6 +351,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
       }));
 
       data.append('variants', JSON.stringify(sanitizedVariants));
+      data.append('attributes', JSON.stringify(attributeValues));
 
       await onSave(data, product?.id);
       onClose();
@@ -299,8 +381,8 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
               )}
             </div>
             <div className="elite-status-badge">
-              <span className={`status-dot ${formData.isActive ? 'active' : ''}`} />
-              {formData.isActive ? 'Live on Boutique' : 'Store Hidden'}
+              <span className={`status-dot ${formData.status === 'ACTIVE' ? 'active' : ''}`} />
+              {formData.status === 'ACTIVE' ? 'Live on Boutique' : formData.status === 'DRAFT' ? 'Draft' : 'Archived'}
             </div>
           </div>
 
@@ -415,22 +497,61 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
                     <div className="field-group">
                       <label>Visibility Status</label>
-                      <div className="elite-status-toggle" onClick={() => set('isActive', !formData.isActive)}>
-                        {formData.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
-                        <span>{formData.isActive ? 'Public Display' : 'Archive / Draft'}</span>
-                        <div className={`elite-switch ${formData.isActive ? 'active' : ''}`} />
-                      </div>
+                      <select value={formData.status} onChange={e => set('status', e.target.value)}>
+                        <option value="ACTIVE">Active — Public Display</option>
+                        <option value="DRAFT">Draft — Not Yet Published</option>
+                        <option value="ARCHIVED">Archived — Hidden</option>
+                      </select>
+                    </div>
+
+                    <div className="field-group">
+                      <label>Product Family</label>
+                      <select value={formData.family} onChange={e => set('family', e.target.value)}>
+                        {PRODUCT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                      </select>
                     </div>
 
                     <div className="field-group span-full">
                       <label>Description (Optional)</label>
-                      <textarea 
+                      <textarea
                         rows={3}
-                        value={formData.description} 
+                        value={formData.description}
                         onChange={e => set('description', e.target.value)}
                         placeholder="Describe the sensory notes and inspiration behind this creation..."
                       />
                     </div>
+
+                    {isEdit && (
+                      <div className="field-group span-full">
+                        <div className="elite-section-divider" style={{ margin: '8px 0 4px' }}>
+                          <Truck size={14} /> <span>Alternative Suppliers</span>
+                        </div>
+                        <div className="alt-supplier-list">
+                          {altSuppliers.map(s => (
+                            <div key={s.id} className="alt-supplier-row">
+                              <span className="alt-supplier-name">{s.supplier?.name}</span>
+                              {s.supplierSku && <span className="alt-supplier-meta">SKU: {s.supplierSku}</span>}
+                              {s.leadTimeDays != null && <span className="alt-supplier-meta">{s.leadTimeDays}d lead</span>}
+                              {s.minOrderQty != null && <span className="alt-supplier-meta">MOQ {s.minOrderQty}</span>}
+                              <button type="button" className="alt-supplier-remove" onClick={() => removeAltSupplier(s.id)}><Trash2 size={12} /></button>
+                            </div>
+                          ))}
+                          {altSuppliers.length === 0 && <p className="alt-supplier-empty">No alternative suppliers linked yet.</p>}
+                        </div>
+                        <div className="alt-supplier-add">
+                          <select value={newAltSupplier.supplierId} onChange={e => setNewAltSupplier(s => ({ ...s, supplierId: e.target.value }))}>
+                            <option value="">Add supplier...</option>
+                            {suppliers.filter(sup => sup.id !== formData.supplierId).map(sup => (
+                              <option key={sup.id} value={sup.id}>{sup.name}</option>
+                            ))}
+                          </select>
+                          <input type="text" placeholder="Supplier SKU" value={newAltSupplier.supplierSku} onChange={e => setNewAltSupplier(s => ({ ...s, supplierSku: e.target.value }))} />
+                          <input type="number" placeholder="Lead days" value={newAltSupplier.leadTimeDays} onChange={e => setNewAltSupplier(s => ({ ...s, leadTimeDays: e.target.value }))} />
+                          <input type="number" placeholder="MOQ" value={newAltSupplier.minOrderQty} onChange={e => setNewAltSupplier(s => ({ ...s, minOrderQty: e.target.value }))} />
+                          <button type="button" className="elite-btn-modern-variant" onClick={addAltSupplier}><Plus size={14} /></button>
+                        </div>
+                      </div>
+                    )}
 
                   </div>
                 </div>
@@ -438,6 +559,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
               {activeTab === 'classification' && (
                 <div className="elite-fade-in section-classification">
+                  {formData.family === 'PERFUME' ? (
                   <div className="elite-grid">
                     <div className="elite-section-divider span-full" style={{ marginTop: 0 }}>
                       <Sparkles size={14} /> <span>Artisan Classification</span>
@@ -460,7 +582,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                     <div className="field-group">
                       <label>Longevity Profile (Auto)</label>
                       <input type="text" value={formData.longevity} readOnly className="read-only" />
-                    </div>
+                    </div><br></br>
 
                     <div className="elite-section-divider span-full">
                       <Layout size={14} /> <span>Sensory & Aromatic Architecture</span>
@@ -548,6 +670,54 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                     </div>
 
                   </div>
+                  ) : (
+                    <div className="elite-grid">
+                      <div className="elite-section-divider span-full" style={{ marginTop: 0 }}>
+                        <Boxes size={14} /> <span>{PRODUCT_FAMILIES.find(f => f.value === formData.family)?.label} Attributes</span>
+                      </div>
+
+                      <div className="field-group">
+                        <label>Category Hub</label>
+                        <select value={formData.categoryId} onChange={e => set('categoryId', e.target.value)} required>
+                          <option value="">Select Category...</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {attributeDefs.filter(d => !d.appliesToVariant).map(def => (
+                        <div className="field-group" key={def.id}>
+                          <label>{def.label}{def.unit ? ` (${def.unit})` : ''}</label>
+                          {def.dataType === 'ENUM' ? (
+                            <select value={attributeValues[def.id] || ''} onChange={e => setAttributeValue(def.id, e.target.value)}>
+                              <option value="">Select...</option>
+                              {(def.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                          ) : def.dataType === 'BOOLEAN' ? (
+                            <select value={attributeValues[def.id] || 'false'} onChange={e => setAttributeValue(def.id, e.target.value)}>
+                              <option value="false">No</option>
+                              <option value="true">Yes</option>
+                            </select>
+                          ) : (
+                            <input
+                              type={def.dataType === 'NUMBER' ? 'number' : 'text'}
+                              value={attributeValues[def.id] || ''}
+                              onChange={e => setAttributeValue(def.id, e.target.value)}
+                            />
+                          )}
+                        </div>
+                      ))}
+
+                      {attributeDefs.filter(d => !d.appliesToVariant).length === 0 && (
+                        <div className="field-group span-full">
+                          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                            No attributes defined for this family yet. Add some under Admin → Attributes.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -579,15 +749,29 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                       handle=".drag-trigger"
                     >
                       {images.map((img, i) => (
-                        <div key={img.id} className="elite-asset-card">
-                          {i === 0 && <span className="primary-tag">PRIMARY</span>}
-                          <img src={img.url} alt="Product" />
-                          <div className="asset-overlay">
-                            <div className="drag-trigger"><GripVertical size={14} /></div>
-                            <button type="button" onClick={() => removeImage(img.id)} className="asset-del">
-                              <Trash2 size={14} />
-                            </button>
+                        <div key={img.id} className="elite-asset-item">
+                          <div className="elite-asset-card">
+                            {i === 0 && <span className="primary-tag">PRIMARY</span>}
+                            <img src={img.url} alt={img.altText || 'Product'} />
+                            <div className="asset-overlay">
+                              <div className="drag-trigger"><GripVertical size={14} /></div>
+                              <button type="button" onClick={() => removeImage(img.id)} className="asset-del">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
+                          {img.mediaId ? (
+                            <input
+                              type="text"
+                              className="asset-alt-input"
+                              placeholder="Alt text (for accessibility & SEO)"
+                              value={img.altText || ''}
+                              onChange={e => updateAltText(img, e.target.value)}
+                              onBlur={() => saveAltText(img)}
+                            />
+                          ) : (
+                            <span className="asset-alt-pending">Save to add alt text</span>
+                          )}
                         </div>
                       ))}
                       <button type="button" className="elite-add-asset" onClick={() => fileInputRef.current?.click()}>
@@ -662,6 +846,10 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                           <div className="field">
                             <label>Low Stock Alert</label>
                             <input type="number" value={v.lowStockThreshold} onChange={e => updateVariant(i, 'lowStockThreshold', e.target.value)} placeholder="5" />
+                          </div>
+                          <div className="field">
+                            <label>Weight (g)</label>
+                            <input type="number" value={v.weightGrams} onChange={e => updateVariant(i, 'weightGrams', e.target.value)} placeholder="150" />
                           </div>
                         </div>
                       </div>
@@ -764,6 +952,19 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           .field-group select option { background: var(--color-bg-card); color: var(--color-text); font-size: 0.85rem; }
           .field-group input.read-only { background: var(--color-surface); border-color: var(--color-border-light); cursor: not-allowed; color: var(--color-text-muted); }
 
+          .alt-supplier-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+          .alt-supplier-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: 2px; font-size: 0.78rem; }
+          .alt-supplier-name { font-weight: 600; flex-shrink: 0; }
+          .alt-supplier-meta { color: var(--color-text-muted); font-size: 0.72rem; }
+          .alt-supplier-remove { margin-left: auto; background: none; border: none; color: var(--color-text-muted); cursor: pointer; }
+          .alt-supplier-remove:hover { color: var(--color-error); }
+          .alt-supplier-empty { font-size: 0.78rem; color: var(--color-text-muted); font-style: italic; }
+          .alt-supplier-add { display: grid; grid-template-columns: 2fr 1fr 90px 90px 40px; gap: 8px; }
+          .alt-supplier-add select, .alt-supplier-add input {
+            background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 2px;
+            padding: 8px 10px; color: var(--color-text); font-size: 0.78rem;
+          }
+
           .aromatic-notes-section { margin-top: 24px; display: flex; flex-direction: column; gap: 32px; }
           .note-group { display: flex; flex-direction: column; gap: 12px; }
           .checkbox-grid { 
@@ -826,7 +1027,15 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           .elite-asset-header p { font-size: 0.72rem; color: var(--color-text-muted); margin: 4px 0 0; }
           
           .elite-uploader { padding: 4px; }
-          .elite-image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+          .elite-image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; align-items: start; }
+          .elite-asset-item { display: flex; flex-direction: column; gap: 6px; }
+          .asset-alt-input {
+            width: 100%; font-size: 0.65rem; padding: 5px 8px; background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: 2px; color: var(--color-text); outline: none;
+          }
+          .asset-alt-input:focus { border-color: var(--color-primary); }
+          .asset-alt-pending { font-size: 0.6rem; color: var(--color-text-muted); font-style: italic; text-align: center; }
+          .elite-add-asset { align-self: start; }
           .elite-asset-card {
             position: relative; aspect-ratio: 1; border-radius: 2px; border: 1px solid var(--color-border);
             background: var(--color-bg-dark); overflow: hidden;

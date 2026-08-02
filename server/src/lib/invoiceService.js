@@ -61,9 +61,11 @@ export async function generateInvoice(orderId) {
     let y = tableTop + 30
     order.items.forEach((item, index) => {
       doc.fillColor('#000').font('Helvetica').fontSize(10)
-      const desc = `${item.variant?.product?.name || 'Product'} - Extrait`
+      // Snapshot preferred — a renamed/deleted product must never rewrite
+      // what a historical invoice was actually for.
+      const desc = item.productNameSnapshot || item.variant?.product?.name || 'Product'
       doc.text(desc, 60, y)
-      doc.text(item.variant?.size || '-', 250, y)
+      doc.text(item.variantLabelSnapshot || item.variant?.size || '-', 250, y)
       doc.text(item.quantity.toString(), 350, y)
       doc.text(`R${Number(item.priceAtPurchase).toLocaleString()}`, 420, y)
       doc.text(`R${(Number(item.priceAtPurchase) * item.quantity).toLocaleString()}`, 500, y)

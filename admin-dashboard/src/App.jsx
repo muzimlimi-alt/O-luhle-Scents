@@ -4,6 +4,8 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
 import { Products } from './pages/Products';
+import { Categories } from './pages/Categories';
+import { AttributeDefinitions } from './pages/AttributeDefinitions';
 import { Inventory } from './pages/Inventory';
 import { Orders } from './pages/Orders';
 import Customers from './pages/Customers';
@@ -21,6 +23,7 @@ import Notifications from './pages/Notifications';
 import { Settings } from './pages/Settings';
 import { Preferences } from './pages/Preferences';
 import { Config } from './pages/Config';
+import { Content } from './pages/Content';
 import { Login } from './pages/Login';
 import { Newsletters } from './pages/Newsletters';
 import { AuthProvider } from './context/AuthProvider';
@@ -73,6 +76,8 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="products" element={<Products />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="attributes" element={<AttributeDefinitions />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="orders" element={<Orders />} />
               <Route path="payments" element={<Payments />} />
@@ -89,6 +94,7 @@ function App() {
               <Route path="admin-users" element={<AdminUsers />} />
               <Route path="audit-logs" element={<AuditLogs />} />
               <Route path="preferences" element={<Preferences />} />
+              <Route path="content" element={<Content />} />
               <Route path="config" element={<Config />} />
             </Route>
             

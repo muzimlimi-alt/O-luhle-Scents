@@ -26,6 +26,25 @@ export function Products() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
+  // Top-level categories first, each followed by its children — mirrors the
+  // hierarchy set up in Admin -> Categories without needing a tree widget here.
+  const orderedCategories = (() => {
+    const byParent = {};
+    categories.forEach(c => {
+      const key = c.parentId || 'root';
+      (byParent[key] = byParent[key] || []).push(c);
+    });
+    const rows = [];
+    const walk = (parentKey, depth) => {
+      (byParent[parentKey] || []).forEach(c => {
+        rows.push({ ...c, depth });
+        walk(c.id, depth + 1);
+      });
+    };
+    walk('root', 0);
+    return rows;
+  })();
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
@@ -154,7 +173,8 @@ export function Products() {
              >
                 <option value="all">ALL PORTFOLIO</option>
                 <option value="active">LIVE PRODUCTS</option>
-                <option value="inactive">ARCHIVED</option>
+                <option value="draft">DRAFT</option>
+                <option value="archived">ARCHIVED</option>
              </select>
           </div>
 
@@ -167,8 +187,8 @@ export function Products() {
                onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
              >
                 <option value="all">ALL CATEGORIES</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name?.toUpperCase()}</option>
+                {orderedCategories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{'—'.repeat(cat.depth)} {cat.name?.toUpperCase()}</option>
                 ))}
              </select>
           </div>
@@ -206,13 +226,17 @@ export function Products() {
                     {/* CARD HEADER: STATUS & BRAND */}
                     <div className="card-top">
                       <div className="status-indicator">
-                        {product.isActive !== false ? (
-                          <span className="badge-status active">
-                            <Eye size={12} /> LIVE
+                        {product.status === 'DRAFT' ? (
+                          <span className="badge-status draft">
+                            <EyeOff size={12} /> DRAFT
                           </span>
-                        ) : (
+                        ) : product.status === 'ARCHIVED' ? (
                           <span className="badge-status archived">
                             <EyeOff size={12} /> ARCHIVED
+                          </span>
+                        ) : (
+                          <span className="badge-status active">
+                            <Eye size={12} /> LIVE
                           </span>
                         )}
                       </div>
@@ -255,10 +279,10 @@ export function Products() {
                         <div className="product-identity">
                           <span className="brand-eyebrow">{product.brand || "O'luhle Scents"}</span>
                           <h3 className="product-name">{product.name}</h3>
-                          {product.tags && (
+                          {product.tags?.length > 0 && (
                             <div className="tag-cloud">
-                              {product.tags.split(',').map((tag, idx) => (
-                                <span key={idx} className="atelier-tag">{tag.trim()}</span>
+                              {product.tags.map((tag, idx) => (
+                                <span key={idx} className="atelier-tag">{tag}</span>
                               ))}
                             </div>
                           )}
@@ -442,11 +466,20 @@ export function Products() {
 
         /* GALLERY GRID */
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); gap: 30px; }
+        /* Grid items default to min-width:auto too — same shrink-to-content
+           trap as flex items. Without this, a 1fr track still renders at
+           the card's full intrinsic content width instead of the track size. */
+        .atelier-card-wrapper { min-width: 0; }
         @media (max-width: 1400px) { .atelier-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 768px) { 
+        @media (max-width: 768px) {
           .elite-products-container { padding: 20px; }
           .card-content-layout { flex-direction: column; align-items: center; }
           .card-visual-sidebar { width: 100%; max-width: 300px; }
+          /* Flex items default to min-width:auto, which refuses to shrink
+             below the variant table's natural content width even though
+             .matrix-scroll has overflow-x:auto — that's what was pushing
+             the whole card (and page) wider than the viewport. */
+          .card-main-body { width: 100%; min-width: 0; }
           .atelier-pagination { flex-direction: column; gap: 20px; text-align: center; }
           .atelier-title { font-size: 2rem; }
         }
@@ -473,6 +506,7 @@ export function Products() {
           padding: 4px 10px; border-radius: 4px;
         }
         .badge-status.active { color: var(--atelier-success); background: rgba(39, 174, 96, 0.1); }
+        .badge-status.draft { color: #e6a23c; background: rgba(230, 162, 60, 0.1); }
         .badge-status.archived { color: var(--atelier-text-muted); background: rgba(255,255,255,0.05); }
 
         .btn-mini-action {

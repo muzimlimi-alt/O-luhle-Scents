@@ -178,8 +178,8 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="settings-container" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '32px' }}>
-        <aside className="settings-tabs" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div className="settings-container">
+        <aside className="settings-tabs">
           {CONFIG_TABS.map(tab => (
             <button
               key={tab.id}
@@ -205,6 +205,13 @@ export function Settings() {
       <style dangerouslySetInnerHTML={{ __html: `
         .settings-input:focus { border-color: var(--color-primary) !important; outline: none; box-shadow: 0 0 0 2px rgba(212,175,55,0.2); }
         .btn--success { background-color: #22c55e !important; border-color: #22c55e !important; }
+        .settings-container { display: grid; grid-template-columns: 240px 1fr; gap: 32px; }
+        .settings-tabs { display: flex; flex-direction: column; gap: 8px; }
+        @media (max-width: 900px) {
+          .settings-container { grid-template-columns: 1fr; }
+          .settings-tabs { flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 4px; }
+          .settings-tabs .nav-link { flex-shrink: 0; }
+        }
       `}} />
     </div>
   );

@@ -8,28 +8,39 @@
  */
 
 import nodemailer from 'nodemailer'
+import configStore from '../lib/configStore.js'
 
 let transporter = null
+let transporterKey = null
 
-function getTransporter() {
-  if (transporter) return transporter
-  
-  const user = process.env.EMAIL_USER
-  const pass = process.env.EMAIL_PASS
+async function getTransporter() {
+  const user = await configStore.get('EMAIL_USER')
+  const pass = await configStore.get('EMAIL_PASS')
+  const host = await configStore.get('EMAIL_HOST')
+  const port = await configStore.get('EMAIL_PORT')
 
   if (!user || !pass) {
-     console.warn('[Email] EMAIL_USER or EMAIL_PASS not set in .env. Emails will not be sent.')
+     console.warn('[Email] EMAIL_USER or EMAIL_PASS not configured. Emails will not be sent.')
      return null
   }
 
-  transporter = nodemailer.createTransport({
-    service: 'gmail', // You can change this or define a custom SMTP host in .env
-    auth: {
-      user: user,
-      pass: pass,
-    },
-  })
-  
+  // Rebuild the transporter if the credentials changed since the last cache.
+  const key = `${host}:${port}:${user}:${pass}`
+  if (transporter && transporterKey === key) return transporter
+
+  transporter = host
+    ? nodemailer.createTransport({
+        host,
+        port: Number(port) || 587,
+        secure: Number(port) === 465,
+        auth: { user, pass },
+      })
+    : nodemailer.createTransport({
+        service: 'gmail', // Default provider when no custom EMAIL_HOST is configured
+        auth: { user, pass },
+      })
+  transporterKey = key
+
   return transporter
 }
 
@@ -37,7 +48,7 @@ const FROM = process.env.EMAIL_FROM || "O'luhle Scents <orders@oluhle.co.za>"
 
 // ── Safe send wrapper ─────────────────────────────────────────────────────────
 async function send({ to, subject, html }) {
-  const mailer = getTransporter()
+  const mailer = await getTransporter()
   if (!mailer) {
     console.warn('[Email] No mailer configured — email not sent:', subject)
     return
@@ -296,7 +307,7 @@ export async function sendNewsletterConfirmation(email, unsubscribeToken) {
 // ── 4. Newsletter Campaign Broadcast ────────────────────────────────────────────
 // Sent during campaign broadcast. Contains custom HTML and attachments.
 export async function sendCampaignBroadcast(email, unsubscribeToken, campaign) {
-  const mailer = getTransporter()
+  const mailer = await getTransporter()
   if (!mailer) {
     throw new Error('Nodemailer not configured')
   }

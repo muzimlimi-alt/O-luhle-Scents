@@ -21,6 +21,7 @@ model AdminUser {
   sessions     AdminSession[]
   auditLogs    AuditLog[]
   newsletterCampaigns NewsletterCampaign[]
+  returnItems  ReturnItem[]
 
   @@map("admin_users")
 }
@@ -40,6 +41,23 @@ model AdminSession {
 }
 
 // ── 3. PRODUCTS ─────────────────────────────────────────────────────────────
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+// PIM Phase 1: which attribute set a product belongs to. Drives which
+// AttributeDefinition rows apply once the family-aware admin UI (Phase 2)
+// exists. Existing catalogue defaults to PERFUME so nothing changes today.
+enum ProductFamily {
+  PERFUME
+  CANDLE
+  HOME_FRAGRANCE
+  ACCESSORY
+  GIFT_SET
+}
+
 model Product {
   id          String           @id @default(uuid()) @db.Uuid
   name        String           @db.VarChar(150)
@@ -47,7 +65,7 @@ model Product {
   description String?
   category    Category?        @relation(fields: [categoryId], references: [id])
   categoryId  String?          @map("category_id") @db.Uuid
-  isActive    Boolean          @default(true) @map("is_active")
+  status      ProductStatus    @default(ACTIVE)
   images       String?          // JSON array of filenames
   primaryImage String?         @map("primary_image")
   cardBadge    String?         @map("card_badge") @db.VarChar(50)
@@ -64,14 +82,146 @@ model Product {
   heartNotes      String?         @map("heart_notes") @db.Text
   baseNotes       String?         @map("base_notes") @db.Text
 
+  // ── PIM Phase 1: identity, taxonomy & SEO ──────────────────────────────────
+  internalName    String?        @map("internal_name") @db.VarChar(150)
+  slug            String?        @unique @db.VarChar(180)
+  brandId         String?        @map("brand_id") @db.Uuid
+  brandRef        Brand?         @relation(fields: [brandId], references: [id])
+  family          ProductFamily  @default(PERFUME)
+  tags            String[]       @default([])
+  launchDate      DateTime?      @map("launch_date")
+  retirementDate  DateTime?      @map("retirement_date")
+
+  shortDescription     String?   @map("short_description")
+  marketingDescription String?   @map("marketing_description")
+  ingredients          String?
+  usageInstructions    String?   @map("usage_instructions")
+  safetyWarnings       String?   @map("safety_warnings")
+  careInstructions     String?   @map("care_instructions")
+
+  metaTitle       String?        @map("meta_title") @db.VarChar(70)
+  metaDescription String?        @map("meta_description") @db.VarChar(180)
+
+  attributeValues ProductAttributeValue[]
+  alternativeSuppliers ProductSupplier[]
+  media ProductMedia[]
+
   supplier    Supplier?        @relation(fields: [supplierId], references: [id])
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
   variants    ProductVariant[]
 
-  @@index([categoryId, isActive])
-  @@index([isActive, createdAt])
+  @@index([categoryId, status])
+  @@index([status, createdAt])
+  @@index([brandId])
+  @@index([family])
   @@map("products")
+}
+
+// ── 3b. BRANDS ───────────────────────────────────────────────────────────────
+// First-class brand entity. Product.brand (free text) is left untouched for
+// backward compatibility; brandId/brandRef is the new authoritative link,
+// backfilled from the distinct existing brand strings — see phase-1 backfill.
+model Brand {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique @db.VarChar(100)
+  slug        String    @unique @db.VarChar(120)
+  description String?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  products    Product[]
+
+  @@map("brands")
+}
+
+// ── 3c. ATTRIBUTE DEFINITIONS ─────────────────────────────────────────────────
+// PIM Phase 1 ships the schema only — empty, unused by the existing perfume
+// catalogue. Phase 2 introduces the admin UI and the CANDLE attribute set.
+model AttributeDefinition {
+  id               String   @id @default(uuid()) @db.Uuid
+  key              String   @unique @db.VarChar(60)
+  label            String   @db.VarChar(120)
+  family           ProductFamily
+  dataType         String   @db.VarChar(20) // TEXT | NUMBER | ENUM | BOOLEAN
+  unit             String?  @db.VarChar(20)
+  options          Json?
+  appliesToVariant Boolean  @default(false) @map("applies_to_variant")
+  isFilterable     Boolean  @default(false) @map("is_filterable")
+  displayOrder     Int      @default(0) @map("display_order")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  productValues ProductAttributeValue[]
+  variantValues VariantAttributeValue[]
+
+  @@index([family])
+  @@map("attribute_definitions")
+}
+
+model ProductAttributeValue {
+  id           String              @id @default(uuid()) @db.Uuid
+  productId    String              @map("product_id") @db.Uuid
+  product      Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  definitionId String              @map("definition_id") @db.Uuid
+  definition   AttributeDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  value        String
+
+  @@unique([productId, definitionId])
+  @@index([definitionId, value])
+  @@map("product_attribute_values")
+}
+
+model VariantAttributeValue {
+  id           String              @id @default(uuid()) @db.Uuid
+  variantId    String              @map("variant_id") @db.Uuid
+  variant      ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  definitionId String              @map("definition_id") @db.Uuid
+  definition   AttributeDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  value        String
+
+  @@unique([variantId, definitionId])
+  @@map("variant_attribute_values")
+}
+
+// ── MEDIA LIBRARY ─────────────────────────────────────────────────────────────
+// Additive: mirrors Product.images/primaryImage rather than replacing them,
+// so the storefront and existing admin gallery keep working unchanged.
+// The concrete new capability this adds is structured metadata — alt text —
+// which a bare JSON filename array can never carry.
+model MediaAsset {
+  id         String   @id @default(uuid()) @db.Uuid
+  filename   String   @db.VarChar(255)
+  storageKey String   @unique @map("storage_key") @db.VarChar(500)
+  mimeType   String?  @map("mime_type") @db.VarChar(100)
+  mediaType  String   @default("IMAGE") @map("media_type") @db.VarChar(20) // IMAGE | VIDEO | DOCUMENT | CERTIFICATE
+  sizeBytes  Int?     @map("size_bytes")
+  width      Int?
+  height     Int?
+  altText    String?  @map("alt_text") @db.VarChar(255)
+  provider   String   @default("local") @db.VarChar(30) // local | azure_blob
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  productMedia ProductMedia[]
+
+  @@map("media_assets")
+}
+
+model ProductMedia {
+  id        String         @id @default(uuid()) @db.Uuid
+  productId String         @map("product_id") @db.Uuid
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   String         @map("media_id") @db.Uuid
+  media     MediaAsset     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  variantId String?        @map("variant_id") @db.Uuid
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  role      String         @default("GALLERY") @db.VarChar(20) // GALLERY | LIFESTYLE | 360 | THUMBNAIL
+  sortOrder Int            @default(0) @map("sort_order")
+  isPrimary Boolean        @default(false) @map("is_primary")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@unique([productId, mediaId])
+  @@index([productId, sortOrder])
+  @@map("product_media")
 }
 
 // ── 4. PRODUCT_VARIANTS ──────────────────────────────────────────────────────
@@ -88,6 +238,7 @@ model ProductVariant {
   // NEW: Logistical Fields
   uom           String         @default("ml") @db.VarChar(20)
   volume        Int            @default(0)
+  weightGrams   Int?           @map("weight_grams")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   inventory     Inventory?
@@ -95,6 +246,9 @@ model ProductVariant {
   orderItems    OrderItem[]
   purchaseItems PurchaseItem[]
   quoteItems    QuoteItem[]
+  reservations  InventoryReservation[]
+  attributeValues VariantAttributeValue[]
+  media ProductMedia[]
 
   @@index([productId])
   @@map("product_variants")
@@ -106,10 +260,33 @@ model Inventory {
   variantId          String         @unique @map("variant_id") @db.Uuid
   variant            ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   quantity           Int            @default(0)
+  reserved           Int            @default(0)
   lowStockThreshold  Int            @default(5) @map("low_stock_threshold")
   updatedAt          DateTime       @updatedAt @map("updated_at")
 
   @@map("inventory")
+}
+
+// ── 5b. INVENTORY_RESERVATIONS ────────────────────────────────────────────────
+// A hold placed on stock between order creation and payment confirmation.
+// Prevents the oversell race: quantity is only decremented on payment; until
+// then, `reserved` narrows what other checkouts see as available.
+model InventoryReservation {
+  id         String         @id @default(uuid()) @db.Uuid
+  variantId  String         @map("variant_id") @db.Uuid
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  orderId    String         @map("order_id") @db.Uuid
+  order      Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quantity   Int
+  expiresAt  DateTime       @map("expires_at")
+  consumedAt DateTime?      @map("consumed_at")
+  releasedAt DateTime?      @map("released_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  @@index([variantId])
+  @@index([orderId])
+  @@index([expiresAt, consumedAt, releasedAt])
+  @@map("inventory_reservations")
 }
 
 // ── 6. INVENTORY_LOGS ────────────────────────────────────────────────────────
@@ -192,6 +369,7 @@ model Order {
   items             OrderItem[]
   payments          Payment[]
   invoices          Invoice[]
+  reservations      InventoryReservation[]
   abandonedEmailSent Boolean     @default(false) @map("abandoned_email_sent")
 
   @@index([status, createdAt])
@@ -210,10 +388,39 @@ model OrderItem {
   variant         ProductVariant? @relation(fields: [variantId], references: [id])
   quantity        Int
   priceAtPurchase Decimal        @map("price_at_purchase") @db.Decimal(10, 2)
+  returnItems     ReturnItem[]
+
+  // PIM Phase 1: frozen at line-item creation so a renamed/deleted product or
+  // variant never rewrites what a historical order/invoice was actually for.
+  // Nullable so pre-existing rows fall back to the live relation unchanged.
+  productNameSnapshot  String?  @map("product_name_snapshot")
+  variantLabelSnapshot String?  @map("variant_label_snapshot")
+  skuSnapshot          String?  @map("sku_snapshot")
+  costAtPurchase       Decimal? @map("cost_at_purchase") @db.Decimal(10, 2)
 
   @@index([orderId])
   @@index([variantId])
   @@map("order_items")
+}
+
+// ── 10b. RETURN_ITEMS ────────────────────────────────────────────────────────
+// A customer return, inspected and dispositioned to one of two outcomes:
+// good condition (restocked, ledgered via InventoryLog through adjustStock)
+// or damaged (written off — no inventory change, this row is the only record).
+model ReturnItem {
+  id          String     @id @default(uuid()) @db.Uuid
+  orderItemId String     @map("order_item_id") @db.Uuid
+  orderItem   OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  quantity    Int
+  condition   String     @db.VarChar(20) // GOOD | DAMAGED
+  restocked   Boolean    @default(false)
+  note        String?
+  adminUserId String?    @map("admin_user_id") @db.Uuid
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([orderItemId])
+  @@map("return_items")
 }
 
 // ── 11. PAYMENTS ─────────────────────────────────────────────────────────────
@@ -271,20 +478,43 @@ model Supplier {
   updatedAt    DateTime   @updatedAt @map("updated_at")
   purchases    Purchase[]
   products     Product[]
+  productSuppliers ProductSupplier[]
 
   @@map("suppliers")
 }
 
+// ── 14b. PRODUCT_SUPPLIERS ────────────────────────────────────────────────────
+// Alternative suppliers for a product. Product.supplierId remains the
+// fast-path primary supplier for the common single-supplier case; this table
+// is purely additive for products that need alternates.
+model ProductSupplier {
+  id           String   @id @default(uuid()) @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierId   String   @map("supplier_id") @db.Uuid
+  supplier     Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplierSku  String?  @map("supplier_sku") @db.VarChar(100)
+  leadTimeDays Int?     @map("lead_time_days")
+  minOrderQty  Int?     @map("min_order_qty")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([productId, supplierId])
+  @@map("product_suppliers")
+}
+
 // ── 15. PURCHASES ────────────────────────────────────────────────────────────
 model Purchase {
-  id         String         @id @default(uuid()) @db.Uuid
-  supplierId String?        @map("supplier_id") @db.Uuid
-  supplier   Supplier?      @relation(fields: [supplierId], references: [id])
-  totalCost  Decimal?       @map("total_cost") @db.Decimal(10, 2)
-  status     String         @default("pending") @db.VarChar(30)
-  createdAt  DateTime       @default(now()) @map("created_at")
-  updatedAt  DateTime       @updatedAt @map("updated_at")
-  items      PurchaseItem[]
+  id                String         @id @default(uuid()) @db.Uuid
+  supplierId        String?        @map("supplier_id") @db.Uuid
+  supplier          Supplier?      @relation(fields: [supplierId], references: [id])
+  totalCost         Decimal?       @map("total_cost") @db.Decimal(10, 2)
+  status            String         @default("PENDING") @db.VarChar(30)
+  expectedDelivery  DateTime?      @map("expected_delivery")
+  receivedAt        DateTime?      @map("received_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  items             PurchaseItem[]
 
   @@map("purchases")
 }
@@ -409,18 +639,31 @@ model QuoteItem {
   quantity     Int
   priceAtQuote Decimal        @map("price_at_quote") @db.Decimal(10, 2)
 
+  // PIM Phase 1: see OrderItem — same snapshot rationale.
+  productNameSnapshot  String? @map("product_name_snapshot")
+  variantLabelSnapshot String? @map("variant_label_snapshot")
+  skuSnapshot          String? @map("sku_snapshot")
+
   @@map("quote_items")
 }
 
 // ── 25. CATEGORIES ───────────────────────────────────────────────────────────
 model Category {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String    @unique @db.VarChar(100)
-  slug      String    @unique @db.VarChar(100)
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique @db.VarChar(100)
+  slug        String    @unique @db.VarChar(100)
+  description String?
+  image       String?
+  displayOrder Int      @default(0) @map("display_order")
+  isActive    Boolean   @default(true) @map("is_active")
+  parentId    String?   @map("parent_id") @db.Uuid
+  parent      Category? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   products  Product[]
 
+  @@index([parentId, displayOrder])
   @@map("categories")
 }
 

@@ -3,6 +3,8 @@ import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import express from 'express'
 import cors from 'cors'
+import cron from 'node-cron'
+import { sweepExpiredReservations } from './lib/inventoryService.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import orderRoutes from './routes/orders.js'
@@ -123,4 +125,17 @@ app.use(errorHandler)
 
 app.listen(PORT, () => {
   console.log(`O'luhle Scents server running on http://localhost:${PORT}`)
+})
+
+// Releases stock held for abandoned/expired checkouts and cancels the orders
+// they belonged to, so the "reserved" count never gets permanently stuck.
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const { releasedCount, cancelledCount } = await sweepExpiredReservations()
+    if (releasedCount > 0 || cancelledCount > 0) {
+      console.log(`[ReservationSweep] Released ${releasedCount} reservation(s), cancelled ${cancelledCount} order(s).`)
+    }
+  } catch (err) {
+    console.error('[ReservationSweep] Failed:', err)
+  }
 })

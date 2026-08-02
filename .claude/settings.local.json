@@ -4,7 +4,9 @@
       "Read(//c/Users/muzim/.claude/projects/c--Users-muzim-OneDrive-Muzi-s-Office-Dev-Beast-O-luhle-Scents/memory/**)",
       "Bash(unzip -l extra/oluhle-scents-original-website.zip)",
       "Bash(unzip -p extra/oluhle-scents-original-website.zip README.md)",
-      "Bash(unzip -p extra/oluhle-scents-original-website.zip js/app.js)"
+      "Bash(unzip -p extra/oluhle-scents-original-website.zip js/app.js)",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\muzim\\\\OneDrive\\\\Muzi's Office\\\\Dev-Beast\\\\O'luhle Scents\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }

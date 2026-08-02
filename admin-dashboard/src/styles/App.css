@@ -96,13 +96,30 @@
   padding: 40px;
   min-width: 0;
   margin-top: 70px; /* Header height offset */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .content-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   margin-bottom: 28px;
+}
+
+/* ── Responsive shell: below this, the sidebar is an off-canvas drawer
+   (see Sidebar.jsx) rather than a permanent column, so content reclaims
+   the full width instead of leaving a permanent 220px gutter. ── */
+@media (max-width: 1024px) {
+  .sidebar { top: 70px; }
+  .main-content { margin-left: 0; padding: 28px; }
+}
+
+@media (max-width: 640px) {
+  .main-content { padding: 16px; }
+  .page-title { font-size: 1.2rem; }
 }
 
 .page-title {
@@ -177,6 +194,23 @@
   font-weight: 600;
   color: var(--color-text-header);
   font-family: var(--font-display);
+}
+
+/* Used across Dashboard/AdminUsers/Analytics/Quotes to keep a wide table's
+   overflow contained to itself instead of the whole page scrolling sideways. */
+.table-responsive {
+  overflow-x: auto;
+}
+
+/* Reusable two-column form row (Coupons/Preferences modals etc.) — stacks on
+   phones where two side-by-side inputs get too cramped to use comfortably. */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 480px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
 }
 
 .modern-table th {

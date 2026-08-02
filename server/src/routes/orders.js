@@ -6,6 +6,7 @@ import { buildSignature, buildPaymentPayload } from '../utils/payfast.js'
 import { sendNewsletterConfirmation } from '../utils/email.js'
 
 import { calculateShipping } from '../lib/shippingService.js'
+import { reserveStock, RESERVATION_HOLD_MINUTES, InsufficientStockError } from '../lib/inventoryService.js'
 
 const router = Router()
 
@@ -81,7 +82,13 @@ router.post('/', async (req, res, next) => {
       return {
         variantId: variant.id,
         quantity: cartItem.quantity,
-        priceAtPurchase: price
+        priceAtPurchase: price,
+        // Frozen at sale time — survives the product/variant being renamed
+        // or deleted later, so the order and its invoice stay historically correct.
+        productNameSnapshot: variant.product.name,
+        variantLabelSnapshot: variant.size,
+        skuSnapshot: variant.sku,
+        costAtPurchase: variant.costPrice
       }
     })
 
@@ -90,6 +97,8 @@ router.post('/', async (req, res, next) => {
     const totalAmount = subtotal + shippingCost
 
     // 3. Create/Update Customer & Store Order in Transaction
+    const reservationExpiresAt = new Date(Date.now() + RESERVATION_HOLD_MINUTES * 60 * 1000)
+
     const order = await prisma.$transaction(async (tx) => {
       // Find or create customer
       let customer = await tx.customer.findUnique({ where: { email: contact.email.toLowerCase() } })
@@ -113,7 +122,7 @@ router.post('/', async (req, res, next) => {
       })
 
       // Create Order
-      return tx.order.create({
+      const newOrder = await tx.order.create({
         data: {
           customerId: customer.id,
           shippingAddressId: address.id,
@@ -127,6 +136,21 @@ router.post('/', async (req, res, next) => {
           }
         }
       })
+
+      // Hold stock for every line item. This is the real guard against the
+      // oversell race (the check above is just a fast, friendly rejection) —
+      // an insufficient-stock failure here rolls back the order and any
+      // earlier holds in this same request, atomically.
+      for (const item of finalItems) {
+        await reserveStock(tx, {
+          variantId: item.variantId,
+          quantity: item.quantity,
+          orderId: newOrder.id,
+          expiresAt: reservationExpiresAt
+        })
+      }
+
+      return newOrder
     })
 
     // 4. Build PayFast data using centralized utility
@@ -161,9 +185,9 @@ router.get('/:id', async (req, res, next) => {
   try {
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },
-      include: { 
-        items: { include: { variant: { include: { product: true } } } }, 
-        shippingAddress: true 
+      include: {
+        items: { include: { variant: { include: { product: true } }, returnItems: true } },
+        shippingAddress: true
       },
     })
     if (!order) return res.status(404).json({ error: 'Order not found' })

@@ -43,7 +43,7 @@ export function Preferences() {
         <section className="card" style={{ marginBottom: '24px' }}>
           <h4 className="pref-title"><Palette size={18} /> Appearance</h4>
           <p className="pref-desc">Select your preferred visual aesthetic for the dashboard.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '20px' }}>
+          <div className="form-grid-2" style={{ marginTop: '20px' }}>
              <button 
                className={`theme-card ${prefs.theme === 'dark' ? 'active' : ''}`} 
                onClick={() => updatePrefs({ theme: 'dark' })}

@@ -60,9 +60,11 @@ export async function generateQuotePDF(quoteId) {
     let y = tableTop + 30
     quote.items.forEach((item, index) => {
       doc.fillColor('#000').font('Helvetica').fontSize(10)
-      const desc = `${item.variant?.product?.name || 'Product'} - Extrait`
+      // Snapshot preferred — a renamed/deleted product must never rewrite
+      // what a historical quote was actually for.
+      const desc = item.productNameSnapshot || item.variant?.product?.name || 'Product'
       doc.text(desc, 60, y)
-      doc.text(item.variant?.size || '-', 250, y)
+      doc.text(item.variantLabelSnapshot || item.variant?.size || '-', 250, y)
       doc.text(item.quantity.toString(), 350, y)
       doc.text(`R${Number(item.priceAtQuote).toLocaleString()}`, 420, y)
       doc.text(`R${(Number(item.priceAtQuote) * item.quantity).toLocaleString()}`, 500, y)

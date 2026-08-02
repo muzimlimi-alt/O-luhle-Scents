@@ -1,34 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database, Landmark } from 'lucide-react';
+import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database, Landmark, PlusCircle, X, ArrowLeft } from 'lucide-react';
 import { DateTime } from 'luxon';
+
+const ADJUSTMENT_TYPES = [
+  { value: 'ADJUSTMENT_ADD', label: 'Stock Correction (Add)' },
+  { value: 'ADJUSTMENT_REMOVE', label: 'Stock Correction (Remove)' },
+  { value: 'DAMAGED', label: 'Damaged / Write-off' },
+  { value: 'CORRECTION', label: 'Other Correction' },
+];
 
 export function Inventory() {
   const [activeTab, setActiveTab] = useState('levels');
   const [items, setItems] = useState([]);
   const [logs, setLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [auditFilter, setAuditFilter] = useState(null); // { variantId, label }
+  const [editingThreshold, setEditingThreshold] = useState(null); // variantId
+  const [thresholdValue, setThresholdValue] = useState('');
+  const [adjustTarget, setAdjustTarget] = useState(null); // inventory item
+  const [adjustForm, setAdjustForm] = useState({ direction: 'add', quantity: '', changeType: 'ADJUSTMENT_ADD', reason: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  async function fetchData() {
+    try {
+      const [invData, logData] = await Promise.all([
+        adminOpsApi.inventory.list(),
+        adminOpsApi.inventory.logs(auditFilter?.variantId)
+      ]);
+      setItems(invData);
+      setLogs(logData);
+    } catch (err) {
+      console.error('Failed to fetch inventory data:', err);
+    }
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [invData, logData] = await Promise.all([
-          adminOpsApi.inventory.list(),
-          adminOpsApi.inventory.logs()
-        ]);
-        setItems(invData);
-        setLogs(logData);
-      } catch (err) {
-        console.error('Failed to fetch inventory data:', err);
-      }
-    }
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auditFilter]);
 
-  const filteredItems = items.filter(item => 
+  const filteredItems = items.filter(item =>
     item.variant?.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.variant?.size?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const openAudit = (item) => {
+    setAuditFilter({ variantId: item.variantId, label: `${item.variant?.product?.name} (${item.variant?.size})` });
+    setActiveTab('history');
+  };
+
+  const startThresholdEdit = (item) => {
+    setEditingThreshold(item.variantId);
+    setThresholdValue(String(item.lowStockThreshold));
+  };
+
+  const saveThreshold = async (variantId) => {
+    const value = parseInt(thresholdValue);
+    if (!Number.isFinite(value) || value < 0) return;
+    try {
+      await adminOpsApi.inventory.updateThreshold(variantId, value);
+      setEditingThreshold(null);
+      fetchData();
+    } catch (err) {
+      alert('Failed to update reorder level: ' + err.message);
+    }
+  };
+
+  const openAdjust = (item) => {
+    setAdjustTarget(item);
+    setAdjustForm({ direction: 'add', quantity: '', changeType: 'ADJUSTMENT_ADD', reason: '' });
+  };
+
+  const submitAdjust = async (e) => {
+    e.preventDefault();
+    const qty = parseInt(adjustForm.quantity);
+    if (!Number.isFinite(qty) || qty <= 0) return;
+
+    setSubmitting(true);
+    try {
+      const quantityChange = adjustForm.direction === 'remove' ? -qty : qty;
+      await adminOpsApi.inventory.adjust(adjustTarget.variantId, {
+        quantityChange,
+        changeType: adjustForm.changeType,
+        reason: adjustForm.reason || undefined
+      });
+      setAdjustTarget(null);
+      fetchData();
+    } catch (err) {
+      alert('Adjustment failed: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="elite-inventory-container animate-fade-in">
@@ -41,13 +105,13 @@ export function Inventory() {
 
       <div className="discovery-matrix">
         <div className="tab-glass-panel">
-          <button 
+          <button
             className={`tab-glass-btn ${activeTab === 'levels' ? 'active' : ''}`}
             onClick={() => setActiveTab('levels')}
           >
             <Layers size={18} /> Reserve Levels
           </button>
-          <button 
+          <button
             className={`tab-glass-btn ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => setActiveTab('history')}
           >
@@ -57,10 +121,10 @@ export function Inventory() {
 
         <div className="search-glass-wrapper">
           <Search size={18} className="glass-icon" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             className="search-glass-input"
-            placeholder="Discovery via variant or size..." 
+            placeholder="Discovery via variant or size..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -87,6 +151,7 @@ export function Inventory() {
       {activeTab === 'levels' ? (
         <div className="atelier-grid fade-in-blur">
           {filteredItems.map(item => {
+            const available = item.available ?? (item.quantity - item.reserved);
             const isLow = item.quantity <= item.lowStockThreshold;
             return (
               <div key={item.id} className="elite-glass inventory-card">
@@ -101,13 +166,47 @@ export function Inventory() {
                 </div>
 
                   <div className="inventory-metrics">
+                    <div className="metric-glass headline">
+                      <span className="metric-label">Available</span>
+                      <span className="metric-value-direct" style={{ color: '#1a1611' }}>{available} Units</span>
+                    </div>
                     <div className="metric-glass">
-                      <span className="metric-label">Residual Stock</span>
+                      <span className="metric-label">On Hand</span>
                       <span className="metric-value-direct" style={{ color: '#1a1611' }}>{item.quantity} Units</span>
                     </div>
                     <div className="metric-glass">
-                      <span className="metric-label">Low Threshold</span>
-                      <span className="metric-value-direct" style={{ color: '#1a1611' }}>{item.lowStockThreshold} Units</span>
+                      <span className="metric-label">Reserved</span>
+                      <span className="metric-value-direct" style={{ color: '#1a1611' }}>{item.reserved} Units</span>
+                    </div>
+                    {item.incoming > 0 && (
+                      <div className="metric-glass">
+                        <span className="metric-label">Incoming</span>
+                        <span className="metric-value-direct" style={{ color: '#2ecc71' }}>+{item.incoming} Units</span>
+                      </div>
+                    )}
+                    <div className="metric-glass">
+                      <span className="metric-label">Reorder Level</span>
+                      {editingThreshold === item.variantId ? (
+                        <div className="threshold-edit">
+                          <input
+                            type="number"
+                            autoFocus
+                            value={thresholdValue}
+                            onChange={(e) => setThresholdValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && saveThreshold(item.variantId)}
+                          />
+                          <button onClick={() => saveThreshold(item.variantId)}>Save</button>
+                        </div>
+                      ) : (
+                        <span
+                          className="metric-value-direct editable"
+                          style={{ color: '#1a1611' }}
+                          onClick={() => startThresholdEdit(item)}
+                          title="Click to edit reorder level"
+                        >
+                          {item.lowStockThreshold} Units
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -115,16 +214,30 @@ export function Inventory() {
                   <span className="supplier-tag">
                     <Landmark size={12} /> {item.variant?.product?.supplier?.name || 'In-House'}
                   </span>
-                  <button className="btn-mini-action">
-                    <History size={14} /> Audit
-                  </button>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button className="btn-mini-action" onClick={() => openAdjust(item)}>
+                      <PlusCircle size={14} /> Adjust
+                    </button>
+                    <button className="btn-mini-action" onClick={() => openAudit(item)}>
+                      <History size={14} /> Audit
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="atelier-grid fade-in-blur">
+        <div className="fade-in-blur">
+          {auditFilter && (
+            <div className="audit-filter-banner">
+              <button className="btn-mini-action" onClick={() => setAuditFilter(null)}>
+                <ArrowLeft size={14} /> Clear Filter
+              </button>
+              <span>Showing movements for <strong>{auditFilter.label}</strong></span>
+            </div>
+          )}
+          <div className="atelier-grid">
            {logs.map(log => (
             <div key={log.id} className="elite-glass movement-card">
               <div className="movement-header">
@@ -136,14 +249,14 @@ export function Inventory() {
                 </div>
                 <span className="movement-date">{DateTime.fromISO(log.createdAt).toFormat('dd LLL, HH:mm')}</span>
               </div>
-              
+
               <div className="movement-variant">
                 <span className="variant-name">{log.variant?.product?.name}</span>
                 <span className="variant-size">{log.variant?.size}</span>
               </div>
 
               <div className="movement-reason">
-                <span className="reason-label">Reason Code</span>
+                <span className="reason-label">Reason Code ({log.changeType})</span>
                 <span className="reason-value">{log.reason}</span>
               </div>
 
@@ -153,15 +266,75 @@ export function Inventory() {
               </div>
             </div>
           ))}
+          {logs.length === 0 && <p style={{ color: 'var(--color-text-muted)' }}>No movements recorded yet.</p>}
+          </div>
+        </div>
+      )}
+
+      {adjustTarget && (
+        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setAdjustTarget(null)}>
+          <div className="elite-modal glass-panel adjust-modal">
+            <div className="modal-top">
+              <h2 className="couture-text">Adjust Stock</h2>
+              <button className="close-btn" onClick={() => setAdjustTarget(null)}><X size={24} /></button>
+            </div>
+            <p className="adjust-subtitle">{adjustTarget.variant?.product?.name} ({adjustTarget.variant?.size}) — currently {adjustTarget.quantity} on hand</p>
+
+            <form onSubmit={submitAdjust} className="elite-form">
+              <div className="elite-input-group">
+                <label className="elite-input-label">Direction</label>
+                <div className="direction-toggle">
+                  <button type="button" className={adjustForm.direction === 'add' ? 'active' : ''} onClick={() => setAdjustForm(f => ({ ...f, direction: 'add', changeType: 'ADJUSTMENT_ADD' }))}>Add</button>
+                  <button type="button" className={adjustForm.direction === 'remove' ? 'active' : ''} onClick={() => setAdjustForm(f => ({ ...f, direction: 'remove', changeType: 'ADJUSTMENT_REMOVE' }))}>Remove</button>
+                </div>
+              </div>
+              <div className="elite-input-group">
+                <label className="elite-input-label">Quantity</label>
+                <input
+                  type="number" min="1" required
+                  className="elite-glass-input"
+                  value={adjustForm.quantity}
+                  onChange={(e) => setAdjustForm(f => ({ ...f, quantity: e.target.value }))}
+                />
+              </div>
+              <div className="elite-input-group">
+                <label className="elite-input-label">Reason</label>
+                <select
+                  className="elite-glass-input"
+                  value={adjustForm.changeType}
+                  onChange={(e) => setAdjustForm(f => ({ ...f, changeType: e.target.value }))}
+                >
+                  {ADJUSTMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="elite-input-group">
+                <label className="elite-input-label">Note (optional)</label>
+                <input
+                  type="text"
+                  className="elite-glass-input"
+                  value={adjustForm.reason}
+                  onChange={(e) => setAdjustForm(f => ({ ...f, reason: e.target.value }))}
+                  placeholder="e.g. Bottle cracked in transit"
+                />
+              </div>
+
+              <div className="modal-actions-elite">
+                <button type="submit" className="elite-btn" disabled={submitting}>
+                  {submitting ? 'Recording...' : 'Record Adjustment'}
+                </button>
+                <button type="button" className="elite-btn-outline" onClick={() => setAdjustTarget(null)}>Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-inventory-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
         .atelier-header { margin-bottom: 48px; border-left: 3px solid var(--color-primary); padding-left: 24px; }
-        
+
         .discovery-matrix { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; gap: 24px; }
-        
+
         .tab-glass-panel { background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 4px; display: flex; gap: 4px; }
         .tab-glass-btn { background: none; border: none; color: var(--color-text-muted); padding: 8px 16px; border-radius: 2px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
         .tab-glass-btn.active { background: var(--color-primary); color: #000; }
@@ -175,21 +348,21 @@ export function Inventory() {
         .inventory-kpi.error { border-color: rgba(231, 76, 60, 0.3); }
         .kpi-top { display: flex; align-items: center; gap: 12px; }
         .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--color-text-muted) !important; font-weight: 800 !important; }
-        .reservoir-count-absolute { 
-          font-size: 2.5rem; font-weight: 800; font-family: var(--font-display); 
-          line-height: 1; margin: 0; color: #1a1611 !important; 
+        .reservoir-count-absolute {
+          font-size: 2.5rem; font-weight: 800; font-family: var(--font-display);
+          line-height: 1; margin: 0; color: #1a1611 !important;
         }
-        .variant-name-primary { 
-          font-weight: 700; font-size: 1.1rem; color: #1a1611 !important; 
+        .variant-name-primary {
+          font-weight: 700; font-size: 1.1rem; color: #1a1611 !important;
         }
 
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
-        
+
         .inventory-card { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
         .inventory-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .variant-info { display: flex; flex-direction: column; }
-        .variant-title-absolute { 
-          font-weight: 700; font-size: 1.1rem; color: #1a1611 !important; 
+        .variant-title-absolute {
+          font-weight: 700; font-size: 1.1rem; color: #1a1611 !important;
         }
         .variant-size { font-size: 0.75rem; color: var(--color-accent-dark) !important; text-transform: uppercase; font-weight: 800 !important; letter-spacing: 0.5px; }
         .status-indicator { font-size: 0.6rem; padding: 3px 8px; border-radius: 2px; font-weight: 700; letter-spacing: 1px; }
@@ -198,13 +371,20 @@ export function Inventory() {
 
         .inventory-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .metric-glass { padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: 4px; }
+        .metric-glass.headline { grid-column: 1 / -1; border-color: var(--color-primary); background: rgba(184,155,106,0.08); }
         .metric-label { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--color-text-muted) !important; margin-bottom: 4px; font-weight: 800 !important; letter-spacing: 0.5px; }
         .metric-value-direct { font-weight: 700; font-size: 1rem; }
+        .metric-value-direct.editable { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
+        .threshold-edit { display: flex; gap: 8px; align-items: center; }
+        .threshold-edit input { width: 60px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 2px; background: var(--color-bg-card); color: var(--color-text); }
+        .threshold-edit button { background: var(--color-primary); color: #000; border: none; padding: 4px 8px; border-radius: 2px; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
 
         .inventory-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-border); }
         .supplier-tag { font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px; }
         .btn-mini-action { background: none; border: none; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; transition: var(--transition); }
         .btn-mini-action:hover { color: var(--color-primary); }
+
+        .audit-filter-banner { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 12px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; font-size: 0.85rem; }
 
         .movement-card { padding: 24px; display: flex; flex-direction: column; gap: 16px; border-left: 2px solid var(--color-border); }
         .movement-header { display: flex; justify-content: space-between; align-items: center; }
@@ -213,7 +393,7 @@ export function Inventory() {
         .movement-type span.inc { color: #2ecc71; }
         .movement-type span.dec { color: #e74c3c; }
         .movement-date { font-size: 0.7rem; color: var(--color-text-muted); font-family: monospace; }
-        
+
         .movement-variant { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 1px solid var(--color-border-alt); }
         .movement-reason { display: flex; flex-direction: column; gap: 2px; }
         .reason-label { font-size: 0.6rem; text-transform: uppercase; color: var(--color-text-muted); }
@@ -224,6 +404,28 @@ export function Inventory() {
 
         @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
         .fade-in-blur { animation: eliteFadeIn 0.4s ease-out; }
+
+        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.92); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; }
+        .elite-modal.adjust-modal { width: 100%; max-width: 440px; padding: 32px; position: relative; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 6px; }
+        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .adjust-subtitle { font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 24px; }
+        .close-btn { background: none; border: none; color: var(--color-text-header); cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        .close-btn:hover { opacity: 1; }
+
+        .elite-form { display: flex; flex-direction: column; gap: 18px; }
+        .elite-input-group { display: flex; flex-direction: column; gap: 6px; }
+        .elite-input-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-primary); }
+        .elite-glass-input { width: 100%; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: var(--color-text); outline: none; transition: var(--transition); font-size: 0.9rem; }
+        .elite-glass-input:focus { border-color: var(--color-primary); }
+
+        .direction-toggle { display: flex; gap: 8px; }
+        .direction-toggle button { flex: 1; padding: 10px; border: 1.5px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
+        .direction-toggle button.active { border-color: var(--color-primary); color: var(--color-primary); background: rgba(184,155,106,0.08); }
+
+        .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        .elite-btn { background: var(--color-primary); color: #000; padding: 14px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; transition: var(--transition); }
+        .elite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
 
         @media (max-width: 768px) {
           .discovery-matrix { flex-direction: column; align-items: stretch; }

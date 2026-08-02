@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url'
 import prisma from '../lib/prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
 import nodemailer from 'nodemailer'
+import { adjustStock } from '../lib/inventoryService.js'
+import { processReturn, RETURN_CONDITIONS } from '../lib/returnsService.js'
+import { getFinanceSummary } from '../lib/financeService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const router = Router()
@@ -78,17 +81,273 @@ router.post('/suppliers/restock-alert/:variantId', requireAdmin, async (req, res
 })
 
 
+// ─── MEDIA LIBRARY (PIM) ───────────────────────────────────────────────────────
+// Alt text is the one piece of metadata a bare filename-array can't carry —
+// see mediaService.js for how these records stay in sync with Product.images.
+router.patch('/media/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const { altText } = req.body
+    const asset = await prisma.mediaAsset.update({
+      where: { id: req.params.id },
+      data: { altText: altText || null }
+    })
+    res.json(asset)
+  } catch (err) { next(err) }
+})
+
+// ─── ATTRIBUTE DEFINITIONS (PIM) ──────────────────────────────────────────────
+// Lets an admin define a family's attribute set (e.g. Candle -> Wax Type,
+// Burn Time) without a developer or a migration. Consumed by ProductModal's
+// family-aware attribute form.
+const ATTRIBUTE_DATA_TYPES = ['TEXT', 'NUMBER', 'ENUM', 'BOOLEAN']
+
+router.get('/attribute-definitions', requireAdmin, async (req, res, next) => {
+  try {
+    const { family } = req.query
+    const definitions = await prisma.attributeDefinition.findMany({
+      where: family ? { family } : undefined,
+      orderBy: [{ family: 'asc' }, { displayOrder: 'asc' }]
+    })
+    res.json(definitions)
+  } catch (err) { next(err) }
+})
+
+router.post('/attribute-definitions', requireAdmin, async (req, res, next) => {
+  try {
+    const { key, label, family, dataType, unit, options, appliesToVariant, isFilterable, displayOrder } = req.body
+    if (!key?.trim() || !label?.trim() || !family) {
+      return res.status(400).json({ error: 'key, label and family are required' })
+    }
+    if (!ATTRIBUTE_DATA_TYPES.includes(dataType)) {
+      return res.status(400).json({ error: `dataType must be one of: ${ATTRIBUTE_DATA_TYPES.join(', ')}` })
+    }
+
+    const definition = await prisma.attributeDefinition.create({
+      data: {
+        key: key.trim().toLowerCase().replace(/\s+/g, '_'),
+        label: label.trim(),
+        family,
+        dataType,
+        unit: unit || null,
+        options: dataType === 'ENUM' ? options : undefined,
+        appliesToVariant: !!appliesToVariant,
+        isFilterable: !!isFilterable,
+        displayOrder: parseInt(displayOrder) || 0
+      }
+    })
+    res.status(201).json(definition)
+  } catch (err) {
+    if (err.code === 'P2002') return res.status(400).json({ error: 'An attribute with that key already exists' })
+    next(err)
+  }
+})
+
+router.patch('/attribute-definitions/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const { label, unit, options, appliesToVariant, isFilterable, displayOrder } = req.body
+    const definition = await prisma.attributeDefinition.update({
+      where: { id: req.params.id },
+      data: {
+        label: label !== undefined ? label.trim() : undefined,
+        unit: unit !== undefined ? (unit || null) : undefined,
+        options: options !== undefined ? options : undefined,
+        appliesToVariant: appliesToVariant !== undefined ? !!appliesToVariant : undefined,
+        isFilterable: isFilterable !== undefined ? !!isFilterable : undefined,
+        displayOrder: displayOrder !== undefined ? parseInt(displayOrder) : undefined
+      }
+    })
+    res.json(definition)
+  } catch (err) { next(err) }
+})
+
+router.delete('/attribute-definitions/:id', requireAdmin, async (req, res, next) => {
+  try {
+    // Deleting a definition cascades to any ProductAttributeValue/VariantAttributeValue
+    // rows already using it (see schema) — confirm intent client-side before calling.
+    await prisma.attributeDefinition.delete({ where: { id: req.params.id } })
+    res.status(204).end()
+  } catch (err) { next(err) }
+})
+
+// ─── PRODUCT SUPPLIERS (alternative suppliers) ────────────────────────────────
+router.get('/products/:productId/suppliers', requireAdmin, async (req, res, next) => {
+  try {
+    const suppliers = await prisma.productSupplier.findMany({
+      where: { productId: req.params.productId },
+      include: { supplier: true },
+      orderBy: { isPrimary: 'desc' }
+    })
+    res.json(suppliers)
+  } catch (err) { next(err) }
+})
+
+router.post('/products/:productId/suppliers', requireAdmin, async (req, res, next) => {
+  try {
+    const { supplierId, supplierSku, leadTimeDays, minOrderQty, isPrimary } = req.body
+    if (!supplierId) return res.status(400).json({ error: 'supplierId is required' })
+
+    const productSupplier = await prisma.productSupplier.create({
+      data: {
+        productId: req.params.productId,
+        supplierId,
+        supplierSku: supplierSku || null,
+        leadTimeDays: leadTimeDays ? parseInt(leadTimeDays) : null,
+        minOrderQty: minOrderQty ? parseInt(minOrderQty) : null,
+        isPrimary: !!isPrimary
+      },
+      include: { supplier: true }
+    })
+    res.status(201).json(productSupplier)
+  } catch (err) {
+    if (err.code === 'P2002') return res.status(400).json({ error: 'That supplier is already linked to this product' })
+    next(err)
+  }
+})
+
+router.delete('/product-suppliers/:id', requireAdmin, async (req, res, next) => {
+  try {
+    await prisma.productSupplier.delete({ where: { id: req.params.id } })
+    res.status(204).end()
+  } catch (err) { next(err) }
+})
+
 // ─── PURCHASES ───────────────────────────────────────────────────────────────
 router.get('/purchases', requireAdmin, async (req, res, next) => {
   try {
     const purchases = await prisma.purchase.findMany({
-      include: { supplier: true },
+      include: { supplier: true, items: { include: { variant: { include: { product: true } } } } },
       orderBy: { createdAt: 'desc' }
     })
     res.json(purchases)
   } catch (err) {
     next(err)
   }
+})
+
+// POST /admin/ops/purchases — create a purchase order (status: PENDING)
+router.post('/purchases', requireAdmin, async (req, res, next) => {
+  try {
+    const { supplierId, expectedDelivery, items = [] } = req.body
+    if (!items.length) return res.status(400).json({ error: 'At least one line item is required' })
+
+    const totalCost = items.reduce((sum, i) => sum + (parseFloat(i.costPrice) || 0) * (parseInt(i.quantity) || 0), 0)
+
+    const purchase = await prisma.purchase.create({
+      data: {
+        supplierId: supplierId || null,
+        expectedDelivery: expectedDelivery ? new Date(expectedDelivery) : null,
+        totalCost,
+        status: 'PENDING',
+        items: {
+          create: items.map(i => ({
+            variantId: i.variantId,
+            quantity: parseInt(i.quantity) || 0,
+            costPrice: parseFloat(i.costPrice) || 0
+          }))
+        }
+      },
+      include: { supplier: true, items: { include: { variant: { include: { product: true } } } } }
+    })
+
+    res.status(201).json(purchase)
+  } catch (err) { next(err) }
+})
+
+// PATCH /admin/ops/purchases/:id/receive — receive goods: increments stock
+// for every line item (ledgered via adjustStock), updates variant cost price,
+// and marks the purchase order RECEIVED. Full receive only — no partials yet.
+router.patch('/purchases/:id/receive', requireAdmin, async (req, res, next) => {
+  try {
+    const purchase = await prisma.purchase.findUnique({
+      where: { id: req.params.id },
+      include: { items: { include: { variant: { include: { product: true } } } } }
+    })
+    if (!purchase) return res.status(404).json({ error: 'Purchase order not found' })
+    if (purchase.status === 'RECEIVED') return res.status(400).json({ error: 'Purchase order already received' })
+
+    const updated = await prisma.$transaction(async (tx) => {
+      for (const item of purchase.items) {
+        await adjustStock(tx, {
+          variantId: item.variantId,
+          delta: item.quantity,
+          changeType: 'PURCHASE_RECEIVE',
+          reason: `Received against Purchase Order ${purchase.id.split('-')[0].toUpperCase()}`,
+          referenceId: purchase.id,
+          productName: item.variant?.product?.name,
+          variantSize: item.variant?.size
+        })
+
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { costPrice: item.costPrice }
+        })
+      }
+
+      return tx.purchase.update({
+        where: { id: purchase.id },
+        data: { status: 'RECEIVED', receivedAt: new Date() },
+        include: { supplier: true, items: { include: { variant: { include: { product: true } } } } }
+      })
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        adminUserId: req.adminId,
+        action: 'RECEIVE_PURCHASE_ORDER',
+        entity: 'Purchase',
+        entityId: purchase.id,
+        details: { itemCount: purchase.items.length }
+      }
+    })
+
+    res.json(updated)
+  } catch (err) { next(err) }
+})
+
+// ─── RETURNS ─────────────────────────────────────────────────────────────────
+// Customer Return -> Inspect -> Good Condition -> Return to Stock, OR
+// Damaged -> Mark as Damaged (write-off, no restock). See returnsService.js.
+router.post('/returns', requireAdmin, async (req, res, next) => {
+  try {
+    const { orderItemId, quantity, condition, note } = req.body
+    const qty = parseInt(quantity)
+    if (!orderItemId || !Number.isFinite(qty) || qty <= 0) {
+      return res.status(400).json({ error: 'orderItemId and a positive quantity are required' })
+    }
+    if (!RETURN_CONDITIONS.includes(condition)) {
+      return res.status(400).json({ error: `condition must be one of: ${RETURN_CONDITIONS.join(', ')}` })
+    }
+
+    const result = await processReturn({ orderItemId, quantity: qty, condition, note, adminUserId: req.adminId })
+
+    await prisma.auditLog.create({
+      data: {
+        adminUserId: req.adminId,
+        action: 'PROCESS_RETURN',
+        entity: 'OrderItem',
+        entityId: orderItemId,
+        details: { quantity: qty, condition, restocked: result.restocked }
+      }
+    })
+
+    res.status(201).json(result)
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
+
+router.get('/returns', requireAdmin, async (req, res, next) => {
+  try {
+    const returns = await prisma.returnItem.findMany({
+      include: {
+        orderItem: { include: { order: true, variant: { include: { product: true } } } },
+        adminUser: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(returns)
+  } catch (err) { next(err) }
 })
 
 // ─── PAYMENTS ────────────────────────────────────────────────────────────────
@@ -107,17 +366,31 @@ router.get('/payments', requireAdmin, async (req, res, next) => {
 // ─── INVENTORY ───────────────────────────────────────────────────────────────
 router.get('/inventory', requireAdmin, async (req, res, next) => {
   try {
-    const inventory = await prisma.inventory.findMany({
-      include: { 
-        variant: { 
-          include: { 
-            product: { include: { supplier: true } } 
-          } 
-        } 
-      },
-      orderBy: { quantity: 'asc' }
-    })
-    res.json(inventory)
+    const [inventory, incoming] = await Promise.all([
+      prisma.inventory.findMany({
+        include: {
+          variant: {
+            include: {
+              product: { include: { supplier: true } }
+            }
+          }
+        },
+        orderBy: { quantity: 'asc' }
+      }),
+      prisma.purchaseItem.groupBy({
+        by: ['variantId'],
+        where: { purchase: { status: 'PENDING' } },
+        _sum: { quantity: true }
+      })
+    ])
+
+    const incomingByVariant = Object.fromEntries(incoming.map(i => [i.variantId, i._sum.quantity || 0]))
+
+    res.json(inventory.map(i => ({
+      ...i,
+      available: i.quantity - i.reserved,
+      incoming: incomingByVariant[i.variantId] || 0
+    })))
   } catch (err) {
     next(err)
   }
@@ -125,8 +398,10 @@ router.get('/inventory', requireAdmin, async (req, res, next) => {
 
 router.get('/inventory/logs', requireAdmin, async (req, res, next) => {
   try {
+    const { variantId } = req.query
     const logs = await prisma.inventoryLog.findMany({
-      include: { 
+      where: variantId ? { variantId } : undefined,
+      include: {
         variant: { include: { product: true } }
       },
       orderBy: { createdAt: 'desc' },
@@ -134,6 +409,63 @@ router.get('/inventory/logs', requireAdmin, async (req, res, next) => {
     })
     res.json(logs)
   } catch (err) {
+    next(err)
+  }
+})
+
+// PATCH /admin/ops/inventory/:variantId/threshold — set the reorder level
+router.patch('/inventory/:variantId/threshold', requireAdmin, async (req, res, next) => {
+  try {
+    const { lowStockThreshold } = req.body
+    const value = parseInt(lowStockThreshold)
+    if (!Number.isFinite(value) || value < 0) {
+      return res.status(400).json({ error: 'lowStockThreshold must be a non-negative number' })
+    }
+
+    const updated = await prisma.inventory.update({
+      where: { variantId: req.params.variantId },
+      data: { lowStockThreshold: value }
+    })
+    res.json(updated)
+  } catch (err) { next(err) }
+})
+
+const ADJUSTMENT_TYPES = ['ADJUSTMENT_ADD', 'ADJUSTMENT_REMOVE', 'DAMAGED', 'CORRECTION']
+
+// POST /admin/ops/inventory/:variantId/adjust — the only way to hand-change
+// stock from the admin UI; always ledgered via adjustStock, never a raw write.
+router.post('/inventory/:variantId/adjust', requireAdmin, async (req, res, next) => {
+  try {
+    const { quantityChange, changeType, reason } = req.body
+    const delta = parseInt(quantityChange)
+    if (!Number.isFinite(delta) || delta === 0) {
+      return res.status(400).json({ error: 'quantityChange must be a non-zero number' })
+    }
+    if (!ADJUSTMENT_TYPES.includes(changeType)) {
+      return res.status(400).json({ error: `changeType must be one of: ${ADJUSTMENT_TYPES.join(', ')}` })
+    }
+
+    const nextQuantity = await prisma.$transaction((tx) => adjustStock(tx, {
+      variantId: req.params.variantId,
+      delta,
+      changeType,
+      reason: reason || null,
+      referenceId: null
+    }))
+
+    await prisma.auditLog.create({
+      data: {
+        adminUserId: req.adminId,
+        action: 'ADJUST_INVENTORY',
+        entity: 'ProductVariant',
+        entityId: req.params.variantId,
+        details: { delta, changeType, reason, nextQuantity }
+      }
+    })
+
+    res.json({ variantId: req.params.variantId, quantity: nextQuantity })
+  } catch (err) {
+    if (err.status === 400) return res.status(400).json({ error: err.message })
     next(err)
   }
 })
@@ -198,6 +530,15 @@ router.patch('/notifications/:id/read', requireAdmin, async (req, res, next) => 
       data: { isRead: true }
     })
     res.json({ success: true })
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.delete('/notifications/:id', requireAdmin, async (req, res, next) => {
+  try {
+    await prisma.notification.delete({ where: { id: req.params.id } })
+    res.status(204).end()
   } catch (err) {
     next(err)
   }
@@ -541,6 +882,86 @@ router.get('/reports/generate', requireAdmin, async (req, res, next) => {
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `attachment; filename=${report.fileName}`)
     fs.createReadStream(filePath).pipe(res)
+  } catch (err) { next(err) }
+})
+
+// GET /admin/ops/reports/inventory-summary — live inventory health report:
+// stock value/on-hand, low-stock and out-of-stock lists, and slow movers
+// (in-stock variants with zero sales in the last 60 days).
+router.get('/reports/inventory-summary', requireAdmin, async (req, res, next) => {
+  try {
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+
+    const [inventory, sales, incoming] = await Promise.all([
+      prisma.inventory.findMany({
+        include: { variant: { include: { product: { include: { supplier: true } } } } }
+      }),
+      prisma.orderItem.findMany({
+        where: { order: { createdAt: { gte: sixtyDaysAgo }, status: { in: ['paid', 'processing', 'shipped', 'delivered'] } } },
+        select: { variantId: true, quantity: true }
+      }),
+      prisma.purchaseItem.groupBy({
+        by: ['variantId'],
+        where: { purchase: { status: 'PENDING' } },
+        _sum: { quantity: true }
+      })
+    ])
+
+    const velocityMap = {}
+    sales.forEach(s => { velocityMap[s.variantId] = (velocityMap[s.variantId] || 0) + s.quantity })
+    const incomingByVariant = Object.fromEntries(incoming.map(i => [i.variantId, i._sum.quantity || 0]))
+
+    const stockOnHand = inventory.reduce((sum, i) => sum + i.quantity, 0)
+    const incomingStock = incoming.reduce((sum, i) => sum + (i._sum.quantity || 0), 0)
+    const stockValue = inventory.reduce((sum, i) => sum + i.quantity * Number(i.variant?.costPrice || 0), 0)
+
+    const lowStockItems = inventory
+      .filter(i => i.quantity <= i.lowStockThreshold)
+      .map(i => ({
+        variantId: i.variantId,
+        productName: i.variant?.product?.name,
+        size: i.variant?.size,
+        quantity: i.quantity,
+        available: i.quantity - i.reserved,
+        incoming: incomingByVariant[i.variantId] || 0,
+        lowStockThreshold: i.lowStockThreshold,
+        supplier: i.variant?.product?.supplier?.name || null
+      }))
+
+    const slowMoving = inventory
+      .filter(i => i.quantity > 0 && !velocityMap[i.variantId])
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 10)
+      .map(i => ({
+        variantId: i.variantId,
+        productName: i.variant?.product?.name,
+        size: i.variant?.size,
+        quantity: i.quantity
+      }))
+
+    res.json({
+      stockOnHand,
+      incomingStock,
+      stockValue,
+      lowStockCount: lowStockItems.length,
+      outOfStockCount: inventory.filter(i => i.quantity - i.reserved <= 0).length,
+      lowStockItems,
+      slowMoving,
+      generatedAt: new Date()
+    })
+  } catch (err) { next(err) }
+})
+
+// GET /admin/ops/reports/finance-summary — revenue, COGS, gross profit and
+// margin computed from OrderItem.costAtPurchase (see financeService.js).
+// Cost data only exists for orders placed after PIM Phase 1 shipped, so the
+// response always reports what fraction of items actually have it.
+const FINANCE_PERIODS = ['7d', '30d', '90d', '365d', 'all']
+router.get('/reports/finance-summary', requireAdmin, async (req, res, next) => {
+  try {
+    const period = FINANCE_PERIODS.includes(req.query.period) ? req.query.period : '30d'
+    const summary = await getFinanceSummary(period)
+    res.json(summary)
   } catch (err) { next(err) }
 })
 

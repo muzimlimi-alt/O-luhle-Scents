@@ -149,7 +149,7 @@ export function Analytics() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
+      <div className="analytics-grid">
         <div className="card">
           <h3 style={{ marginBottom: '20px' }}>Top Performing Products</h3>
           <div className="table-responsive">
@@ -184,6 +184,13 @@ export function Analytics() {
            </div>
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .analytics-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+        @media (max-width: 900px) {
+          .analytics-grid { grid-template-columns: 1fr; }
+        }
+      `}} />
     </div>
   );
 }

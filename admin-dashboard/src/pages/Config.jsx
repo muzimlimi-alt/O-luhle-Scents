@@ -157,39 +157,77 @@ export function Config() {
             <div className="input-row">
               <div className="input-group flex-2">
                 <label className="input-label">SMTP Host</label>
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  value={settings['smtp_host']?.value || ''} 
-                  onChange={e => handleChange('smtp_host', e.target.value)}
+                <input
+                  type="text"
+                  className="input-field"
+                  value={settings['EMAIL_HOST']?.value || ''}
+                  onChange={e => handleChange('EMAIL_HOST', e.target.value)}
+                  placeholder="smtp.gmail.com (leave blank to use Gmail service)"
                 />
               </div>
               <div className="input-group flex-1">
                 <label className="input-label">Port</label>
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  value={settings['smtp_port']?.value || '587'} 
-                  onChange={e => handleChange('smtp_port', e.target.value)}
+                <input
+                  type="text"
+                  className="input-field"
+                  value={settings['EMAIL_PORT']?.value || '587'}
+                  onChange={e => handleChange('EMAIL_PORT', e.target.value)}
                 />
               </div>
             </div>
             <div className="input-group">
               <label className="input-label">Username</label>
-              <input 
-                type="text" 
-                className="input-field" 
-                value={settings['smtp_user']?.value || ''} 
-                onChange={e => handleChange('smtp_user', e.target.value)}
+              <input
+                type="text"
+                className="input-field"
+                value={settings['EMAIL_USER']?.value || ''}
+                onChange={e => handleChange('EMAIL_USER', e.target.value)}
               />
             </div>
             <div className="input-group">
               <label className="input-label">Password</label>
-              <input 
-                type="password" 
-                className="input-field" 
-                value={settings['smtp_pass']?.value || ''} 
-                onChange={e => handleChange('smtp_pass', e.target.value)}
+              <input
+                type="password"
+                className="input-field"
+                value={settings['EMAIL_PASS']?.value || ''}
+                onChange={e => handleChange('EMAIL_PASS', e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* WhatsApp Engine (Twilio) */}
+        <div className="card config-card">
+          <div className="card-header">
+            <Phone className="text-primary" size={20} />
+            <h3 className="card-title">WhatsApp Fulfillment (Twilio)</h3>
+          </div>
+          <div className="card-body">
+            <div className="input-group">
+              <label className="input-label">Account SID</label>
+              <input
+                type="text"
+                className="input-field"
+                value={settings['TWILIO_ACCOUNT_SID']?.value || ''}
+                onChange={e => handleChange('TWILIO_ACCOUNT_SID', e.target.value)}
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Auth Token</label>
+              <input
+                type="password"
+                className="input-field"
+                value={settings['TWILIO_AUTH_TOKEN']?.value || ''}
+                onChange={e => handleChange('TWILIO_AUTH_TOKEN', e.target.value)}
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label">WhatsApp From (e.g. whatsapp:+14155238886)</label>
+              <input
+                type="text"
+                className="input-field"
+                value={settings['TWILIO_WHATSAPP_FROM']?.value || ''}
+                onChange={e => handleChange('TWILIO_WHATSAPP_FROM', e.target.value)}
               />
             </div>
           </div>
@@ -278,6 +316,9 @@ export function Config() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; padding-bottom: 40px; }
+        @media (max-width: 460px) {
+          .config-grid { grid-template-columns: 1fr; }
+        }
         .config-card { border: 1px solid var(--color-border); background: var(--color-bg-card); transition: transform 0.2s; }
         .config-card:hover { transform: translateY(-2px); border-color: var(--color-primary); }
         .card-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--color-border); }

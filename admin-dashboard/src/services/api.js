@@ -67,6 +67,9 @@ export const productsApi = {
 
 export const categoriesApi = {
   list: () => api.get('/categories'),
+  create: (data) => api.post('/categories', data),
+  update: (id, data) => api.patch(`/categories/${id}`, data),
+  delete: (id) => api.delete(`/categories/${id}`),
 };
 
 export const ordersApi = {
@@ -115,17 +118,36 @@ export const adminOpsApi = {
 
   purchases: {
     list: () => api.get('/admin/ops/purchases'),
+    create: (data) => api.post('/admin/ops/purchases', data),
+    receive: (id) => api.patch(`/admin/ops/purchases/${id}/receive`),
   },
   payments: {
     list: () => api.get('/admin/ops/payments'),
   },
   inventory: {
     list: () => api.get('/admin/ops/inventory'),
-    logs: () => api.get('/admin/ops/inventory/logs'),
+    logs: (variantId) => api.get('/admin/ops/inventory/logs', { params: variantId ? { variantId } : {} }),
+    updateThreshold: (variantId, lowStockThreshold) => api.patch(`/admin/ops/inventory/${variantId}/threshold`, { lowStockThreshold }),
+    adjust: (variantId, data) => api.post(`/admin/ops/inventory/${variantId}/adjust`, data),
+  },
+  attributeDefinitions: {
+    list: (family) => api.get('/admin/ops/attribute-definitions', { params: family ? { family } : {} }),
+    create: (data) => api.post('/admin/ops/attribute-definitions', data),
+    update: (id, data) => api.patch(`/admin/ops/attribute-definitions/${id}`, data),
+    delete: (id) => api.delete(`/admin/ops/attribute-definitions/${id}`),
+  },
+  productSuppliers: {
+    list: (productId) => api.get(`/admin/ops/products/${productId}/suppliers`),
+    create: (productId, data) => api.post(`/admin/ops/products/${productId}/suppliers`, data),
+    delete: (id) => api.delete(`/admin/ops/product-suppliers/${id}`),
+  },
+  media: {
+    updateAltText: (mediaId, altText) => api.patch(`/admin/ops/media/${mediaId}`, { altText }),
   },
   notifications: {
     list: () => api.get('/admin/ops/notifications'),
     markRead: (id) => api.patch(`/admin/ops/notifications/${id}/read`),
+    delete: (id) => api.delete(`/admin/ops/notifications/${id}`),
   },
   invoices: {
     list: () => api.get('/admin/ops/invoices'),
@@ -149,6 +171,12 @@ export const adminOpsApi = {
   },
   reports: {
     generate: (month = 1) => api.get('/admin/ops/reports/generate', { params: { month }, responseType: 'blob' }),
+    inventorySummary: () => api.get('/admin/ops/reports/inventory-summary'),
+    financeSummary: (period = '30d') => api.get('/admin/ops/reports/finance-summary', { params: { period } }),
+  },
+  returns: {
+    list: () => api.get('/admin/ops/returns'),
+    create: (data) => api.post('/admin/ops/returns', data),
   }
 };
 

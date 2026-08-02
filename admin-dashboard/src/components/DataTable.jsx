@@ -13,41 +13,43 @@ export function DataTable({ columns, data, actions, loading }) {
 
   return (
     <div className="table-wrapper">
-      <table className="modern-table">
-        <thead>
-          <tr>
-            {columns.map(col => <th key={col.key}>{col.label}</th>)}
-            {actions && <th>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {data.length > 0 ? (
-            data.map((row, idx) => (
-              <tr key={row.id || idx}>
-                {columns.map(col => (
-                  <td key={col.key}>
-                    {col.render ? col.render(row[col.key], row) : row[col.key]}
-                  </td>
-                ))}
-                {actions && (
-                  <td>
-                    <div className="action-cell">
-                      {actions(row)}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))
-          ) : (
+      <div className="table-scroll">
+        <table className="modern-table">
+          <thead>
             <tr>
-              <td colSpan={columns.length + (actions ? 1 : 0)} className="empty-cell">
-                No records found.
-              </td>
+              {columns.map(col => <th key={col.key}>{col.label}</th>)}
+              {actions && <th>Actions</th>}
             </tr>
-          )}
-        </tbody>
-      </table>
-      
+          </thead>
+          <tbody>
+            {data.length > 0 ? (
+              data.map((row, idx) => (
+                <tr key={row.id || idx}>
+                  {columns.map(col => (
+                    <td key={col.key}>
+                      {col.render ? col.render(row[col.key], row) : row[col.key]}
+                    </td>
+                  ))}
+                  {actions && (
+                    <td>
+                      <div className="action-cell">
+                        {actions(row)}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length + (actions ? 1 : 0)} className="empty-cell">
+                  No records found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
       <div className="table-footer">
         <div className="pagination">
           <button className="page-btn"><ChevronLeft size={16} /></button>
@@ -58,6 +60,8 @@ export function DataTable({ columns, data, actions, loading }) {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .table-wrapper { position: relative; }
+        .table-scroll { overflow-x: auto; }
+        .modern-table { width: 100%; border-collapse: collapse; }
         .empty-cell { padding: 48px; text-align: center; color: var(--color-text-muted); font-style: italic; }
         .table-footer { padding: 16px; display: flex; justify-content: flex-end; border-top: 1px solid var(--color-border); }
         .pagination { display: flex; align-items: center; gap: 12px; }

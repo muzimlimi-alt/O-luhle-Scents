@@ -23,7 +23,7 @@ router.post('/validate', async (req, res, next) => {
         }
       })
 
-      if (!variant || !variant.product.isActive) {
+      if (!variant || variant.product.status !== 'ACTIVE') {
         return {
           variantId: item.variantId,
           valid: false,

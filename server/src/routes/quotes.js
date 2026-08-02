@@ -28,15 +28,21 @@ router.post('/', async (req, res, next) => {
       let totalAmount = 0
       const quoteItems = []
       for (const item of items) {
-        const variant = await tx.productVariant.findUnique({ where: { id: item.variantId } })
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          include: { product: true }
+        })
         if (!variant) throw new Error(`Product variant ${item.variantId} not found`)
-        
+
         const price = Number(variant.price)
         totalAmount += price * item.quantity
         quoteItems.push({
           variantId: variant.id,
           quantity: item.quantity,
-          priceAtQuote: price
+          priceAtQuote: price,
+          productNameSnapshot: variant.product.name,
+          variantLabelSnapshot: variant.size,
+          skuSnapshot: variant.sku
         })
       }
 
@@ -93,7 +99,7 @@ router.post('/admin/:id/convert', requireAdmin, async (req, res, next) => {
     const result = await prisma.$transaction(async (tx) => {
        const quote = await tx.quote.findUnique({
          where: { id: quoteId },
-         include: { items: true, customer: { include: { addresses: true } } }
+         include: { items: { include: { variant: true } }, customer: { include: { addresses: true } } }
        })
 
        if (!quote) throw new Error('Quote not found')
@@ -112,7 +118,14 @@ router.post('/admin/:id/convert', requireAdmin, async (req, res, next) => {
              create: quote.items.map(i => ({
                variantId: i.variantId,
                quantity: i.quantity,
-               priceAtPurchase: i.priceAtQuote
+               priceAtPurchase: i.priceAtQuote,
+               // Carry the quote's own snapshot forward rather than re-reading
+               // the live product — a converted order should describe exactly
+               // what was quoted, not whatever the catalogue says today.
+               productNameSnapshot: i.productNameSnapshot,
+               variantLabelSnapshot: i.variantLabelSnapshot,
+               skuSnapshot: i.skuSnapshot,
+               costAtPurchase: i.variant?.costPrice
              }))
            }
          }

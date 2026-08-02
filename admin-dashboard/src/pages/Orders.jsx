@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ordersApi } from '../services/api';
-import { ShoppingBag, Eye, User, Search, Truck, X, Filter, ChevronRight, Hash, Clock, Landmark } from 'lucide-react';
+import { ordersApi, adminOpsApi } from '../services/api';
+import { ShoppingBag, Eye, User, Search, Truck, X, Filter, ChevronRight, Hash, Clock, Landmark, RotateCcw } from 'lucide-react';
 
 const COURIERS = [
   { key: 'THE_COURIER_GUY', name: 'The Courier Guy' },
@@ -18,6 +18,9 @@ export function Orders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
+  const [returnOrder, setReturnOrder] = useState(null); // full order detail with items+returnItems
+  const [returnLines, setReturnLines] = useState({}); // { [orderItemId]: { quantity, condition, note } }
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -54,7 +57,54 @@ export function Orders() {
     }
   };
 
-  const filteredOrders = orders.filter(o => 
+  const remainingReturnable = (item) => {
+    const alreadyReturned = (item.returnItems || []).reduce((sum, r) => sum + r.quantity, 0);
+    return item.quantity - alreadyReturned;
+  };
+
+  const handleOpenReturn = async (order) => {
+    try {
+      const detail = await ordersApi.getDetail(order.id);
+      setReturnOrder(detail);
+      const initialLines = {};
+      (detail.items || []).forEach(item => {
+        initialLines[item.id] = { quantity: 0, condition: 'GOOD', note: '' };
+      });
+      setReturnLines(initialLines);
+    } catch (err) {
+      alert('Failed to load order detail: ' + err.message);
+    }
+  };
+
+  const updateReturnLine = (itemId, field, value) => {
+    setReturnLines(prev => ({ ...prev, [itemId]: { ...prev[itemId], [field]: value } }));
+  };
+
+  const handleSubmitReturns = async (e) => {
+    e.preventDefault();
+    const toProcess = Object.entries(returnLines).filter(([, line]) => parseInt(line.quantity) > 0);
+    if (!toProcess.length) return alert('Enter a quantity for at least one item to return.');
+
+    setReturnSubmitting(true);
+    try {
+      for (const [orderItemId, line] of toProcess) {
+        await adminOpsApi.returns.create({
+          orderItemId,
+          quantity: parseInt(line.quantity),
+          condition: line.condition,
+          note: line.note || undefined
+        });
+      }
+      setReturnOrder(null);
+      fetchOrders();
+    } catch (err) {
+      alert('Return processing failed: ' + err.message);
+    } finally {
+      setReturnSubmitting(false);
+    }
+  };
+
+  const filteredOrders = orders.filter(o =>
     o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.trackingNumber?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -150,12 +200,17 @@ export function Orders() {
               <button className="btn-mini-action" title="View Dossier">
                 <Eye size={16} /> Inspect
               </button>
-              {o.status === 'PAID' && !o.trackingNumber && (
-                <button 
-                  className="elite-btn-ship" 
+              {o.status === 'paid' && !o.trackingNumber && (
+                <button
+                  className="elite-btn-ship"
                   onClick={() => handleOpenFulfill(o)}
                 >
                   <Truck size={14} /> Dispatch
+                </button>
+              )}
+              {['paid', 'SHIPPED', 'DELIVERED'].includes(o.status) && (
+                <button className="btn-mini-action" onClick={() => handleOpenReturn(o)}>
+                  <RotateCcw size={14} /> Return
                 </button>
               )}
             </div>
@@ -208,6 +263,62 @@ export function Orders() {
                  </button>
                  <button type="button" className="elite-btn-outline" onClick={() => setShowFulfillModal(false)}>Cancel</button>
                </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {returnOrder && (
+        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setReturnOrder(null)}>
+          <div className="elite-modal glass-panel return-modal">
+            <div className="modal-top">
+              <h2 className="couture-text">Process Return</h2>
+              <button className="close-btn" onClick={() => setReturnOrder(null)}><X size={24} /></button>
+            </div>
+            <p className="return-subtitle">Order #{returnOrder.id.substring(0, 8).toUpperCase()} — {returnOrder.shippingAddress ? `${returnOrder.customer?.name || 'Guest'}` : ''}</p>
+
+            <form onSubmit={handleSubmitReturns} className="elite-form">
+              {returnOrder.items?.map(item => {
+                const remaining = remainingReturnable(item);
+                const line = returnLines[item.id] || { quantity: 0, condition: 'GOOD', note: '' };
+                return (
+                  <div key={item.id} className="return-line">
+                    <div className="return-line-header">
+                      <span>{item.variant?.product?.name} ({item.variant?.size})</span>
+                      <span className="return-remaining">{remaining} of {item.quantity} returnable</span>
+                    </div>
+                    {remaining > 0 ? (
+                      <div className="return-line-fields">
+                        <input
+                          type="number" min="0" max={remaining}
+                          value={line.quantity}
+                          onChange={e => updateReturnLine(item.id, 'quantity', e.target.value)}
+                          placeholder="Qty"
+                        />
+                        <select value={line.condition} onChange={e => updateReturnLine(item.id, 'condition', e.target.value)}>
+                          <option value="GOOD">Good — Restock</option>
+                          <option value="DAMAGED">Damaged — Write off</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={line.note}
+                          onChange={e => updateReturnLine(item.id, 'note', e.target.value)}
+                          placeholder="Note (optional)"
+                        />
+                      </div>
+                    ) : (
+                      <p className="return-fulfilled">Fully returned already.</p>
+                    )}
+                  </div>
+                );
+              })}
+
+              <div className="modal-actions-elite">
+                <button type="submit" className="elite-btn" disabled={returnSubmitting}>
+                  {returnSubmitting ? 'Processing...' : 'Record Return'}
+                </button>
+                <button type="button" className="elite-btn-outline" onClick={() => setReturnOrder(null)}>Cancel</button>
+              </div>
             </form>
           </div>
         </div>
@@ -306,7 +417,19 @@ export function Orders() {
 
         .elite-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: eliteFadeIn 0.4s ease-out; }
         .elite-modal { width: 100%; max-width: 440px; padding: 40px; position: relative; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; box-shadow: var(--shadow-lg); }
+        .elite-modal.return-modal { max-width: 560px; max-height: 85vh; overflow-y: auto; }
         .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .return-subtitle { font-size: 0.8rem; color: var(--color-text-muted); margin: -24px 0 24px; }
+
+        .return-line { border: 1px solid var(--color-border); border-radius: 4px; padding: 16px; margin-bottom: 16px; }
+        .return-line-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; }
+        .return-remaining { color: var(--color-text-muted); font-weight: 500; font-size: 0.75rem; }
+        .return-line-fields { display: grid; grid-template-columns: 80px 1fr 1fr; gap: 10px; }
+        .return-line-fields input, .return-line-fields select {
+          background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
+          padding: 8px 10px; color: var(--color-text); font-size: 0.8rem;
+        }
+        .return-fulfilled { font-size: 0.75rem; color: var(--color-text-muted); font-style: italic; margin: 0; }
         
         .elite-glass-input { width: 100%; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: var(--color-text); outline: none; transition: var(--transition); font-size: 0.9rem; }
         .elite-glass-input:focus { border-color: var(--color-primary); background: var(--color-border-light); }

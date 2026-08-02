@@ -346,7 +346,7 @@ async function handleCurrencyChange(e) {
   } else {
     // Reload other globals
     PRODUCTS = await fetchProducts();
-    if (document.getElementById('featured-products')) renderProducts('featured-products', PRODUCTS.filter(p => p.isActive), 8);
+    if (document.getElementById('featured-products')) renderProducts('featured-products', PRODUCTS.filter(p => p.status === 'ACTIVE'), 8);
     if (document.querySelector('.product-detail')) window.location.reload(); // Refresh detail page values
   }
   
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     PRODUCTS = await fetchProducts();
     if (document.getElementById('featured-products')) {
-      const featured = PRODUCTS.filter(p => (p.isActive || p.is_active === true)).slice(0, 8);
+      const featured = PRODUCTS.filter(p => p.status === 'ACTIVE').slice(0, 8);
       renderProducts('featured-products', featured);
     }
   }

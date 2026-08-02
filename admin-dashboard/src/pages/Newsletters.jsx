@@ -791,6 +791,17 @@ export function Newsletters() {
         .animate-in { animation: cardIn 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards; opacity: 0; transform: translateY(10px); }
         @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+        @media (max-width: 768px) {
+          .elite-products-container { padding: 20px; }
+          .header-main { flex-direction: column; align-items: stretch; }
+          .atelier-title { font-size: 2rem; }
+          .atelier-discovery { flex-direction: column; align-items: stretch; }
+          .search-glass-container { max-width: none; }
+          .tab-buttons { flex-wrap: wrap; }
+          .atelier-grid { grid-template-columns: 1fr; }
+          .modal-content { padding: 24px; }
+        }
       `}} />
     </div>
   );

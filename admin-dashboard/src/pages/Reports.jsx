@@ -1,10 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { FileBarChart, Download, Calendar, Loader2 } from 'lucide-react';
+import { FileBarChart, Download, Calendar, Loader2, Boxes, AlertTriangle, Ban, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
+
+const FINANCE_PERIODS = [
+  { value: '7d', label: 'Last 7 Days' },
+  { value: '30d', label: 'Last 30 Days' },
+  { value: '90d', label: 'Last 90 Days' },
+  { value: '365d', label: 'Last 12 Months' },
+  { value: 'all', label: 'All Time' },
+];
 
 export function Reports() {
   const [loading, setLoading] = useState(false);
   const [monthOffset, setMonthOffset] = useState(1);
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [financePeriod, setFinancePeriod] = useState('30d');
+  const [finance, setFinance] = useState(null);
+  const [financeLoading, setFinanceLoading] = useState(true);
+
+  useEffect(() => {
+    adminOpsApi.reports.inventorySummary()
+      .then(setSummary)
+      .catch(err => console.warn('Inventory summary failed:', err.message))
+      .finally(() => setSummaryLoading(false));
+  }, []);
+
+  useEffect(() => {
+    setFinanceLoading(true);
+    adminOpsApi.reports.financeSummary(financePeriod)
+      .then(setFinance)
+      .catch(err => console.warn('Finance summary failed:', err.message))
+      .finally(() => setFinanceLoading(false));
+  }, [financePeriod]);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -30,7 +58,89 @@ export function Reports() {
         <h2 className="page-title">Executive Intelligence</h2>
       </div>
 
-      <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+      <div className="card" style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Wallet size={22} color="var(--color-primary)" />
+            <h3 style={{ margin: 0 }}>Finance &amp; Margin</h3>
+          </div>
+          <select
+            value={financePeriod}
+            onChange={(e) => setFinancePeriod(e.target.value)}
+            className="admin-input"
+            style={{ width: 'auto' }}
+          >
+            {FINANCE_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+          </select>
+        </div>
+
+        {financeLoading ? (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Calculating margin...</p>
+        ) : finance ? (
+          <>
+            <div className="inv-stat-grid finance-stat-grid">
+              <div className="inv-stat">
+                <span className="inv-stat-label">Revenue</span>
+                <span className="inv-stat-value">R{finance.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label">Cost of Goods Sold</span>
+                <span className="inv-stat-value">R{finance.cogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label"><PiggyBank size={12} /> Gross Profit</span>
+                <span className="inv-stat-value" style={{ color: finance.grossProfit >= 0 ? '#2ecc71' : 'var(--color-error-text)' }}>
+                  R{finance.grossProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label">Margin</span>
+                <span className="inv-stat-value">{finance.marginPercent.toFixed(1)}%</span>
+              </div>
+            </div>
+
+            {finance.costCoveragePercent < 100 && (
+              <p className="finance-coverage-note">
+                Cost data covers {finance.costCoveragePercent.toFixed(0)}% of line items in this period ({finance.itemsWithCostData} of {finance.itemsTotal}).
+                Orders placed before cost snapshotting was introduced don't carry a cost record, so margin above is calculated only from items that have one — it understates true profit if coverage is well below 100%.
+              </p>
+            )}
+
+            {finance.topProducts?.length > 0 && (
+              <div className="finance-table-wrap">
+                <table className="finance-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Units</th>
+                      <th>Revenue</th>
+                      <th>COGS</th>
+                      <th>Gross Profit</th>
+                      <th>Margin</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {finance.topProducts.map(p => (
+                      <tr key={p.productName}>
+                        <td>{p.productName}</td>
+                        <td>{p.unitsSold}</td>
+                        <td>R{p.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                        <td>{p.cogs != null ? `R${p.cogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}</td>
+                        <td>{p.grossProfit != null ? `R${p.grossProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}</td>
+                        <td>{p.marginPercent != null ? `${p.marginPercent.toFixed(1)}%` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Finance summary unavailable.</p>
+        )}
+      </div>
+
+      <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
              <FileBarChart size={24} color="var(--color-primary)" />
@@ -39,13 +149,13 @@ export function Reports() {
           <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
             Generate a high-fidelity executive report containing revenue analytics, best-selling fragrance variants, and customer acquisition metrics for any previous month.
           </p>
-          
+
           <div className="form-group" style={{ marginBottom: '20px' }}>
              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Calendar size={14} /> Select Previous Month
              </label>
-             <select 
-               value={monthOffset} 
+             <select
+               value={monthOffset}
                onChange={(e) => setMonthOffset(parseInt(e.target.value))}
                className="admin-input"
                style={{ marginTop: '8px' }}
@@ -56,8 +166,8 @@ export function Reports() {
              </select>
           </div>
 
-          <button 
-            className="btn btn--primary" 
+          <button
+            className="btn btn--primary"
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
             disabled={loading}
             onClick={handleGenerate}
@@ -67,14 +177,110 @@ export function Reports() {
           </button>
         </div>
 
-        <div className="card" style={{ opacity: 0.7 }}>
-           <h3 style={{ marginBottom: '12px' }}>Inventory Health Forecast</h3>
-           <p style={{ fontSize: '0.85rem' }}>Automated daily replenishment analysis available in Dashboard overview.</p>
-           <div style={{ padding: '20px', border: '1px dashed var(--color-border)', borderRadius: '8px', textAlign: 'center', marginTop: '20px' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Advanced AI Predictions coming soon.</p>
-           </div>
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <Boxes size={22} color="var(--color-primary)" />
+            <h3 style={{ margin: 0 }}>Inventory Health</h3>
+          </div>
+          {summaryLoading ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Loading inventory snapshot...</p>
+          ) : summary ? (
+            <div className="inv-stat-grid">
+              <div className="inv-stat">
+                <span className="inv-stat-label">Stock on Hand</span>
+                <span className="inv-stat-value">{summary.stockOnHand.toLocaleString()} units</span>
+              </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label">Stock Value</span>
+                <span className="inv-stat-value">R{summary.stockValue.toLocaleString()}</span>
+              </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label">Incoming</span>
+                <span className="inv-stat-value" style={{ color: summary.incomingStock > 0 ? '#2ecc71' : '' }}>{summary.incomingStock?.toLocaleString() || 0} units</span>
+              </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label"><AlertTriangle size={12} /> Low Stock</span>
+                <span className="inv-stat-value" style={{ color: summary.lowStockCount > 0 ? 'var(--color-error-text)' : '' }}>{summary.lowStockCount}</span>
+              </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label"><Ban size={12} /> Out of Stock</span>
+                <span className="inv-stat-value" style={{ color: summary.outOfStockCount > 0 ? 'var(--color-error-text)' : '' }}>{summary.outOfStockCount}</span>
+              </div>
+            </div>
+          ) : (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Inventory snapshot unavailable.</p>
+          )}
         </div>
       </div>
+
+      {summary && (summary.lowStockItems?.length > 0 || summary.slowMoving?.length > 0) && (
+        <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+          {summary.lowStockItems?.length > 0 && (
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <AlertTriangle size={18} color="var(--color-error-text, #c0392b)" />
+                <h3 style={{ margin: 0 }}>Low Stock Report</h3>
+              </div>
+              <div className="report-list">
+                {summary.lowStockItems.map(item => (
+                  <div key={item.variantId} className="report-row">
+                    <div>
+                      <span className="report-row-title">{item.productName} ({item.size})</span>
+                      <span className="report-row-subtitle">{item.supplier || 'In-House'}{item.incoming > 0 ? ` · +${item.incoming} incoming` : ''}</span>
+                    </div>
+                    <span className="report-row-value">{item.available} / {item.lowStockThreshold}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {summary.slowMoving?.length > 0 && (
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <TrendingDown size={18} color="var(--color-text-muted)" />
+                <h3 style={{ margin: 0 }}>Slow Moving Products</h3>
+              </div>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '12px' }}>
+                In-stock variants with zero sales in the last 60 days.
+              </p>
+              <div className="report-list">
+                {summary.slowMoving.map(item => (
+                  <div key={item.variantId} className="report-row">
+                    <span className="report-row-title">{item.productName} ({item.size})</span>
+                    <span className="report-row-value">{item.quantity} on hand</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .inv-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .finance-stat-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 16px; }
+        .inv-stat { padding: 14px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; display: flex; flex-direction: column; gap: 6px; }
+        .inv-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px; }
+        .inv-stat-value { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        .finance-coverage-note {
+          font-size: 0.78rem; color: var(--color-warning-text, #92400e); background: rgba(251, 191, 36, 0.1);
+          border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 4px; padding: 10px 14px; margin-bottom: 16px;
+        }
+
+        .finance-table-wrap { overflow-x: auto; }
+        .finance-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .finance-table th { text-align: left; padding: 8px 12px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+        .finance-table td { padding: 8px 12px; border-bottom: 1px solid var(--color-border-light, var(--color-border)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .finance-table tr:last-child td { border-bottom: none; }
+
+        .report-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
+        .report-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; }
+        .report-row-title { display: block; font-size: 0.85rem; font-weight: 600; }
+        .report-row-subtitle { display: block; font-size: 0.7rem; color: var(--color-text-muted); }
+        .report-row-value { font-size: 0.8rem; font-weight: 700; color: var(--color-primary); white-space: nowrap; margin-left: 12px; }
+      `}} />
     </div>
   );
 }

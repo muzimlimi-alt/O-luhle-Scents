@@ -20,6 +20,8 @@ export function requireAdmin(req, res, next) {
     if (req.user.role?.toUpperCase() !== 'ADMIN') {
       return res.status(403).json({ error: 'Admin access required' })
     }
+    // admin_ops.js audit-log writes read req.adminId, not req.user.id
+    req.adminId = req.user.id
     next()
   })
 }

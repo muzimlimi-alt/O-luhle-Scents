@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import https from 'https'
 import prisma from '../lib/prisma.js'
 import { generateInvoice, sendWhatsAppNotification } from '../lib/invoiceService.js'
+import { consumeReservation } from '../lib/inventoryService.js'
 
 import { buildSignature, isPayfastIP, validateItnWithPayfast } from '../utils/payfast.js'
 
@@ -67,7 +68,8 @@ router.post('/payfast', async (req, res) => {
         const order = await tx.order.findUnique({
           where: { id: orderId },
           include: {
-            items: { include: { variant: { include: { product: true } } } }
+            items: { include: { variant: { include: { product: true } } } },
+            reservations: { where: { consumedAt: null, releasedAt: null } }
           }
         })
 
@@ -94,9 +96,21 @@ router.post('/payfast', async (req, res) => {
           }
         })
 
-        // 3c. Deduct Inventory & Log
+        // 3c. Consume the stock held at checkout — moves reserved units into
+        // an actual sale (decrements quantity + reserved together) and logs it.
+        const reservedVariantIds = new Set(order.reservations.map(r => r.variantId))
+        for (const reservation of order.reservations) {
+          const item = order.items.find(i => i.variantId === reservation.variantId)
+          await consumeReservation(tx, reservation, {
+            productName: item?.variant?.product?.name,
+            variantSize: item?.variant?.size
+          })
+        }
+
+        // Defensive fallback for orders placed before reservations existed
+        // (no InventoryReservation row for the item): decrement directly.
         for (const item of order.items) {
-          if (!item.variantId) continue
+          if (!item.variantId || reservedVariantIds.has(item.variantId)) continue
 
           const productName = item.variant?.product?.name || 'Aromatic Formulation'
 
@@ -114,8 +128,7 @@ router.post('/payfast', async (req, res) => {
               referenceId: orderId
             }
           })
-          
-          // Create a Notification for low stock if needed
+
           const updatedInv = await tx.inventory.findUnique({ where: { variantId: item.variantId } })
           if (updatedInv.quantity <= updatedInv.lowStockThreshold) {
             await tx.notification.create({

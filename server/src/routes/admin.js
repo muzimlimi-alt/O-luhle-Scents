@@ -13,15 +13,23 @@ router.get('/metrics/dashboard', requireAdmin, async (req, res, next) => {
     })
     const orders = await prisma.order.count()
     const customers = await prisma.customer.count()
-    const lowStock = await prisma.inventory.count({
-      where: { quantity: { lte: prisma.inventory.lowStockThreshold } }
+
+    // Prisma can't compare two columns of the same row (quantity <= lowStockThreshold)
+    // in a where clause, so this is filtered in JS rather than the DB.
+    const inventory = await prisma.inventory.findMany({
+      select: { quantity: true, reserved: true, lowStockThreshold: true, variant: { select: { costPrice: true } } }
     })
+    const lowStock = inventory.filter(i => i.quantity <= i.lowStockThreshold).length
+    const outOfStock = inventory.filter(i => i.quantity - i.reserved <= 0).length
+    const stockValue = inventory.reduce((sum, i) => sum + i.quantity * Number(i.variant?.costPrice || 0), 0)
 
     res.json({
       revenue: Number(revenue._sum.totalAmount) || 0,
       orders,
       customers,
-      lowStock
+      lowStock,
+      outOfStock,
+      stockValue
     })
   } catch (err) { next(err) }
 })

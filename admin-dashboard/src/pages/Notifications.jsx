@@ -13,6 +13,21 @@ import {
 } from 'lucide-react';
 import { DateTime } from 'luxon';
 
+// The Notification model has no title field — type ("LOW_STOCK") is all
+// there is to summarize it with, so humanize it for display.
+const humanizeType = (type) => (type || '')
+  .toLowerCase()
+  .replace(/_/g, ' ')
+  .replace(/\b\w/g, c => c.toUpperCase());
+
+// Only LOW_STOCK and PAYMENT_MISMATCH are actually created anywhere in the
+// app today; anything else falls back to the neutral/info treatment rather
+// than assuming a fixed INFO/WARNING/ERROR vocabulary that doesn't exist.
+const SEVERITY = {
+  PAYMENT_MISMATCH: 'critical',
+  LOW_STOCK: 'warning',
+};
+
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +68,13 @@ export default function Notifications() {
   };
 
   const filtered = notifications.filter(n => {
-    const matchesSearch = n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = humanizeType(n.type).toLowerCase().includes(searchTerm.toLowerCase()) ||
                           n.message.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === '' || n.type === typeFilter;
     return matchesSearch && matchesType;
   });
+
+  const availableTypes = [...new Set(notifications.map(n => n.type))];
 
   return (
     <div className="elite-notifications-container animate-fade-in">
@@ -85,9 +102,9 @@ export default function Notifications() {
               <Filter size={14} className="glass-icon" />
               <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                 <option value="">Alerts: All Types</option>
-                <option value="INFO">System Information</option>
-                <option value="WARNING">Operational Warning</option>
-                <option value="ERROR">Critical Failure</option>
+                {availableTypes.map(type => (
+                  <option key={type} value={type}>{humanizeType(type)}</option>
+                ))}
               </select>
            </div>
         </div>
@@ -109,8 +126,8 @@ export default function Notifications() {
             <div key={n.id} className={`elite-glass alert-card fade-in-blur ${!n.isRead ? 'unread' : 'read'}`}>
               <div className="alert-card-side">
                 {!n.isRead && <div className="unread-pulse"></div>}
-                <div className={`alert-icon-box ${n.type.toLowerCase()}`}>
-                   {n.type === 'ERROR' ? <AlertTriangle size={20} /> : n.type === 'WARNING' ? <Info size={20} /> : <CheckCircle size={20} />}
+                <div className={`alert-icon-box ${SEVERITY[n.type] === 'critical' ? 'error' : SEVERITY[n.type] === 'warning' ? 'warning' : 'info'}`}>
+                   {SEVERITY[n.type] === 'critical' ? <AlertTriangle size={20} /> : SEVERITY[n.type] === 'warning' ? <Info size={20} /> : <CheckCircle size={20} />}
                 </div>
               </div>
 
@@ -119,7 +136,7 @@ export default function Notifications() {
                   <span className="alert-type-tag">{n.type}</span>
                   <span className="alert-time">{DateTime.fromISO(n.createdAt).toRelative()}</span>
                 </div>
-                <h3 className="alert-title">{n.title}</h3>
+                <h3 className="alert-title">{humanizeType(n.type)}</h3>
                 <p className="alert-message">{n.message}</p>
                 
                 <div className="alert-footer">

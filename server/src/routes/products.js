@@ -6,6 +6,12 @@ import fs from 'fs'
 import prisma from '../lib/prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
 import { convertPrice } from '../lib/currencyService.js'
+import { adjustStock } from '../lib/inventoryService.js'
+import { generateUniqueProductSlug } from '../lib/slug.js'
+import { syncProductMedia } from '../lib/mediaService.js'
+
+const PRODUCT_STATUSES = ['ACTIVE', 'DRAFT', 'ARCHIVED']
+const PRODUCT_FAMILIES = ['PERFUME', 'CANDLE', 'HOME_FRAGRANCE', 'ACCESSORY', 'GIFT_SET']
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const uploadDir = path.join(__dirname, '../../../images/products')
@@ -59,11 +65,12 @@ router.get('/', async (req, res, next) => {
 
     // Admins (Bearer token present) see all products by default; storefront only sees active
     const isAdmin = !!req.headers.authorization
-    const where = isAdmin ? {} : { isActive: true }
+    const where = isAdmin ? {} : { status: 'ACTIVE' }
 
     // If admin explicitly requests a status
     if (isAdmin && status && status !== 'all') {
-      where.isActive = status === 'active'
+      const upper = status.toUpperCase()
+      if (PRODUCT_STATUSES.includes(upper)) where.status = upper
     }
 
     if (category && category !== 'all') {
@@ -80,13 +87,15 @@ router.get('/', async (req, res, next) => {
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
         { brand: { contains: search, mode: 'insensitive' } },
-        { tags: { contains: search, mode: 'insensitive' } }
+        { tags: { has: search } }
       ]
     }
-    
+
     if (tags) {
-      const tagList = tags.split(',')
-      where.AND = tagList.map(t => ({ tags: { contains: t } }))
+      // tags is now a String[] column (PIM) — hasEvery matches the original
+      // "must have all of these tags" intent, not the old string `contains`.
+      const tagList = tags.split(',').map(t => t.trim()).filter(Boolean)
+      where.tags = { hasEvery: tagList }
     }
 
     if (minPrice || maxPrice) {
@@ -113,10 +122,13 @@ router.get('/', async (req, res, next) => {
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        include: { 
+        include: {
           category: true,
           supplier: true,
-          variants: { include: { inventory: true } } 
+          brandRef: true,
+          variants: { include: { inventory: true } },
+          attributeValues: { include: { definition: true } },
+          media: { include: { media: true }, orderBy: { sortOrder: 'asc' } }
         },
         orderBy,
         skip,
@@ -159,14 +171,16 @@ router.get('/:id', async (req, res, next) => {
       where: { id: req.params.id },
       include: {
         category: true,
-        variants: { 
+        variants: {
           include: { inventory: true },
           orderBy: { price: 'asc' }
-        }
+        },
+        attributeValues: { include: { definition: true } },
+        media: { include: { media: true }, orderBy: { sortOrder: 'asc' } }
       }
     })
 
-    if (!product || (!product.isActive && !req.headers.authorization)) {
+    if (!product || (product.status !== 'ACTIVE' && !req.headers.authorization)) {
       return res.status(404).json({ error: 'Scent not found' })
     }
 
@@ -181,7 +195,7 @@ router.get('/:id', async (req, res, next) => {
       where: {
         categoryId: product.categoryId,
         id: { not: product.id },
-        isActive: true
+        status: 'ACTIVE'
       },
       take: 4,
       include: { variants: true }
@@ -219,10 +233,14 @@ router.get('/low-stock', requireAdmin, async (req, res, next) => {
 // POST /api/products (admin only)
 router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next) => {
   try {
-    const { 
-      name, brand, description, categoryId, variants, supplierId, 
-      collection, type, scentFamily, 
-      topNotes, heartNotes, baseNotes, cardBadge 
+    const {
+      name, brand, description, categoryId, variants, supplierId,
+      collection, type, scentFamily, status,
+      topNotes, heartNotes, baseNotes, cardBadge,
+      internalName, family, brandId, tags, launchDate, retirementDate,
+      shortDescription, marketingDescription, ingredients,
+      usageInstructions, safetyWarnings, careInstructions,
+      metaTitle, metaDescription, attributes
     } = req.body
 
     // Auto-population Logic (Backend Enforcement)
@@ -257,25 +275,28 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
     const files = req.files || []
     const filenames = files.map(f => f.filename)
     const primaryImage = filenames.length > 0 ? filenames[0] : null
-    
+
     const parsedVariants = JSON.parse(variants || '[]')
+    const parsedTags = (() => { try { return JSON.parse(tags || '[]') } catch { return [] } })()
+    const slug = await generateUniqueProductSlug(name)
 
     const product = await prisma.$transaction(async (tx) => {
       // Defensive UUID handling
       const safeCategoryId = (categoryId && categoryId !== "" && categoryId !== "undefined") ? categoryId : null;
       const safeSupplierId = (supplierId && supplierId !== "" && supplierId !== "undefined") ? supplierId : null;
+      const safeBrandId = (brandId && brandId !== "" && brandId !== "undefined") ? brandId : null;
 
       const p = await tx.product.create({
         data: {
-          name, 
-          brand: brand || "O'luhle Scents", 
-          description: description || "", 
+          name,
+          brand: brand || "O'luhle Scents",
+          description: description || "",
           category: safeCategoryId ? { connect: { id: safeCategoryId } } : undefined,
           supplier: safeSupplierId ? { connect: { id: safeSupplierId } } : undefined,
           images: JSON.stringify(filenames),
           primaryImage,
           cardBadge,
-          isActive: true,
+          status: PRODUCT_STATUSES.includes(status) ? status : 'ACTIVE',
           collection,
           type,
           oilConcentration,
@@ -284,7 +305,22 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
           characteristic,
           topNotes,
           heartNotes,
-          baseNotes
+          baseNotes,
+          slug,
+          internalName: internalName || null,
+          brandRef: safeBrandId ? { connect: { id: safeBrandId } } : undefined,
+          family: PRODUCT_FAMILIES.includes(family) ? family : 'PERFUME',
+          tags: parsedTags,
+          launchDate: launchDate ? new Date(launchDate) : null,
+          retirementDate: retirementDate ? new Date(retirementDate) : null,
+          shortDescription: shortDescription || null,
+          marketingDescription: marketingDescription || null,
+          ingredients: ingredients || null,
+          usageInstructions: usageInstructions || null,
+          safetyWarnings: safetyWarnings || null,
+          careInstructions: careInstructions || null,
+          metaTitle: metaTitle || null,
+          metaDescription: metaDescription || null
         }
       })
 
@@ -309,22 +345,62 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
           }
         })
         
+        const startingQuantity = parseInt(v.quantity || 0)
         await tx.inventory.create({
           data: {
             variantId: variant.id,
-            quantity: parseInt(v.quantity || 0),
+            quantity: startingQuantity,
             lowStockThreshold: parseInt(v.lowStockThreshold || 5)
           }
         })
+
+        if (startingQuantity > 0) {
+          await tx.inventoryLog.create({
+            data: {
+              variantId: variant.id,
+              changeType: 'INITIAL_STOCK',
+              quantityChanged: startingQuantity,
+              reason: 'Opening stock on product creation',
+              referenceId: p.id
+            }
+          })
+        }
       }
+
+      // Family-specific attribute values (e.g. Candle -> Wax Type). Keyed by
+      // AttributeDefinition id, populated by ProductModal's dynamic form.
+      const parsedAttributes = (() => { try { return JSON.parse(attributes || '{}') } catch { return {} } })()
+      for (const [definitionId, value] of Object.entries(parsedAttributes)) {
+        if (value === '' || value === null || value === undefined) continue
+        await tx.productAttributeValue.create({
+          data: { productId: p.id, definitionId, value: String(value) }
+        })
+      }
+
+      await syncProductMedia(tx, p.id, filenames)
+
       return tx.product.findUnique({
         where: { id: p.id },
-        include: { variants: { include: { inventory: true } } }
+        include: {
+          variants: { include: { inventory: true } },
+          attributeValues: { include: { definition: true } },
+          media: { include: { media: true }, orderBy: { sortOrder: 'asc' } }
+        }
       })
     })
 
+    await prisma.auditLog.create({
+      data: {
+        adminUserId: req.adminId,
+        action: 'CREATE_PRODUCT',
+        entity: 'Product',
+        entityId: product.id,
+        details: { name: product.name, slug: product.slug, family: product.family, status: product.status }
+      }
+    })
+
     res.status(201).json(product)
-  } catch (err) { 
+  } catch (err) {
     console.error('[POST /api/products] Error:', err);
     next(err);
   }
@@ -334,12 +410,19 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
 router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, next) => {
   try {
     console.log('[PATCH /api/products/:id] Payload:', { id: req.params.id, body: req.body, files: req.files?.length });
-    const { 
-      name, brand, description, categoryId, isActive, variants, 
-      collection, type, scentFamily, 
+    const {
+      name, brand, description, categoryId, status, variants,
+      collection, type, scentFamily,
       topNotes, heartNotes, baseNotes, cardBadge,
-      existingImages 
+      existingImages,
+      internalName, family, brandId, tags, launchDate, retirementDate,
+      shortDescription, marketingDescription, ingredients,
+      usageInstructions, safetyWarnings, careInstructions,
+      metaTitle, metaDescription, slug: requestedSlug, attributes
     } = req.body
+
+    const previous = await prisma.product.findUnique({ where: { id: req.params.id } })
+    if (!previous) return res.status(404).json({ error: 'Product not found' })
 
     // Auto-population Logic (Backend Enforcement)
     let oilConcentration = "Varies";
@@ -379,23 +462,36 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
     const allImages = [...currentImages, ...newFiles]
     const primaryImage = allImages.length > 0 ? allImages[0] : null
 
+    // Slugs are stable once set — only touched when the admin explicitly
+    // edits it via an SEO field, never silently regenerated from a rename
+    // (that would break any link already shared to the old slug).
+    let resolvedSlug = undefined
+    if (requestedSlug !== undefined && requestedSlug !== previous.slug) {
+      resolvedSlug = requestedSlug ? await generateUniqueProductSlug(requestedSlug, previous.id) : null
+    }
+    const parsedTags = tags !== undefined ? (() => { try { return JSON.parse(tags) } catch { return [] } })() : undefined
+
     const product = await prisma.$transaction(async (tx) => {
       // Defensive UUID handling
       const safeCategoryId = (categoryId && categoryId !== "" && categoryId !== "undefined") ? categoryId : null;
       const safeSupplierId = (req.body.supplierId && req.body.supplierId !== "" && req.body.supplierId !== "undefined") ? req.body.supplierId : null;
-      
+      const safeBrandId = (brandId && brandId !== "" && brandId !== "undefined") ? brandId : null;
+
       console.log('[PATCH] Transaction Logic:', { safeCategoryId, safeSupplierId });
 
       // 1. Update Product details
       const p = await tx.product.update({
         where: { id: req.params.id },
-        data: { 
-          name, 
-          brand, 
-          description, 
-          category: safeCategoryId ? { connect: { id: safeCategoryId } } : { disconnect: true },
-          supplier: safeSupplierId ? { connect: { id: safeSupplierId } } : { disconnect: true },
-          isActive: isActive === 'true' || isActive === true,
+        data: {
+          name,
+          brand,
+          description,
+          // Only touch these relations when the field was actually part of the
+          // request — omitting a field must never silently disconnect it
+          // (a partial PATCH previously stripped category/supplier entirely).
+          category: categoryId !== undefined ? (safeCategoryId ? { connect: { id: safeCategoryId } } : { disconnect: true }) : undefined,
+          supplier: req.body.supplierId !== undefined ? (safeSupplierId ? { connect: { id: safeSupplierId } } : { disconnect: true }) : undefined,
+          status: PRODUCT_STATUSES.includes(status) ? status : undefined,
           images: JSON.stringify(allImages),
           primaryImage,
           cardBadge,
@@ -407,7 +503,22 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
           characteristic,
           topNotes,
           heartNotes,
-          baseNotes
+          baseNotes,
+          slug: resolvedSlug,
+          internalName: internalName !== undefined ? (internalName || null) : undefined,
+          brandRef: brandId !== undefined ? (safeBrandId ? { connect: { id: safeBrandId } } : { disconnect: true }) : undefined,
+          family: PRODUCT_FAMILIES.includes(family) ? family : undefined,
+          tags: parsedTags,
+          launchDate: launchDate !== undefined ? (launchDate ? new Date(launchDate) : null) : undefined,
+          retirementDate: retirementDate !== undefined ? (retirementDate ? new Date(retirementDate) : null) : undefined,
+          shortDescription: shortDescription !== undefined ? (shortDescription || null) : undefined,
+          marketingDescription: marketingDescription !== undefined ? (marketingDescription || null) : undefined,
+          ingredients: ingredients !== undefined ? (ingredients || null) : undefined,
+          usageInstructions: usageInstructions !== undefined ? (usageInstructions || null) : undefined,
+          safetyWarnings: safetyWarnings !== undefined ? (safetyWarnings || null) : undefined,
+          careInstructions: careInstructions !== undefined ? (careInstructions || null) : undefined,
+          metaTitle: metaTitle !== undefined ? (metaTitle || null) : undefined,
+          metaDescription: metaDescription !== undefined ? (metaDescription || null) : undefined
         }
       })
 
@@ -422,22 +533,37 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
           if (v.id) {
             await tx.productVariant.update({
               where: { id: v.id },
-              data: { 
-                size: v.size, 
-                price: parseFloat(v.price) || 0, 
+              data: {
+                size: v.size,
+                price: parseFloat(v.price) || 0,
                 costPrice: (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0,
                 barcode: v.barcode || undefined,
                 uom: v.uom,
-                volume
+                volume,
+                weightGrams: v.weightGrams !== undefined && v.weightGrams !== '' ? parseInt(v.weightGrams) : undefined
               }
             })
-            if (v.quantity !== undefined || v.lowStockThreshold !== undefined) {
+
+            // Stock quantity is never overwritten directly — a delta is
+            // computed and routed through adjustStock so it's always ledgered.
+            if (v.quantity !== undefined) {
+              const currentInventory = await tx.inventory.findUnique({ where: { variantId: v.id } })
+              const nextQuantity = parseInt(v.quantity)
+              const delta = nextQuantity - (currentInventory?.quantity || 0)
+              if (currentInventory && delta !== 0) {
+                await adjustStock(tx, {
+                  variantId: v.id,
+                  delta,
+                  changeType: 'CORRECTION',
+                  reason: 'Manual correction via product edit',
+                  referenceId: p.id
+                })
+              }
+            }
+            if (v.lowStockThreshold !== undefined) {
               await tx.inventory.updateMany({
                 where: { variantId: v.id },
-                data: { 
-                  quantity: v.quantity !== undefined ? parseInt(v.quantity) : undefined,
-                  lowStockThreshold: v.lowStockThreshold !== undefined ? parseInt(v.lowStockThreshold) : undefined
-                }
+                data: { lowStockThreshold: parseInt(v.lowStockThreshold) }
               })
             }
           } else {
@@ -450,28 +576,79 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
                 sku: v.sku || `SKU-${Date.now()}`,
                 barcode: v.barcode || null,
                 uom: v.uom || 'ml',
-                volume: parseInt(v.volume || 0)
+                volume: parseInt(v.volume || 0),
+                weightGrams: v.weightGrams !== undefined && v.weightGrams !== '' ? parseInt(v.weightGrams) : undefined
               }
             })
+            const startingQuantity = parseInt(v.quantity || 0)
             await tx.inventory.create({
-              data: { 
-                variantId: nv.id, 
-                quantity: parseInt(v.quantity || 0),
+              data: {
+                variantId: nv.id,
+                quantity: startingQuantity,
                 lowStockThreshold: parseInt(v.lowStockThreshold || 5)
               }
             })
+            if (startingQuantity > 0) {
+              await tx.inventoryLog.create({
+                data: {
+                  variantId: nv.id,
+                  changeType: 'INITIAL_STOCK',
+                  quantityChanged: startingQuantity,
+                  reason: 'Opening stock for new variation',
+                  referenceId: p.id
+                }
+              })
+            }
           }
         }
       }
 
+      // 3. Sync attribute values (full replace — the family-aware form always
+      // submits the complete current attribute set).
+      if (attributes !== undefined) {
+        const parsedAttributes = (() => { try { return JSON.parse(attributes) } catch { return {} } })()
+        await tx.productAttributeValue.deleteMany({ where: { productId: req.params.id } })
+        for (const [definitionId, value] of Object.entries(parsedAttributes)) {
+          if (value === '' || value === null || value === undefined) continue
+          await tx.productAttributeValue.create({
+            data: { productId: req.params.id, definitionId, value: String(value) }
+          })
+        }
+      }
+
+      await syncProductMedia(tx, req.params.id, allImages)
+
       return tx.product.findUnique({
         where: { id: req.params.id },
-        include: { variants: { include: { inventory: true } } }
+        include: {
+          variants: { include: { inventory: true } },
+          attributeValues: { include: { definition: true } },
+          media: { include: { media: true }, orderBy: { sortOrder: 'asc' } }
+        }
       })
     })
 
+    const TRACKED_FIELDS = ['name', 'brand', 'status', 'family', 'slug', 'categoryId', 'supplierId', 'brandId']
+    const changes = {}
+    for (const field of TRACKED_FIELDS) {
+      if (previous[field] !== product[field]) {
+        changes[field] = { from: previous[field], to: product[field] }
+      }
+    }
+    if (Object.keys(changes).length > 0) {
+      await prisma.auditLog.create({
+        data: {
+          adminUserId: req.adminId,
+          action: 'UPDATE_PRODUCT',
+          entity: 'Product',
+          entityId: product.id,
+          details: { changes }
+        }
+      })
+    }
+
     res.json(product)
-  } catch (err) { 
+  } catch (err) {
     console.error('[PATCH /api/products/:id] Error:', err);
     next(err);
   }
@@ -481,9 +658,18 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
 // DELETE /api/products/:id (soft delete)
 router.delete('/:id', requireAdmin, async (req, res, next) => {
   try {
-    await prisma.product.update({
+    const product = await prisma.product.update({
       where: { id: req.params.id },
-      data: { isActive: false }
+      data: { status: 'ARCHIVED' }
+    })
+    await prisma.auditLog.create({
+      data: {
+        adminUserId: req.adminId,
+        action: 'ARCHIVE_PRODUCT',
+        entity: 'Product',
+        entityId: product.id,
+        details: { name: product.name }
+      }
     })
     res.status(204).end()
   } catch (err) { next(err) }

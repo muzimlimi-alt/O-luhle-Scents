@@ -71,7 +71,7 @@ export function Coupons() {
             <label>Coupon Code *</label>
             <input type="text" placeholder="e.g. SUMMER2026" required />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="form-grid-2">
             <div className="form-group">
               <label>Type</label>
               <select>
@@ -84,7 +84,7 @@ export function Coupons() {
               <input type="number" placeholder="20" required />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="form-grid-2">
             <div className="form-group">
               <label>Expiry Date</label>
               <input type="date" />
