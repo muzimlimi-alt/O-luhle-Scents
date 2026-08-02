@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { newsletterApi } from '../services/api';
-import { 
+import { Modal } from '../components/Modal';
+import {
   Users, Mail, Plus, Search, Filter, Trash2,
   RefreshCw, CheckCircle, XCircle, Send, Paperclip, Edit2
 } from 'lucide-react';
@@ -560,112 +561,111 @@ export function Newsletters() {
       )}
 
       {/* SUBSCRIBER MODAL */}
-      {isSubModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsSubModalOpen(false)}>
-          <div className="modal-content elite-glass" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <h2 className="atelier-title" style={{ fontSize: '1.8rem', marginBottom: '20px' }}>Add Subscriber</h2>
-            <form onSubmit={handleAddSubscriber}>
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>EMAIL ADDRESS</label>
-                <input 
-                  type="email" 
-                  required 
-                  className="search-glass-input" 
-                  style={{ paddingLeft: '16px' }}
-                  value={newSubEmail} 
-                  onChange={e => setNewSubEmail(e.target.value)} 
-                />
-              </div>
-              {subError && (
-                <div style={{ padding: '12px', background: 'rgba(192,57,43,0.1)', color: 'var(--atelier-error)', borderLeft: '3px solid var(--atelier-error)', marginBottom: '20px', borderRadius: '4px', fontSize: '0.85rem' }}>
-                  {subError}
+      <Modal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} title="Add Subscriber" maxWidth={400}>
+        <form onSubmit={handleAddSubscriber}>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>EMAIL ADDRESS</label>
+            <input
+              type="email"
+              required
+              className="search-glass-input"
+              style={{ paddingLeft: '16px' }}
+              value={newSubEmail}
+              onChange={e => setNewSubEmail(e.target.value)}
+            />
+          </div>
+          {subError && (
+            <div style={{ padding: '12px', background: 'rgba(192,57,43,0.1)', color: 'var(--atelier-error)', borderLeft: '3px solid var(--atelier-error)', marginBottom: '20px', borderRadius: '4px', fontSize: '0.85rem' }}>
+              {subError}
+            </div>
+          )}
+          <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn-pagination" onClick={() => setIsSubModalOpen(false)}>CANCEL</button>
+            <button type="submit" className="btn-elite-primary">ADD SUBSCRIBER</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* CAMPAIGN MODAL — raw mode: Quill's own layout/toolbar don't fit the generic title/body chrome */}
+      <Modal isOpen={isCampModalOpen} onClose={() => setIsCampModalOpen(false)} raw>
+        <div className="campaign-modal-panel elite-glass" style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <h2 className="atelier-title" style={{ fontSize: '2rem', marginBottom: '24px' }}>
+            {campForm.id ? 'Edit Campaign' : 'Compose Newsletters'}
+          </h2>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>SUBJECT LINE</label>
+            <input
+              type="text"
+              className="search-glass-input"
+              style={{ paddingLeft: '16px' }}
+              value={campForm.subject}
+              onChange={e => setCampForm({...campForm, subject: e.target.value})}
+              placeholder="e.g. The Spring Collection is Here"
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>EMAIL CONTENT (RICH TEXT)</label>
+            <div style={{ background: 'var(--color-bg-card)', borderRadius: '8px', overflow: 'hidden', minHeight: '340px' }} className="quill-container-override">
+              {!editorReady && (
+                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text)' }}>
+                   <RefreshCw className="spinner" size={24} />
+                   <span style={{ marginLeft: '10px' }}>Loading Designer Studio...</span>
                 </div>
               )}
-              <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn-pagination" onClick={() => setIsSubModalOpen(false)}>CANCEL</button>
-                <button type="submit" className="btn-elite-primary">ADD SUBSCRIBER</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* CAMPAIGN MODAL */}
-      {isCampModalOpen && (
-        <div className="modal-overlay" style={{ zIndex: 999 }} onClick={() => setIsCampModalOpen(false)}>
-          <div className="modal-content elite-glass" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 className="atelier-title" style={{ fontSize: '2rem', marginBottom: '24px' }}>
-              {campForm.id ? 'Edit Campaign' : 'Compose Newsletters'}
-            </h2>
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>SUBJECT LINE</label>
-              <input 
-                type="text" 
-                className="search-glass-input" 
-                style={{ paddingLeft: '16px' }}
-                value={campForm.subject} 
-                onChange={e => setCampForm({...campForm, subject: e.target.value})} 
-                placeholder="e.g. The Spring Collection is Here"
+              <div
+                ref={quillRef}
+                style={{
+                  display: editorReady ? 'block' : 'none',
+                  height: '300px',
+                  color: 'var(--color-text)'
+                }}
               />
             </div>
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>EMAIL CONTENT (RICH TEXT)</label>
-              <div style={{ background: 'var(--color-bg-card)', borderRadius: '8px', overflow: 'hidden', minHeight: '340px' }} className="quill-container-override">
-                {!editorReady && (
-                  <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text)' }}>
-                     <RefreshCw className="spinner" size={24} />
-                     <span style={{ marginLeft: '10px' }}>Loading Designer Studio...</span>
-                  </div>
-                )}
-                <div 
-                  ref={quillRef} 
-                  style={{ 
-                    display: editorReady ? 'block' : 'none',
-                    height: '300px',
-                    color: 'var(--color-text)'
-                  }} 
-                />
-              </div>
-              <p style={{ fontSize: '0.7rem', color: 'var(--atelier-gold)', marginTop: '12px' }}>
-                * Click the image icon inside the toolbar above to embed images directly into the text layout. Attachments can still be appended silently below.
-              </p>
+            <p style={{ fontSize: '0.7rem', color: 'var(--atelier-gold)', marginTop: '12px' }}>
+              * Click the image icon inside the toolbar above to embed images directly into the text layout. Attachments can still be appended silently below.
+            </p>
+          </div>
+          <div className="form-group" style={{ marginBottom: '30px' }}>
+            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>ATTACHMENTS</label>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
+              {campForm.attachments.map((att, i) => (
+                <div key={i} className="atelier-tag" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Paperclip size={12}/>
+                  <span style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace:'nowrap' }}>{att.filename}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(i)}
+                    aria-label={`Remove attachment ${att.filename}`}
+                    style={{ background: 'none', border: 'none', padding: 0, display: 'inline-flex', cursor: 'pointer', color: 'var(--atelier-error)' }}
+                  >
+                    <XCircle size={12} />
+                  </button>
+                </div>
+              ))}
             </div>
-            <div className="form-group" style={{ marginBottom: '30px' }}>
-              <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>ATTACHMENTS</label>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                {campForm.attachments.map((att, i) => (
-                  <div key={i} className="atelier-tag" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Paperclip size={12}/> 
-                    <span style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace:'nowrap' }}>{att.filename}</span>
-                    <XCircle size={12} style={{ cursor: 'pointer', color: 'var(--atelier-error)' }} onClick={() => removeAttachment(i)} />
-                  </div>
-                ))}
-              </div>
-              <label className="btn-pagination" style={{ display: 'inline-flex', cursor: 'pointer' }}>
-                {uploadingFiles ? 'UPLOADING...' : 'ADD ATTACHMENT'}
-                <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} disabled={uploadingFiles} />
-              </label>
-            </div>
-            
-            <div className="modal-actions" style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', borderTop: '1px solid rgba(184,155,106,0.2)', paddingTop: '24px' }}>
-              <button type="button" className="btn-pagination" onClick={() => setIsCampModalOpen(false)}>CLOSE</button>
-              <button type="button" className="btn-pagination" style={{ color: 'var(--atelier-gold)' }} onClick={handleSaveCampaign} disabled={isSaving || isSending}>
-                {isSaving ? 'SAVING...' : 'SAVE DRAFT'}
-              </button>
-              <button type="button" className="btn-elite-primary" onClick={() => handleSendCampaign()} disabled={isSaving || isSending}>
-                {isSending ? 'SENDING...' : 'SEND CAMPAIGN'}
-              </button>
-            </div>
+            <label className="btn-pagination" style={{ display: 'inline-flex', cursor: 'pointer' }}>
+              {uploadingFiles ? 'UPLOADING...' : 'ADD ATTACHMENT'}
+              <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} disabled={uploadingFiles} />
+            </label>
+          </div>
+
+          <div className="modal-actions" style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', borderTop: '1px solid rgba(184,155,106,0.2)', paddingTop: '24px' }}>
+            <button type="button" className="btn-pagination" onClick={() => setIsCampModalOpen(false)}>CLOSE</button>
+            <button type="button" className="btn-pagination" style={{ color: 'var(--atelier-gold)' }} onClick={handleSaveCampaign} disabled={isSaving || isSending}>
+              {isSaving ? 'SAVING...' : 'SAVE DRAFT'}
+            </button>
+            <button type="button" className="btn-elite-primary" onClick={() => handleSendCampaign()} disabled={isSaving || isSending}>
+              {isSending ? 'SENDING...' : 'SEND CAMPAIGN'}
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* CONFIRMATION MODAL */}
-      {deleteConfirmTarget && (
-        <div className="modal-overlay" style={{ zIndex: 1001 }} onClick={() => setDeleteConfirmTarget(null)}>
-          <div className="modal-content elite-glass animate-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
+      <Modal isOpen={!!deleteConfirmTarget} onClose={() => setDeleteConfirmTarget(null)} title="Are you sure?" maxWidth={400}>
+        {deleteConfirmTarget && (
+          <div style={{ textAlign: 'center' }}>
             <Trash2 size={40} color="var(--atelier-error)" style={{ margin: '0 auto 20px auto' }} />
-            <h2 className="atelier-title" style={{ fontSize: '1.6rem', marginBottom: '10px' }}>Are you sure?</h2>
             <p style={{ color: 'var(--atelier-text-muted)', fontSize: '0.9rem', marginBottom: '30px' }}>
               This action cannot be undone. This {deleteConfirmTarget.type} will be permanently deleted from the database.
             </p>
@@ -674,8 +674,8 @@ export function Newsletters() {
               <button type="button" className="btn-elite-primary" style={{ background: 'var(--atelier-error)' }} onClick={confirmDelete}>YES, DELETE IT</button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* STYLES (inheriting mostly from Products.jsx container scope, adding specific overrides here) */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -774,12 +774,8 @@ export function Newsletters() {
         .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
         .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
 
-        .modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
-          display: flex; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .modal-content { padding: 40px; }
-        
+        .campaign-modal-panel { padding: 40px; }
+
         .btn-pagination {
           background: transparent; border: 1px solid var(--atelier-border);
           color: var(--atelier-text); padding: 10px 20px; border-radius: 8px;
@@ -800,7 +796,7 @@ export function Newsletters() {
           .search-glass-container { max-width: none; }
           .tab-buttons { flex-wrap: wrap; }
           .atelier-grid { grid-template-columns: 1fr; }
-          .modal-content { padding: 24px; }
+          .campaign-modal-panel { padding: 24px; }
         }
       `}} />
     </div>

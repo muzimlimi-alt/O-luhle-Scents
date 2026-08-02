@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { categoriesApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
-import { FolderTree, Plus, X, Edit2, Archive, CornerDownRight } from 'lucide-react';
+import { Modal } from '../components/Modal';
+import { FolderTree, Plus, Edit2, Archive, CornerDownRight } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', description: '', parentId: '', displayOrder: '0' };
 
@@ -131,49 +132,37 @@ export function Categories() {
         />
       </div>
 
-      {showModal && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="elite-modal">
-            <div className="modal-top">
-              <h2>{editing ? 'Edit Category' : 'New Category'}</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}><X size={22} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="cat-form">
-              <div className="cat-field">
-                <label>Name</label>
-                <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required placeholder="e.g. Candles" />
-              </div>
-              <div className="cat-field">
-                <label>Parent Category</label>
-                <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}>
-                  <option value="">None — top level</option>
-                  {availableParents.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="cat-field">
-                <label>Description</label>
-                <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-              </div>
-              <div className="cat-field">
-                <label>Display Order</label>
-                <input type="number" value={form.displayOrder} onChange={e => setForm(f => ({ ...f, displayOrder: e.target.value }))} />
-              </div>
-              <div className="cat-actions">
-                <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn--primary" disabled={submitting}>
-                  {submitting ? 'Saving...' : editing ? 'Save Changes' : 'Create Category'}
-                </button>
-              </div>
-            </form>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Category' : 'New Category'} maxWidth={480}>
+        <form onSubmit={handleSubmit} className="cat-form">
+          <div className="cat-field">
+            <label>Name</label>
+            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required placeholder="e.g. Candles" />
           </div>
-        </div>
-      )}
+          <div className="cat-field">
+            <label>Parent Category</label>
+            <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}>
+              <option value="">None — top level</option>
+              {availableParents.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="cat-field">
+            <label>Description</label>
+            <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+          </div>
+          <div className="cat-field">
+            <label>Display Order</label>
+            <input type="number" value={form.displayOrder} onChange={e => setForm(f => ({ ...f, displayOrder: e.target.value }))} />
+          </div>
+          <div className="cat-actions">
+            <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="submit" className="btn btn--primary" disabled={submitting}>
+              {submitting ? 'Saving...' : editing ? 'Save Changes' : 'Create Category'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.85); backdrop-filter: blur(16px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .elite-modal { width: 100%; max-width: 480px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 6px; padding: 28px; }
-        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .close-btn { background: none; border: none; color: var(--color-text-muted); cursor: pointer; }
         .cat-form { display: flex; flex-direction: column; gap: 16px; }
         .cat-field { display: flex; flex-direction: column; gap: 6px; }
         .cat-field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }

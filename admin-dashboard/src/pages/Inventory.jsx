@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database, Landmark, PlusCircle, X, ArrowLeft } from 'lucide-react';
+import { Modal } from '../components/Modal';
+import { Boxes, AlertCircle, History, Package, TrendingUp, TrendingDown, Clock, Search, Filter, Layers, Database, Landmark, PlusCircle, ArrowLeft } from 'lucide-react';
 import { DateTime } from 'luxon';
 
 const ADJUSTMENT_TYPES = [
@@ -198,14 +199,15 @@ export function Inventory() {
                           <button onClick={() => saveThreshold(item.variantId)}>Save</button>
                         </div>
                       ) : (
-                        <span
+                        <button
+                          type="button"
                           className="metric-value-direct editable"
                           style={{ color: '#1a1611' }}
                           onClick={() => startThresholdEdit(item)}
                           title="Click to edit reorder level"
                         >
                           {item.lowStockThreshold} Units
-                        </span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -271,63 +273,55 @@ export function Inventory() {
         </div>
       )}
 
-      {adjustTarget && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setAdjustTarget(null)}>
-          <div className="elite-modal glass-panel adjust-modal">
-            <div className="modal-top">
-              <h2 className="couture-text">Adjust Stock</h2>
-              <button className="close-btn" onClick={() => setAdjustTarget(null)}><X size={24} /></button>
+      <Modal isOpen={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Stock" maxWidth={440}>
+        <p className="adjust-subtitle">{adjustTarget?.variant?.product?.name} ({adjustTarget?.variant?.size}) — currently {adjustTarget?.quantity} on hand</p>
+
+        <form onSubmit={submitAdjust} className="elite-form">
+          <div className="elite-input-group">
+            <label className="elite-input-label">Direction</label>
+            <div className="direction-toggle">
+              <button type="button" className={adjustForm.direction === 'add' ? 'active' : ''} onClick={() => setAdjustForm(f => ({ ...f, direction: 'add', changeType: 'ADJUSTMENT_ADD' }))}>Add</button>
+              <button type="button" className={adjustForm.direction === 'remove' ? 'active' : ''} onClick={() => setAdjustForm(f => ({ ...f, direction: 'remove', changeType: 'ADJUSTMENT_REMOVE' }))}>Remove</button>
             </div>
-            <p className="adjust-subtitle">{adjustTarget.variant?.product?.name} ({adjustTarget.variant?.size}) — currently {adjustTarget.quantity} on hand</p>
-
-            <form onSubmit={submitAdjust} className="elite-form">
-              <div className="elite-input-group">
-                <label className="elite-input-label">Direction</label>
-                <div className="direction-toggle">
-                  <button type="button" className={adjustForm.direction === 'add' ? 'active' : ''} onClick={() => setAdjustForm(f => ({ ...f, direction: 'add', changeType: 'ADJUSTMENT_ADD' }))}>Add</button>
-                  <button type="button" className={adjustForm.direction === 'remove' ? 'active' : ''} onClick={() => setAdjustForm(f => ({ ...f, direction: 'remove', changeType: 'ADJUSTMENT_REMOVE' }))}>Remove</button>
-                </div>
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Quantity</label>
-                <input
-                  type="number" min="1" required
-                  className="elite-glass-input"
-                  value={adjustForm.quantity}
-                  onChange={(e) => setAdjustForm(f => ({ ...f, quantity: e.target.value }))}
-                />
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Reason</label>
-                <select
-                  className="elite-glass-input"
-                  value={adjustForm.changeType}
-                  onChange={(e) => setAdjustForm(f => ({ ...f, changeType: e.target.value }))}
-                >
-                  {ADJUSTMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Note (optional)</label>
-                <input
-                  type="text"
-                  className="elite-glass-input"
-                  value={adjustForm.reason}
-                  onChange={(e) => setAdjustForm(f => ({ ...f, reason: e.target.value }))}
-                  placeholder="e.g. Bottle cracked in transit"
-                />
-              </div>
-
-              <div className="modal-actions-elite">
-                <button type="submit" className="elite-btn" disabled={submitting}>
-                  {submitting ? 'Recording...' : 'Record Adjustment'}
-                </button>
-                <button type="button" className="elite-btn-outline" onClick={() => setAdjustTarget(null)}>Cancel</button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+          <div className="elite-input-group">
+            <label className="elite-input-label">Quantity</label>
+            <input
+              type="number" min="1" required
+              className="elite-glass-input"
+              value={adjustForm.quantity}
+              onChange={(e) => setAdjustForm(f => ({ ...f, quantity: e.target.value }))}
+            />
+          </div>
+          <div className="elite-input-group">
+            <label className="elite-input-label">Reason</label>
+            <select
+              className="elite-glass-input"
+              value={adjustForm.changeType}
+              onChange={(e) => setAdjustForm(f => ({ ...f, changeType: e.target.value }))}
+            >
+              {ADJUSTMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <div className="elite-input-group">
+            <label className="elite-input-label">Note (optional)</label>
+            <input
+              type="text"
+              className="elite-glass-input"
+              value={adjustForm.reason}
+              onChange={(e) => setAdjustForm(f => ({ ...f, reason: e.target.value }))}
+              placeholder="e.g. Bottle cracked in transit"
+            />
+          </div>
+
+          <div className="modal-actions-elite">
+            <button type="submit" className="elite-btn" disabled={submitting}>
+              {submitting ? 'Recording...' : 'Record Adjustment'}
+            </button>
+            <button type="button" className="elite-btn-outline" onClick={() => setAdjustTarget(null)}>Cancel</button>
+          </div>
+        </form>
+      </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-inventory-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
@@ -374,7 +368,7 @@ export function Inventory() {
         .metric-glass.headline { grid-column: 1 / -1; border-color: var(--color-primary); background: rgba(184,155,106,0.08); }
         .metric-label { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--color-text-muted) !important; margin-bottom: 4px; font-weight: 800 !important; letter-spacing: 0.5px; }
         .metric-value-direct { font-weight: 700; font-size: 1rem; }
-        .metric-value-direct.editable { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
+        .metric-value-direct.editable { cursor: pointer; border: none; border-bottom: 1px dashed var(--color-primary); background: none; font-family: inherit; padding: 0; }
         .threshold-edit { display: flex; gap: 8px; align-items: center; }
         .threshold-edit input { width: 60px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 2px; background: var(--color-bg-card); color: var(--color-text); }
         .threshold-edit button { background: var(--color-primary); color: #000; border: none; padding: 4px 8px; border-radius: 2px; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
@@ -405,12 +399,7 @@ export function Inventory() {
         @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
         .fade-in-blur { animation: eliteFadeIn 0.4s ease-out; }
 
-        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.92); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .elite-modal.adjust-modal { width: 100%; max-width: 440px; padding: 32px; position: relative; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 6px; }
-        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .adjust-subtitle { font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 24px; }
-        .close-btn { background: none; border: none; color: var(--color-text-header); cursor: pointer; opacity: 0.5; transition: 0.2s; }
-        .close-btn:hover { opacity: 1; }
 
         .elite-form { display: flex; flex-direction: column; gap: 18px; }
         .elite-input-group { display: flex; flex-direction: column; gap: 6px; }

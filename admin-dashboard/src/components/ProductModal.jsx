@@ -363,14 +363,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
     }
   };
 
-  if (!isOpen) return null;
-
   const isEdit = !!product;
 
   return (
-    <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <Modal isOpen={isOpen} onClose={onClose} raw>
       <div className="elite-modal">
-        
+
         {/* ── Visual Sidebar ── */}
         <aside className="elite-sidebar">
           <div className="elite-sidebar-top">
@@ -876,15 +874,6 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         </div>
 
         <style>{`
-          .elite-overlay {
-            position: fixed; inset: 0; z-index: 3000;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(24px) saturate(180%);
-            display: flex; align-items: center; justify-content: center;
-            padding: 24px;
-            animation: eliteFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-          
           .elite-modal {
             display: flex; width: 100%; max-width: 1100px; height: 100%; max-height: 820px;
             background: var(--color-bg-card);
@@ -1152,7 +1141,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           }
         `}</style>
       </div>
-    </div>
+    </Modal>
   );
 };
 

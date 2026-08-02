@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi, productsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
-import { ShoppingCart, Eye, Truck, Barcode, Plus, X, Trash2, PackageCheck, Sparkles } from 'lucide-react';
+import { Modal } from '../components/Modal';
+import { ShoppingCart, Eye, Truck, Barcode, Plus, Trash2, PackageCheck, Sparkles } from 'lucide-react';
 
 const EMPTY_ITEM = { variantId: '', quantity: '1', costPrice: '' };
 
@@ -199,58 +200,49 @@ export function Purchases() {
         />
       </div>
 
-      {showModal && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="elite-modal">
-            <div className="modal-top">
-              <h2>New Purchase Order</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}><X size={22} /></button>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="New Purchase Order" maxWidth={560}>
+        <form onSubmit={handleSubmit} className="po-form">
+          <div className="po-row">
+            <div className="po-field">
+              <label>Supplier</label>
+              <select value={form.supplierId} onChange={e => setForm(f => ({ ...f, supplierId: e.target.value }))}>
+                <option value="">Select supplier...</option>
+                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
             </div>
-
-            <form onSubmit={handleSubmit} className="po-form">
-              <div className="po-row">
-                <div className="po-field">
-                  <label>Supplier</label>
-                  <select value={form.supplierId} onChange={e => setForm(f => ({ ...f, supplierId: e.target.value }))}>
-                    <option value="">Select supplier...</option>
-                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div className="po-field">
-                  <label>Expected Delivery</label>
-                  <input type="date" value={form.expectedDelivery} onChange={e => setForm(f => ({ ...f, expectedDelivery: e.target.value }))} />
-                </div>
-              </div>
-
-              <div className="po-items-header">
-                <label>Line Items</label>
-                <button type="button" className="icon-btn" onClick={addItemRow}><Plus size={16} /></button>
-              </div>
-
-              {form.items.map((item, i) => (
-                <div key={i} className="po-item-row">
-                  <select value={item.variantId} onChange={e => updateItem(i, 'variantId', e.target.value)} required>
-                    <option value="">Select variant...</option>
-                    {variantOptions.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
-                  </select>
-                  <input type="number" min="1" placeholder="Qty" value={item.quantity} onChange={e => updateItem(i, 'quantity', e.target.value)} />
-                  <input type="number" step="0.01" min="0" placeholder="Cost (R)" value={item.costPrice} onChange={e => updateItem(i, 'costPrice', e.target.value)} />
-                  <button type="button" className="icon-btn danger" onClick={() => removeItemRow(i)} disabled={form.items.length === 1}>
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-
-              <div className="po-actions">
-                <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn--primary" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create Purchase Order'}
-                </button>
-              </div>
-            </form>
+            <div className="po-field">
+              <label>Expected Delivery</label>
+              <input type="date" value={form.expectedDelivery} onChange={e => setForm(f => ({ ...f, expectedDelivery: e.target.value }))} />
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="po-items-header">
+            <label>Line Items</label>
+            <button type="button" className="icon-btn" onClick={addItemRow}><Plus size={16} /></button>
+          </div>
+
+          {form.items.map((item, i) => (
+            <div key={i} className="po-item-row">
+              <select value={item.variantId} onChange={e => updateItem(i, 'variantId', e.target.value)} required>
+                <option value="">Select variant...</option>
+                {variantOptions.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
+              </select>
+              <input type="number" min="1" placeholder="Qty" value={item.quantity} onChange={e => updateItem(i, 'quantity', e.target.value)} />
+              <input type="number" step="0.01" min="0" placeholder="Cost (R)" value={item.costPrice} onChange={e => updateItem(i, 'costPrice', e.target.value)} />
+              <button type="button" className="icon-btn danger" onClick={() => removeItemRow(i)} disabled={form.items.length === 1}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+
+          <div className="po-actions">
+            <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="submit" className="btn btn--primary" disabled={submitting}>
+              {submitting ? 'Creating...' : 'Create Purchase Order'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .suggested-reorders { margin-bottom: 24px; }
@@ -261,11 +253,6 @@ export function Purchases() {
         }
         .suggestion-supplier { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; }
         .suggestion-count { color: var(--color-text-muted); font-size: 0.8rem; flex: 1; text-align: right; margin-right: 8px; }
-
-        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.85); backdrop-filter: blur(16px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .elite-modal { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 6px; padding: 28px; }
-        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .close-btn { background: none; border: none; color: var(--color-text-muted); cursor: pointer; }
 
         .po-form { display: flex; flex-direction: column; gap: 16px; }
         .po-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -285,8 +272,6 @@ export function Purchases() {
         .icon-btn.danger { color: var(--color-error-text, #c0392b); }
 
         @media (max-width: 600px) {
-          .elite-overlay { padding: 12px; }
-          .elite-modal { padding: 20px; }
           .po-row { grid-template-columns: 1fr; }
           .po-item-row { grid-template-columns: 1fr; gap: 6px; padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; }
         }

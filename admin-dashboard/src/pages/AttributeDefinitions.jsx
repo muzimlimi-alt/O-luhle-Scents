@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
-import { SlidersHorizontal, Plus, X, Trash2, Layers } from 'lucide-react';
+import { Modal } from '../components/Modal';
+import { SlidersHorizontal, Plus, Trash2, Layers } from 'lucide-react';
 
 const FAMILIES = ['PERFUME', 'CANDLE', 'HOME_FRAGRANCE', 'ACCESSORY', 'GIFT_SET'];
 const DATA_TYPES = ['TEXT', 'NUMBER', 'ENUM', 'BOOLEAN'];
@@ -116,59 +117,51 @@ export function AttributeDefinitions() {
         </div>
       ))}
 
-      {showModal && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="elite-modal">
-            <div className="modal-top">
-              <h2>New Attribute</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}><X size={22} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="attr-form">
-              <div className="attr-field">
-                <label>Family</label>
-                <select value={form.family} onChange={e => setForm(f => ({ ...f, family: e.target.value }))}>
-                  {FAMILIES.map(f => <option key={f} value={f}>{f.replace('_', ' ')}</option>)}
-                </select>
-              </div>
-              <div className="attr-field">
-                <label>Label (shown to admins)</label>
-                <input type="text" value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value, key: f.key || e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') }))} required placeholder="e.g. Wax Type" />
-              </div>
-              <div className="attr-field">
-                <label>Key (used internally, no spaces)</label>
-                <input type="text" value={form.key} onChange={e => setForm(f => ({ ...f, key: e.target.value }))} required placeholder="wax_type" />
-              </div>
-              <div className="form-grid-2">
-                <div className="attr-field">
-                  <label>Data Type</label>
-                  <select value={form.dataType} onChange={e => setForm(f => ({ ...f, dataType: e.target.value }))}>
-                    {DATA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="attr-field">
-                  <label>Unit (optional)</label>
-                  <input type="text" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="hours, g, ml..." />
-                </div>
-              </div>
-              {form.dataType === 'ENUM' && (
-                <div className="attr-field">
-                  <label>Options (comma-separated)</label>
-                  <input type="text" value={form.optionsCsv} onChange={e => setForm(f => ({ ...f, optionsCsv: e.target.value }))} placeholder="Soy, Coconut, Beeswax" />
-                </div>
-              )}
-              <div className="attr-checkboxes">
-                <label><input type="checkbox" checked={form.isFilterable} onChange={e => setForm(f => ({ ...f, isFilterable: e.target.checked }))} /> Show as a storefront filter</label>
-              </div>
-              <div className="attr-actions">
-                <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn--primary" disabled={submitting}>
-                  {submitting ? 'Saving...' : 'Create Attribute'}
-                </button>
-              </div>
-            </form>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="New Attribute" maxWidth={480}>
+        <form onSubmit={handleSubmit} className="attr-form">
+          <div className="attr-field">
+            <label>Family</label>
+            <select value={form.family} onChange={e => setForm(f => ({ ...f, family: e.target.value }))}>
+              {FAMILIES.map(f => <option key={f} value={f}>{f.replace('_', ' ')}</option>)}
+            </select>
           </div>
-        </div>
-      )}
+          <div className="attr-field">
+            <label>Label (shown to admins)</label>
+            <input type="text" value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value, key: f.key || e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') }))} required placeholder="e.g. Wax Type" />
+          </div>
+          <div className="attr-field">
+            <label>Key (used internally, no spaces)</label>
+            <input type="text" value={form.key} onChange={e => setForm(f => ({ ...f, key: e.target.value }))} required placeholder="wax_type" />
+          </div>
+          <div className="form-grid-2">
+            <div className="attr-field">
+              <label>Data Type</label>
+              <select value={form.dataType} onChange={e => setForm(f => ({ ...f, dataType: e.target.value }))}>
+                {DATA_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="attr-field">
+              <label>Unit (optional)</label>
+              <input type="text" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="hours, g, ml..." />
+            </div>
+          </div>
+          {form.dataType === 'ENUM' && (
+            <div className="attr-field">
+              <label>Options (comma-separated)</label>
+              <input type="text" value={form.optionsCsv} onChange={e => setForm(f => ({ ...f, optionsCsv: e.target.value }))} placeholder="Soy, Coconut, Beeswax" />
+            </div>
+          )}
+          <div className="attr-checkboxes">
+            <label><input type="checkbox" checked={form.isFilterable} onChange={e => setForm(f => ({ ...f, isFilterable: e.target.checked }))} /> Show as a storefront filter</label>
+          </div>
+          <div className="attr-actions">
+            <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="submit" className="btn btn--primary" disabled={submitting}>
+              {submitting ? 'Saving...' : 'Create Attribute'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .attr-list { display: flex; flex-direction: column; gap: 8px; }
@@ -181,10 +174,6 @@ export function AttributeDefinitions() {
         .attr-tag { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary); }
         .icon-btn.danger { color: var(--color-error-text, #c0392b); }
 
-        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.85); backdrop-filter: blur(16px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .elite-modal { width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 6px; padding: 28px; }
-        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .close-btn { background: none; border: none; color: var(--color-text-muted); cursor: pointer; }
         .attr-form { display: flex; flex-direction: column; gap: 16px; }
         .attr-field { display: flex; flex-direction: column; gap: 6px; }
         .attr-field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }

@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { adminOpsApi } from '../services/api';
-import { 
-  Truck, 
-  Plus, 
-  Mail, 
-  Phone, 
+import { Modal } from '../components/Modal';
+import {
+  Truck,
+  Plus,
+  Mail,
+  Phone,
   ExternalLink,
   Search,
   Loader2,
   AlertCircle,
-  X,
   Globe,
   Star
 } from 'lucide-react';
@@ -137,59 +137,49 @@ export function Suppliers() {
         </div>
       )}
 
-      {/* --- ADD MODAL --- */}
-      {showModal && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="elite-modal glass-panel">
-            <div className="modal-top">
-              <h2 className="couture-text">Register Partner</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}><X size={24} /></button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="elite-form">
-              <div className="elite-input-group">
-                <label className="elite-input-label">Company Nomenclature</label>
-                <input 
-                  type="text" 
-                  className="elite-glass-input"
-                  value={newSupplier.name} 
-                  onChange={e => setNewSupplier({...newSupplier, name: e.target.value})}
-                  required 
-                  placeholder="e.g. Grasse Essence Co."
-                />
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Communication Nexus (Email)</label>
-                <input 
-                  type="email" 
-                  className="elite-glass-input"
-                  value={newSupplier.contactEmail} 
-                  onChange={e => setNewSupplier({...newSupplier, contactEmail: e.target.value})}
-                  required 
-                  placeholder="fulfillment@grasse.com"
-                />
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Voice Channel (Phone)</label>
-                <input 
-                  type="tel" 
-                  className="elite-glass-input"
-                  value={newSupplier.phone} 
-                  onChange={e => setNewSupplier({...newSupplier, phone: e.target.value})}
-                  placeholder="+33 4 00 00 00 00"
-                />
-              </div>
-              
-              <div className="modal-actions-elite">
-                <button type="submit" className="elite-btn" disabled={submitting}>
-                  {submitting ? 'Authenticating...' : 'Authorize Partner'}
-                </button>
-                <button type="button" className="elite-btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
-              </div>
-            </form>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Register Partner" maxWidth={480}>
+        <form onSubmit={handleSubmit} className="elite-form">
+          <div className="elite-input-group">
+            <label className="elite-input-label">Company Nomenclature</label>
+            <input
+              type="text"
+              className="elite-glass-input"
+              value={newSupplier.name}
+              onChange={e => setNewSupplier({...newSupplier, name: e.target.value})}
+              required
+              placeholder="e.g. Grasse Essence Co."
+            />
           </div>
-        </div>
-      )}
+          <div className="elite-input-group">
+            <label className="elite-input-label">Communication Nexus (Email)</label>
+            <input
+              type="email"
+              className="elite-glass-input"
+              value={newSupplier.contactEmail}
+              onChange={e => setNewSupplier({...newSupplier, contactEmail: e.target.value})}
+              required
+              placeholder="fulfillment@grasse.com"
+            />
+          </div>
+          <div className="elite-input-group">
+            <label className="elite-input-label">Voice Channel (Phone)</label>
+            <input
+              type="tel"
+              className="elite-glass-input"
+              value={newSupplier.phone}
+              onChange={e => setNewSupplier({...newSupplier, phone: e.target.value})}
+              placeholder="+33 4 00 00 00 00"
+            />
+          </div>
+
+          <div className="modal-actions-elite">
+            <button type="submit" className="elite-btn" disabled={submitting}>
+              {submitting ? 'Authenticating...' : 'Authorize Partner'}
+            </button>
+            <button type="button" className="elite-btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
+          </div>
+        </form>
+      </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-suppliers-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
@@ -228,12 +218,9 @@ export function Suppliers() {
         .loader-gold { width: 40px; height: 40px; border: 3px solid rgba(184,155,106,0.1); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .elite-overlay { position: fixed; inset: 0; background: rgba(8,7,6,0.92); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: eliteFadeIn 0.4s ease-out; }
-        .elite-modal { width: 100%; max-width: 480px; padding: 40px; position: relative; }
-        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        .close-btn { background: none; border: none; color: var(--color-text-header); cursor: pointer; opacity: 0.5; transition: 0.2s; }
-        .close-btn:hover { opacity: 1; }
-
+        .elite-form { display: flex; flex-direction: column; gap: 20px; }
+        .elite-input-group { display: flex; flex-direction: column; gap: 8px; }
+        .elite-input-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
         .elite-glass-input { width: 100%; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: var(--color-text); outline: none; transition: var(--transition); font-size: 0.9rem; }
         .elite-glass-input:focus { border-color: var(--color-primary); background: rgba(184,155,106,0.05); }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ordersApi, adminOpsApi } from '../services/api';
-import { ShoppingBag, Eye, User, Search, Truck, X, Filter, ChevronRight, Hash, Clock, Landmark, RotateCcw } from 'lucide-react';
+import { Modal } from '../components/Modal';
+import { ShoppingBag, Eye, User, Search, Truck, Filter, ChevronRight, Hash, Clock, Landmark, RotateCcw } from 'lucide-react';
 
 const COURIERS = [
   { key: 'THE_COURIER_GUY', name: 'The Courier Guy' },
@@ -224,105 +225,88 @@ export function Orders() {
         )}
       </div>
 
-      {showFulfillModal && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setShowFulfillModal(false)}>
-          <div className="elite-modal glass-panel">
-            <div className="modal-top">
-              <h2 className="couture-text">Logistics Dispatch</h2>
-              <button className="close-btn" onClick={() => setShowFulfillModal(false)}><X size={24} /></button>
-            </div>
-            
-            <form onSubmit={handleFulfill} className="elite-form">
-               <div className="elite-input-group">
-                 <label className="elite-input-label">Select Logistics Courier</label>
-                 <select 
-                    className="elite-glass-input"
-                    value={fulfillData.courierKey} 
-                    onChange={e => setFulfillData({...fulfillData, courierKey: e.target.value})}
-                    required
-                 >
-                   {COURIERS.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
-                 </select>
-               </div>
+      <Modal isOpen={showFulfillModal} onClose={() => setShowFulfillModal(false)} title="Logistics Dispatch" maxWidth={440}>
+        <form onSubmit={handleFulfill} className="elite-form">
+           <div className="elite-input-group">
+             <label className="elite-input-label">Select Logistics Courier</label>
+             <select
+                className="elite-glass-input"
+                value={fulfillData.courierKey}
+                onChange={e => setFulfillData({...fulfillData, courierKey: e.target.value})}
+                required
+             >
+               {COURIERS.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
+             </select>
+           </div>
 
-               <div className="elite-input-group">
-                 <label className="elite-input-label">Consignment Tracking Number</label>
-                 <input 
-                   type="text" 
-                   className="elite-glass-input"
-                   value={fulfillData.trackingNumber} 
-                   onChange={e => setFulfillData({...fulfillData, trackingNumber: e.target.value})}
-                   required 
-                   placeholder="e.g. TCG-OLUHLE-8849"
-                 />
-               </div>
+           <div className="elite-input-group">
+             <label className="elite-input-label">Consignment Tracking Number</label>
+             <input
+               type="text"
+               className="elite-glass-input"
+               value={fulfillData.trackingNumber}
+               onChange={e => setFulfillData({...fulfillData, trackingNumber: e.target.value})}
+               required
+               placeholder="e.g. TCG-OLUHLE-8849"
+             />
+           </div>
 
-               <div className="modal-actions-elite">
-                 <button type="submit" className="elite-btn" disabled={submitting}>
-                   {submitting ? 'Dispatching...' : 'Confirm Shipment'}
-                 </button>
-                 <button type="button" className="elite-btn-outline" onClick={() => setShowFulfillModal(false)}>Cancel</button>
-               </div>
-            </form>
-          </div>
-        </div>
-      )}
+           <div className="modal-actions-elite">
+             <button type="submit" className="elite-btn" disabled={submitting}>
+               {submitting ? 'Dispatching...' : 'Confirm Shipment'}
+             </button>
+             <button type="button" className="elite-btn-outline" onClick={() => setShowFulfillModal(false)}>Cancel</button>
+           </div>
+        </form>
+      </Modal>
 
-      {returnOrder && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setReturnOrder(null)}>
-          <div className="elite-modal glass-panel return-modal">
-            <div className="modal-top">
-              <h2 className="couture-text">Process Return</h2>
-              <button className="close-btn" onClick={() => setReturnOrder(null)}><X size={24} /></button>
-            </div>
-            <p className="return-subtitle">Order #{returnOrder.id.substring(0, 8).toUpperCase()} — {returnOrder.shippingAddress ? `${returnOrder.customer?.name || 'Guest'}` : ''}</p>
+      <Modal isOpen={!!returnOrder} onClose={() => setReturnOrder(null)} title="Process Return" maxWidth={560}>
+        <p className="return-subtitle">{returnOrder && `Order #${returnOrder.id.substring(0, 8).toUpperCase()} — ${returnOrder.shippingAddress ? `${returnOrder.customer?.name || 'Guest'}` : ''}`}</p>
 
-            <form onSubmit={handleSubmitReturns} className="elite-form">
-              {returnOrder.items?.map(item => {
-                const remaining = remainingReturnable(item);
-                const line = returnLines[item.id] || { quantity: 0, condition: 'GOOD', note: '' };
-                return (
-                  <div key={item.id} className="return-line">
-                    <div className="return-line-header">
-                      <span>{item.variant?.product?.name} ({item.variant?.size})</span>
-                      <span className="return-remaining">{remaining} of {item.quantity} returnable</span>
-                    </div>
-                    {remaining > 0 ? (
-                      <div className="return-line-fields">
-                        <input
-                          type="number" min="0" max={remaining}
-                          value={line.quantity}
-                          onChange={e => updateReturnLine(item.id, 'quantity', e.target.value)}
-                          placeholder="Qty"
-                        />
-                        <select value={line.condition} onChange={e => updateReturnLine(item.id, 'condition', e.target.value)}>
-                          <option value="GOOD">Good — Restock</option>
-                          <option value="DAMAGED">Damaged — Write off</option>
-                        </select>
-                        <input
-                          type="text"
-                          value={line.note}
-                          onChange={e => updateReturnLine(item.id, 'note', e.target.value)}
-                          placeholder="Note (optional)"
-                        />
-                      </div>
-                    ) : (
-                      <p className="return-fulfilled">Fully returned already.</p>
-                    )}
+        <form onSubmit={handleSubmitReturns} className="elite-form">
+          {returnOrder?.items?.map(item => {
+            const remaining = remainingReturnable(item);
+            const line = returnLines[item.id] || { quantity: 0, condition: 'GOOD', note: '' };
+            return (
+              <div key={item.id} className="return-line">
+                <div className="return-line-header">
+                  <span>{item.variant?.product?.name} ({item.variant?.size})</span>
+                  <span className="return-remaining">{remaining} of {item.quantity} returnable</span>
+                </div>
+                {remaining > 0 ? (
+                  <div className="return-line-fields">
+                    <input
+                      type="number" min="0" max={remaining}
+                      value={line.quantity}
+                      onChange={e => updateReturnLine(item.id, 'quantity', e.target.value)}
+                      placeholder="Qty"
+                    />
+                    <select value={line.condition} onChange={e => updateReturnLine(item.id, 'condition', e.target.value)}>
+                      <option value="GOOD">Good — Restock</option>
+                      <option value="DAMAGED">Damaged — Write off</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={line.note}
+                      onChange={e => updateReturnLine(item.id, 'note', e.target.value)}
+                      placeholder="Note (optional)"
+                    />
                   </div>
-                );
-              })}
-
-              <div className="modal-actions-elite">
-                <button type="submit" className="elite-btn" disabled={returnSubmitting}>
-                  {returnSubmitting ? 'Processing...' : 'Record Return'}
-                </button>
-                <button type="button" className="elite-btn-outline" onClick={() => setReturnOrder(null)}>Cancel</button>
+                ) : (
+                  <p className="return-fulfilled">Fully returned already.</p>
+                )}
               </div>
-            </form>
+            );
+          })}
+
+          <div className="modal-actions-elite">
+            <button type="submit" className="elite-btn" disabled={returnSubmitting}>
+              {returnSubmitting ? 'Processing...' : 'Record Return'}
+            </button>
+            <button type="button" className="elite-btn-outline" onClick={() => setReturnOrder(null)}>Cancel</button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-orders-container { 
@@ -415,11 +399,7 @@ export function Orders() {
         .elite-btn-ship { background: var(--color-primary); color: #000; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: var(--transition); }
         .elite-btn-ship:hover { filter: brightness(1.2); transform: translateY(-2px); }
 
-        .elite-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(24px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: eliteFadeIn 0.4s ease-out; }
-        .elite-modal { width: 100%; max-width: 440px; padding: 40px; position: relative; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; box-shadow: var(--shadow-lg); }
-        .elite-modal.return-modal { max-width: 560px; max-height: 85vh; overflow-y: auto; }
-        .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        .return-subtitle { font-size: 0.8rem; color: var(--color-text-muted); margin: -24px 0 24px; }
+        .return-subtitle { font-size: 0.8rem; color: var(--color-text-muted); margin: 0 0 24px; }
 
         .return-line { border: 1px solid var(--color-border); border-radius: 4px; padding: 16px; margin-bottom: 16px; }
         .return-line-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; }

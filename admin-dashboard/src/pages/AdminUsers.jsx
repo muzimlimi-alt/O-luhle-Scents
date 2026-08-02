@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
-import { 
-  UserPlus, Shield, ShieldCheck, Edit2, Trash2, Key, Search, Filter, 
+import { Modal } from '../components/Modal';
+import {
+  UserPlus, Shield, ShieldCheck, Edit2, Trash2, Key, Search, Filter,
   MoreVertical, X, Check, AlertCircle, RefreshCw, Lock, Unlock, UserCog
 } from 'lucide-react';
 
@@ -262,138 +263,112 @@ export function AdminUsers() {
       </div>
 
       {/* --- MODALS --- */}
-      {isCreateOpen && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setIsCreateOpen(false)}>
-          <div className="elite-modal glass-panel">
-            <div className="modal-top">
-              <h2 className="couture-text">New Principal</h2>
-              <button className="close-btn" onClick={() => setIsCreateOpen(false)}><X size={24} /></button>
-            </div>
-            <form className="elite-form" onSubmit={handleCreate}>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Full Nomenclature</label>
-                <input type="text" className="elite-glass-input" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">System Email</label>
-                <input type="email" className="elite-glass-input" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Authorization Role</label>
-                <select className="elite-glass-input" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})}>
+      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="New Principal" maxWidth={480}>
+        <form className="elite-form" onSubmit={handleCreate}>
+          <div className="elite-input-group">
+            <label className="elite-input-label">Full Nomenclature</label>
+            <input type="text" className="elite-glass-input" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+          </div>
+          <div className="elite-input-group">
+            <label className="elite-input-label">System Email</label>
+            <input type="email" className="elite-glass-input" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+          </div>
+          <div className="elite-input-group">
+            <label className="elite-input-label">Authorization Role</label>
+            <select className="elite-glass-input" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})}>
+              <option value="staff">Staff</option>
+              <option value="shop_manager">Shop Manager</option>
+              <option value="admin">Super Admin</option>
+              <option value="auditor">Internal Auditor</option>
+            </select>
+          </div>
+          <div className="elite-input-group">
+            <label className="elite-input-label">Primary Password</label>
+            <input type="password" className="elite-glass-input" required value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+          </div>
+          <div className="modal-actions-elite">
+            <button type="submit" className="elite-btn" disabled={actionLoading}>{actionLoading ? 'Initializing...' : 'Authorize Account'}</button>
+            <button type="button" className="elite-btn-outline" onClick={() => setIsCreateOpen(false)}>Cancel</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Modal (Account Settings) */}
+      <Modal isOpen={isEditOpen && !!selectedUser} onClose={() => setIsEditOpen(false)} title="Account Settings" maxWidth={480}>
+        {selectedUser && (
+          <form className="elite-form" onSubmit={handleUpdate}>
+             <div className="elite-input-group">
+               <label className="elite-input-label">Principal Name</label>
+               <input type="text" className="elite-glass-input" value={selectedUser.name} onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})} />
+             </div>
+             <div className="elite-input-group">
+               <label className="elite-input-label">Role Tier</label>
+               <select className="elite-glass-input" value={selectedUser.role} onChange={(e) => setSelectedUser({...selectedUser, role: e.target.value})}>
                   <option value="staff">Staff</option>
                   <option value="shop_manager">Shop Manager</option>
                   <option value="admin">Super Admin</option>
                   <option value="auditor">Internal Auditor</option>
-                </select>
-              </div>
-              <div className="elite-input-group">
-                <label className="elite-input-label">Primary Password</label>
-                <input type="password" className="elite-glass-input" required value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
-              </div>
-              <div className="modal-actions-elite">
-                <button type="submit" className="elite-btn" disabled={actionLoading}>{actionLoading ? 'Initializing...' : 'Authorize Account'}</button>
-                <button type="button" className="elite-btn-outline" onClick={() => setIsCreateOpen(false)}>Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal (Account Settings) */}
-      {isEditOpen && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setIsEditOpen(false)}>
-          <div className="elite-modal glass-panel">
-            <div className="modal-top">
-               <h2 className="couture-text">Account Settings</h2>
-               <button className="close-btn" onClick={() => setIsEditOpen(false)}><X size={24} /></button>
-            </div>
-            <form className="elite-form" onSubmit={handleUpdate}>
-               <div className="elite-input-group">
-                 <label className="elite-input-label">Principal Name</label>
-                 <input type="text" className="elite-glass-input" value={selectedUser.name} onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})} />
-               </div>
-               <div className="elite-input-group">
-                 <label className="elite-input-label">Role Tier</label>
-                 <select className="elite-glass-input" value={selectedUser.role} onChange={(e) => setSelectedUser({...selectedUser, role: e.target.value})}>
-                    <option value="staff">Staff</option>
-                    <option value="shop_manager">Shop Manager</option>
-                    <option value="admin">Super Admin</option>
-                    <option value="auditor">Internal Auditor</option>
-                 </select>
-               </div>
-               <div className="elite-input-group">
-                 <label className="elite-input-label">Access State</label>
-                 <select className="elite-glass-input" value={selectedUser.isActive ? 'true' : 'false'} onChange={(e) => setSelectedUser({...selectedUser, isActive: e.target.value === 'true'})}>
-                    <option value="true">Grant Absolute Access</option>
-                    <option value="false">Revoke All Sessions</option>
-                 </select>
-               </div>
-               <div className="modal-actions-elite">
-                 <button type="submit" className="elite-btn" disabled={actionLoading}>{actionLoading ? 'Synchronizing...' : 'Save Changes'}</button>
-               </div>
-            </form>
-          </div>
-        </div>
-      )}
+               </select>
+             </div>
+             <div className="elite-input-group">
+               <label className="elite-input-label">Access State</label>
+               <select className="elite-glass-input" value={selectedUser.isActive ? 'true' : 'false'} onChange={(e) => setSelectedUser({...selectedUser, isActive: e.target.value === 'true'})}>
+                  <option value="true">Grant Absolute Access</option>
+                  <option value="false">Revoke All Sessions</option>
+               </select>
+             </div>
+             <div className="modal-actions-elite">
+               <button type="submit" className="elite-btn" disabled={actionLoading}>{actionLoading ? 'Synchronizing...' : 'Save Changes'}</button>
+             </div>
+          </form>
+        )}
+      </Modal>
 
       {/* Password Reset Modal */}
-      {isPasswordOpen && selectedUser && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setIsPasswordOpen(false)}>
-          <div className="elite-modal glass-panel">
-            <div className="modal-top">
-               <h2 className="couture-text">Secure Credentials</h2>
-               <button className="close-btn" onClick={() => setIsPasswordOpen(false)}><X size={24} /></button>
-            </div>
-            <form className="elite-form" onSubmit={handlePasswordReset}>
-               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
-                 Update security credentials for <strong>{selectedUser.name}</strong>
-               </p>
-               <div className="elite-input-group">
-                 <label className="elite-input-label">New Master Password</label>
-                 <input type="password" className="elite-glass-input" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-               </div>
-               <div className="elite-input-group">
-                 <label className="elite-input-label">Confirm Master Password</label>
-                 <input type="password" className="elite-glass-input" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-               </div>
-               <div className="modal-actions-elite">
-                 <button type="submit" className="elite-btn" disabled={actionLoading}>
-                   {actionLoading ? 'Updating Matrix...' : 'Commit New Password'}
-                 </button>
-               </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal isOpen={isPasswordOpen && !!selectedUser} onClose={() => setIsPasswordOpen(false)} title="Secure Credentials" maxWidth={480}>
+        {selectedUser && (
+          <form className="elite-form" onSubmit={handlePasswordReset}>
+             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
+               Update security credentials for <strong>{selectedUser.name}</strong>
+             </p>
+             <div className="elite-input-group">
+               <label className="elite-input-label">New Master Password</label>
+               <input type="password" className="elite-glass-input" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+             </div>
+             <div className="elite-input-group">
+               <label className="elite-input-label">Confirm Master Password</label>
+               <input type="password" className="elite-glass-input" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+             </div>
+             <div className="modal-actions-elite">
+               <button type="submit" className="elite-btn" disabled={actionLoading}>
+                 {actionLoading ? 'Updating Matrix...' : 'Commit New Password'}
+               </button>
+             </div>
+          </form>
+        )}
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {isDeleteOpen && selectedUser && (
-        <div className="elite-overlay" onClick={(e) => e.target === e.currentTarget && setIsDeleteOpen(false)}>
-          <div className="elite-modal glass-panel">
-            <div className="modal-top">
-               <h2 className="couture-text" style={{ color: '#ef4444' }}>Revoke Authority</h2>
-               <button className="close-btn" onClick={() => setIsDeleteOpen(false)}><X size={24} /></button>
-            </div>
-            <div className="elite-form">
-               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '32px', lineHeight: '1.6' }}>
-                 You are about to decommission <strong>{selectedUser.name}</strong>. This action will permanently revoke all system access and cannot be undone.
-               </p>
-               <div className="modal-actions-elite">
-                 <button 
-                   className="elite-btn" 
-                   style={{ background: '#ef4444' }} 
-                   onClick={handleDelete} 
-                   disabled={actionLoading}
-                 >
-                   {actionLoading ? 'Decommissioning...' : 'Confirm Revocation'}
-                 </button>
-                 <button className="elite-btn-outline" onClick={() => setIsDeleteOpen(false)}>Abort Action</button>
-               </div>
-            </div>
+      <Modal isOpen={isDeleteOpen && !!selectedUser} onClose={() => setIsDeleteOpen(false)} title="Revoke Authority" maxWidth={440}>
+        {selectedUser && (
+          <div className="elite-form">
+             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '32px', lineHeight: '1.6' }}>
+               You are about to decommission <strong>{selectedUser.name}</strong>. This action will permanently revoke all system access and cannot be undone.
+             </p>
+             <div className="modal-actions-elite">
+               <button
+                 className="elite-btn"
+                 style={{ background: '#ef4444' }}
+                 onClick={handleDelete}
+                 disabled={actionLoading}
+               >
+                 {actionLoading ? 'Decommissioning...' : 'Confirm Revocation'}
+               </button>
+               <button className="elite-btn-outline" onClick={() => setIsDeleteOpen(false)}>Abort Action</button>
+             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-governance-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
@@ -446,6 +421,18 @@ export function AdminUsers() {
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
+
+        .elite-form { display: flex; flex-direction: column; gap: 20px; }
+        .elite-input-group { display: flex; flex-direction: column; gap: 8px; }
+        .elite-input-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
+        .elite-glass-input { width: 100%; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: var(--color-text); outline: none; transition: var(--transition); font-size: 0.9rem; }
+        .elite-glass-input:focus { border-color: var(--color-primary); }
+        .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        .elite-btn { background: var(--color-primary); color: #000; padding: 14px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; transition: var(--transition); }
+        .elite-btn:hover:not(:disabled) { filter: brightness(1.1); }
+        .elite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
+        .elite-btn-outline:hover { background: var(--color-border-light); }
       `}} />
     </div>
   );
