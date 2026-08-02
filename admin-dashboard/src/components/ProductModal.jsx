@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
 import { adminOpsApi } from '../services/api';
+import { Modal } from './Modal';
 
 const PRODUCT_FAMILIES = [
   { value: 'PERFUME', label: 'Perfume' },
