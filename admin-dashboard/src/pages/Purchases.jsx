@@ -2,11 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi, productsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { Drawer } from '../components/Drawer';
+import { PageHeader } from '../components/PageHeader';
+import { StatusBadge } from '../components/StatusBadge';
+import { FormField } from '../components/FormField';
+import { useMessaging } from '../context/MessagingContext';
 import { ShoppingCart, Eye, Truck, Barcode, Plus, Trash2, PackageCheck, Sparkles } from 'lucide-react';
+
+const STATUS_TONE = { PENDING: 'warning', RECEIVED: 'success', CANCELLED: 'error' };
 
 const EMPTY_ITEM = { variantId: '', quantity: '1', costPrice: '' };
 
 export function Purchases() {
+  const { showMessage } = useMessaging();
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [suppliers, setSuppliers] = useState([]);
@@ -96,7 +103,7 @@ export function Purchases() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const items = form.items.filter(i => i.variantId && parseInt(i.quantity) > 0);
-    if (!items.length) return alert('Add at least one line item with a variant and quantity.');
+    if (!items.length) return showMessage('warning', 'Missing Line Items', 'Add at least one line item with a variant and quantity.');
 
     setSubmitting(true);
     try {
@@ -108,7 +115,7 @@ export function Purchases() {
       setShowModal(false);
       fetchPurchases();
     } catch (err) {
-      alert('Failed to create purchase order: ' + err.message);
+      showMessage('error', 'Create Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +128,7 @@ export function Purchases() {
       await adminOpsApi.purchases.receive(purchase.id);
       fetchPurchases();
     } catch (err) {
-      alert('Failed to receive purchase order: ' + err.message);
+      showMessage('error', 'Receive Failed', err.message);
     } finally {
       setReceivingId(null);
     }
@@ -141,19 +148,23 @@ export function Purchases() {
     { key: 'items', label: 'Items', render: (val) => `${val?.length || 0} line item(s)` },
     { key: 'totalCost', label: 'Total Cost', render: (val) => `R${Number(val || 0).toLocaleString()}` },
     { key: 'status', label: 'Status', render: (val) => (
-      <span className={`status-badge ${val.toLowerCase()}`}>{val}</span>
+      <StatusBadge tone={STATUS_TONE[val] || 'neutral'} label={val} />
     )},
     { key: 'createdAt', label: 'Date', render: (val) => new Date(val).toLocaleDateString() },
   ];
 
   return (
     <div className="purchases-page">
-      <div className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 className="page-title">Stock Purchases</h2>
-        <button className="btn btn--primary" onClick={openModal}>
-          <Plus size={16} /> New Purchase Order
-        </button>
-      </div>
+      <PageHeader
+        icon={<ShoppingCart size={22} />}
+        title="Stock Purchases"
+        subtitle="Purchase orders and goods-received tracking."
+        actions={(
+          <button className="btn btn--primary" onClick={openModal}>
+            <Plus size={16} /> New Purchase Order
+          </button>
+        )}
+      />
 
       {lowStockBySupplier.length > 0 && (
         <div className="card suggested-reorders">
@@ -203,17 +214,15 @@ export function Purchases() {
       <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title="New Purchase Order" width={560}>
         <form onSubmit={handleSubmit} className="po-form">
           <div className="po-row">
-            <div className="po-field">
-              <label>Supplier</label>
+            <FormField label="Supplier">
               <select value={form.supplierId} onChange={e => setForm(f => ({ ...f, supplierId: e.target.value }))}>
                 <option value="">Select supplier...</option>
                 {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-            </div>
-            <div className="po-field">
-              <label>Expected Delivery</label>
+            </FormField>
+            <FormField label="Expected Delivery">
               <input type="date" value={form.expectedDelivery} onChange={e => setForm(f => ({ ...f, expectedDelivery: e.target.value }))} />
-            </div>
+            </FormField>
           </div>
 
           <div className="po-items-header">
@@ -254,11 +263,9 @@ export function Purchases() {
         .suggestion-supplier { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; }
         .suggestion-count { color: var(--color-text-muted); font-size: 0.8rem; flex: 1; text-align: right; margin-right: 8px; }
 
-        .po-form { display: flex; flex-direction: column; gap: 16px; }
+        .po-form { display: flex; flex-direction: column; }
         .po-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .po-field { display: flex; flex-direction: column; gap: 6px; }
-        .po-field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
-        .po-field select, .po-field input, .po-item-row select, .po-item-row input {
+        .po-item-row select, .po-item-row input {
           background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
           padding: 10px 12px; color: var(--color-text); font-size: 0.85rem;
         }

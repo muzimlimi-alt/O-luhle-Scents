@@ -1,61 +1,79 @@
+/* ============================================================
+   O'luhle Scents Admin — Design Tokens
+   Single source of truth for color, type, spacing, and elevation.
+   Consume via var(--token-name); never hardcode a hex/rgba that
+   already has a token here.
+
+   Breakpoint scale (no CSS var equivalent exists — @media can't
+   consume custom properties — so this is the documented convention
+   every component/page should use instead of inventing new values):
+     480px  — phone / small-form breakpoint
+     768px  — tablet
+     1024px — sidebar collapse / desktop
+   ============================================================ */
+
 :root {
   /* Constant Brand Identity Tokens */
-  --color-primary: #b89b6a;      /* Oluhle Gold */
+  --color-primary: #b89b6a;      /* Oluhle Gold — backgrounds, borders, icons, accents. NOT for text on light surfaces (fails contrast) — use --color-primary-text instead. */
   --color-primary-light: #d4bc91;
   --color-primary-dark: #8c7650;
-  
+
   --color-success: #27ae60;
   --color-warning: #fbbf24;
   --color-error: #c0392b;
+  --color-info: #2980b9;
 
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-display: 'Playfair Display', 'Outfit', serif;
+  --font-display: 'Cormorant Garamond', 'Outfit', serif;
   --font-body: 'Outfit', 'Inter', sans-serif;
-  
+
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: 8px;
 
   /* Global Base: Light & Refined */
-  --color-bg-dark: #fbfaf8;      
-  --color-bg-card: #ffffff;      
-  --color-bg-nav: #fbfaf8;       
+  --color-bg-dark: #fbfaf8;
+  --color-bg-card: #ffffff;
   --color-surface: #f3f1ed;
-  
-  --color-text: #2c2824;         
+
+  --color-text: #2c2824;
   --color-text-muted: #5a5650;
   --color-text-header: #1a1611;
-  
+
   --color-border: rgba(184, 155, 106, 0.22);
   --color-border-light: rgba(184, 155, 106, 0.12);
-  --color-border-focus: rgba(184, 155, 106, 0.4);
+  --color-border-focus: rgba(184, 155, 106, 0.4); /* drives the global :focus-visible ring (buttons.css) */
 
+  /* Text-safe pairings for their base color — each of these is
+     verified ≥4.5:1 against --color-bg-card in its own theme.
+     Use these for TEXT; use the plain --color-{success,warning,
+     error,primary} tokens above only for backgrounds/icons/borders. */
   --color-success-text: #064e3b;
   --color-warning-text: #92400e;
   --color-error-text: #7f1d1d;
+  --color-info-text: #1c5a80;
+  --color-primary-text: #6b5632; /* ~7:1 on white — swap in .theme-dark below */
 
   --shadow-sm: 0 1px 2px rgba(130, 110, 80, 0.08);
   --shadow-md: 0 8px 24px rgba(130, 110, 80, 0.1);
   --shadow-lg: 0 15px 40px rgba(130, 110, 80, 0.15);
-  
+
   --glass-bg: #ffffff;
   --color-accent-dark: #6b5632;
-  --color-accent-text: var(--color-accent-dark);
   --color-sidebar-header: var(--color-primary-dark);
 }
 
 /* Theme Classes */
 
 .theme-dark {
-  --color-bg-dark: #0f0e0c;      
-  --color-bg-card: #1a1611;      
-  --color-bg-nav: #0f0e0c;       
+  --color-bg-dark: #0f0e0c;
+  --color-bg-card: #1a1611;
   --color-surface: #1e1a14;
-  
-  --color-text: #e8e2d8;         
-  --color-text-muted: rgba(232, 226, 216, 0.48); 
+
+  --color-text: #e8e2d8;
+  --color-text-muted: rgba(232, 226, 216, 0.55); /* was 0.48 — measured ~4.1:1, failed AA normal-text; 0.55 measures ~4.95:1 */
   --color-text-header: #f5f0e8;
-  
+
   --color-border: rgba(184, 155, 106, 0.18);
   --color-border-light: rgba(184, 155, 106, 0.08);
   --color-border-focus: rgba(184, 155, 106, 0.4);
@@ -63,11 +81,13 @@
   --color-success-text: #d1fae5;
   --color-warning-text: #fef3c7;
   --color-error-text: #fee2e2;
+  --color-info-text: #cfe8fb;
+  --color-primary-text: #d4bc91; /* ~9.7:1 on dark card */
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.7);
-  
+
   --glass-bg: rgba(26, 22, 17, 0.85);
   --color-sidebar-header: var(--color-primary);
 }

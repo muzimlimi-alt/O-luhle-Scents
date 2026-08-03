@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { metricsApi } from '../services/api';
+import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useMessaging } from '../context/MessagingContext';
 import {
   Users,
   ShoppingCart,
   Wallet,
   AlertTriangle,
-  TrendingUp,
+  LayoutDashboard,
   Zap,
   Mail,
   Package,
@@ -25,6 +29,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 export function Dashboard() {
+  const { showMessage } = useMessaging();
   const [data, setData] = useState({
     revenue: 0,
     orders: 0,
@@ -73,10 +78,10 @@ export function Dashboard() {
   const handleRecovery = async (orderId) => {
     try {
       await metricsApi.sendRecovery(orderId);
-      alert('Recovery email sent!');
+      showMessage('success', 'Recovery Email Sent', 'The customer has been notified about their abandoned cart.');
       window.location.reload(); // Simple refresh for state
     } catch (err) {
-      alert('Failed: ' + err.message);
+      showMessage('error', 'Send Failed', err.message);
     }
   };
 
@@ -94,9 +99,7 @@ export function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <div className="content-header">
-        <h2 className="page-title">Dashboard</h2>
-      </div>
+      <PageHeader icon={<LayoutDashboard size={22} />} title="Dashboard" subtitle="Store performance at a glance." />
 
       <div className="kpi-grid">
         <div className="kpi-card">
@@ -210,7 +213,7 @@ export function Dashboard() {
                   </p>
                </div>
              ))}
-             {data.predictions.length === 0 && <p style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>Not enough sales data for predictions.</p>}
+             {data.predictions.length === 0 && <EmptyState title="Not enough data yet" description="Predictions appear once there's enough sales history to model." />}
           </div>
         </div>
       </div>
@@ -220,35 +223,21 @@ export function Dashboard() {
            <Mail size={20} color="var(--color-primary)" />
            <h3 style={{ margin: 0 }}>Abandoned Cart Recovery Opportunities</h3>
         </div>
-        <div className="table-responsive">
-           <table className="modern-table">
-              <thead>
-                 <tr>
-                    <th>Customer</th>
-                    <th>Abandoned Since</th>
-                    <th>Potential Value</th>
-                    <th>Items</th>
-                    <th>Action</th>
-                 </tr>
-              </thead>
-              <tbody>
-                 {data.abandoned.map(order => (
-                   <tr key={order.id}>
-                      <td>{order.customer?.name || order.customer?.email || 'Guest'}</td>
-                      <td>{new Date(order.createdAt).toLocaleString()}</td>
-                      <td>R{Number(order.totalAmount).toLocaleString()}</td>
-                      <td>{order.items.length} items</td>
-                      <td>
-                         <button className="btn btn--primary btn--sm" onClick={() => handleRecovery(order.id)}>
-                            Send Recovery Email
-                         </button>
-                      </td>
-                   </tr>
-                 ))}
-              </tbody>
-           </table>
-           {data.abandoned.length === 0 && <p style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)' }}>No abandoned carts found.</p>}
-        </div>
+        <DataTable
+          columns={[
+            { key: 'customer', label: 'Customer', render: (val) => val?.name || val?.email || 'Guest' },
+            { key: 'createdAt', label: 'Abandoned Since', render: (val) => new Date(val).toLocaleString() },
+            { key: 'totalAmount', label: 'Potential Value', render: (val) => `R${Number(val).toLocaleString()}` },
+            { key: 'items', label: 'Items', render: (val) => `${val.length} items` },
+          ]}
+          data={data.abandoned}
+          emptyState={<EmptyState title="No abandoned carts" description="Recoverable checkouts will appear here." />}
+          actions={(order) => (
+            <button className="btn btn--primary btn--sm" onClick={() => handleRecovery(order.id)}>
+              Send Recovery Email
+            </button>
+          )}
+        />
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

@@ -22,7 +22,6 @@ import Notifications from './pages/Notifications';
 
 import { Settings } from './pages/Settings';
 import { Preferences } from './pages/Preferences';
-import { Config } from './pages/Config';
 import { Content } from './pages/Content';
 import { Login } from './pages/Login';
 import { Newsletters } from './pages/Newsletters';
@@ -95,7 +94,7 @@ function App() {
               <Route path="audit-logs" element={<AuditLogs />} />
               <Route path="preferences" element={<Preferences />} />
               <Route path="content" element={<Content />} />
-              <Route path="config" element={<Config />} />
+              <Route path="config" element={<Navigate to="/settings" replace />} />
             </Route>
             
             <Route path="*" element={<Navigate to="/" replace />} />

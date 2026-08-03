@@ -39,6 +39,17 @@
   transform: scale(0.98);
 }
 
+/* Keyboard-only focus ring — .btn sets outline:none above, so this is the
+   only visible focus indicator keyboard users get. :focus-visible skips it
+   for mouse/touch clicks, matching modern browser default behavior. */
+.btn:focus-visible,
+.action-btn:focus-visible,
+.icon-btn:focus-visible,
+.classic-action-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-border-focus);
+}
+
 /* --- Primary: Premium Gold Gradient --- */
 .btn--primary {
   background: linear-gradient(135deg, #b89b6a 0%, #8c7650 100%);

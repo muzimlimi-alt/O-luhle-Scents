@@ -54,6 +54,23 @@
   font-weight: 600;
 }
 
+.nav-link:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-border-focus);
+}
+
+/* Global keyboard-focus ring for native form controls — the app has no
+   shared <input>/<select>/<textarea> base class, so this attaches directly
+   to the elements themselves rather than a class every page would need to
+   remember to apply. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-border-focus);
+  border-color: var(--color-primary);
+}
+
 .nav-icon {
   margin-right: 12px;
   display: inline-flex;
@@ -189,6 +206,22 @@
   font-size: 0.7rem; color: var(--color-text-muted); margin-top: 8px;
 }
 
+.card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 24px;
+}
+
+/* DataTable renders its own header/cell padding — when a .card exists only
+   to frame a table (no heading or other sibling content), it should sit
+   flush around it rather than double up the inset. Cards that pair a
+   heading with a table (e.g. a "Top Products" card) keep normal padding
+   so the heading isn't flush against the card border. */
+.card:has(> .table-wrapper:only-child) {
+  padding: 0;
+}
+
 .card h3 {
   font-size: 1.125rem;
   font-weight: 600;
@@ -246,19 +279,22 @@
   letter-spacing: 0.06em;
 }
 
+/* Text uses the *-text token pairing, not the raw semantic color — the raw
+   tokens are tuned for icons/backgrounds and fail AA contrast as text
+   (e.g. --color-warning as text measured ~1.7:1 on its own tint). */
 .status-badge.paid, .status-badge.success {
-  background: rgba(39, 174, 96, 0.1); 
-  color: var(--color-success);
+  background: rgba(39, 174, 96, 0.1);
+  color: var(--color-success-text);
 }
 
 .status-badge.pending, .status-badge.warning {
-  background: rgba(251, 191, 36, 0.1); 
-  color: var(--color-warning);
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--color-warning-text);
 }
 
 .status-badge.cancelled, .status-badge.failed, .status-badge.error {
-  background: rgba(192, 57, 43, 0.1); 
-  color: var(--color-error);
+  background: rgba(192, 57, 43, 0.1);
+  color: var(--color-error-text);
 }
 
 /* Flex Center Utility */
@@ -373,3 +409,54 @@
   from { opacity: 0; filter: blur(10px); transform: translateY(10px); }
   to { opacity: 1; filter: blur(0); transform: translateY(0); }
 }
+
+/* ============================================================
+   Design system — StatusBadge (components/StatusBadge.jsx)
+   Global (not per-instance-injected) since a table can render
+   dozens of these per page.
+   ============================================================ */
+.status-badge-ds {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.status-badge-ds__icon { display: inline-flex; }
+.status-badge-ds--success { background: rgba(39, 174, 96, 0.1); color: var(--color-success-text); }
+.status-badge-ds--warning { background: rgba(251, 191, 36, 0.1); color: var(--color-warning-text); }
+.status-badge-ds--error { background: rgba(192, 57, 43, 0.1); color: var(--color-error-text); }
+.status-badge-ds--info { background: rgba(41, 128, 185, 0.1); color: var(--color-info-text); }
+.status-badge-ds--neutral { background: var(--color-surface); color: var(--color-text-muted); border: 1px solid var(--color-border-light); }
+
+/* ============================================================
+   Design system — FormField (components/FormField.jsx) + shared
+   input styling. Replaces .elite-glass-input/.settings-input/
+   .input-field/.search-glass-input and other one-off input classes.
+   ============================================================ */
+.form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.form-field__label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); }
+.form-field__required { color: var(--color-error-text); }
+.form-field__hint { font-size: 0.78rem; color: var(--color-text-muted); margin: 0; }
+.form-field__error { font-size: 0.78rem; color: var(--color-error-text); margin: 0; display: flex; align-items: center; gap: 4px; }
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  transition: var(--transition);
+}
+.form-input::placeholder { color: var(--color-text-muted); opacity: 0.7; }
+.form-input:hover:not(:disabled) { border-color: var(--color-primary); }
+.form-input:disabled { opacity: 0.5; cursor: not-allowed; background: var(--color-surface); }
+textarea.form-input { resize: vertical; min-height: 80px; }

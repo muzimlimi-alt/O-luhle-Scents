@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
-import { 
-  Bell, 
-  CheckCircle, 
-  AlertTriangle, 
-  Info, 
-  Trash2, 
-  X, 
-  Clock, 
-  Search, 
+import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
+import {
+  Bell,
+  CheckCircle,
+  AlertTriangle,
+  Info,
+  Trash2,
+  Search,
   Filter
 } from 'lucide-react';
 import { DateTime } from 'luxon';
@@ -78,12 +79,11 @@ export default function Notifications() {
 
   return (
     <div className="elite-notifications-container animate-fade-in">
-      <div className="atelier-header">
-        <div className="header-titles">
-          <h1 className="couture-text">Intelligence Feed</h1>
-          <p className="couture-subtext">Real-time operational alerts and system diagnostics</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={<Bell size={22} />}
+        title="Notifications"
+        subtitle="Operational alerts that need attention."
+      />
 
       <div className="atelier-discovery">
         <div className="search-glass-wrapper">
@@ -112,15 +112,9 @@ export default function Notifications() {
 
       <div className="atelier-grid vertical-feed">
         {loading ? (
-          <div className="elite-loading">
-            <div className="loader-gold"></div>
-            <p>Syncing broadcast matrix...</p>
-          </div>
+          <LoadingState label="Loading notifications..." />
         ) : filtered.length === 0 ? (
-          <div className="elite-empty-state">
-            <Bell size={48} />
-            <p>Operational intelligence is silent at this interval.</p>
-          </div>
+          <EmptyState icon={<Bell size={40} />} title="All clear" description="No notifications match your current filters." />
         ) : (
           filtered.map((n) => (
             <div key={n.id} className={`elite-glass alert-card fade-in-blur ${!n.isRead ? 'unread' : 'read'}`}>
@@ -159,9 +153,8 @@ export default function Notifications() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .elite-notifications-container { padding: 40px; max-width: 1000px; margin: 0 auto; min-height: 100vh; }
-        .atelier-header { margin-bottom: 48px; border-left: 3px solid var(--color-primary); padding-left: 24px; }
-        
-        .atelier-discovery { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 24px; }
+
+        .atelier-discovery { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 24px; }
         .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; flex: 1; }
         .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
         .filter-glass-matrix { display: flex; gap: 16px; }

@@ -3,6 +3,8 @@ import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { Plus, Ticket, Calendar, Trash2 } from 'lucide-react';
 import { Drawer } from '../components/Drawer';
+import { PageHeader } from '../components/PageHeader';
+import { FormField } from '../components/FormField';
 
 export function Coupons() {
   const [coupons, setCoupons] = useState([]);
@@ -46,12 +48,16 @@ export function Coupons() {
 
   return (
     <div className="coupons-page">
-      <div className="content-header">
-        <h2 className="page-title">Coupons & Discounts</h2>
-        <button className="btn btn--primary" onClick={() => setIsModalOpen(true)}>
-          <Plus size={18} /> Create Coupon
-        </button>
-      </div>
+      <PageHeader
+        icon={<Ticket size={22} />}
+        title="Coupons & Discounts"
+        subtitle="Promotional codes available at checkout."
+        actions={(
+          <button className="btn btn--primary" onClick={() => setIsModalOpen(true)}>
+            <Plus size={18} /> Create Coupon
+          </button>
+        )}
+      />
 
       <div className="card">
         <DataTable 
@@ -67,49 +73,34 @@ export function Coupons() {
 
       <Drawer isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Coupon" width={480}>
         <form className="admin-form">
-          <div className="form-group">
-            <label>Coupon Code *</label>
+          <FormField label="Coupon Code" required>
             <input type="text" placeholder="e.g. SUMMER2026" required />
-          </div>
+          </FormField>
           <div className="form-grid-2">
-            <div className="form-group">
-              <label>Type</label>
+            <FormField label="Type">
               <select>
                 <option value="PERCENT">Percentage (%)</option>
                 <option value="FIXED">Fixed Amount (R)</option>
               </select>
-            </div>
-            <div className="form-group">
-              <label>Value</label>
+            </FormField>
+            <FormField label="Value">
               <input type="number" placeholder="20" required />
-            </div>
+            </FormField>
           </div>
           <div className="form-grid-2">
-            <div className="form-group">
-              <label>Expiry Date</label>
+            <FormField label="Expiry Date">
               <input type="date" />
-            </div>
-            <div className="form-group">
-              <label>Usage Limit</label>
+            </FormField>
+            <FormField label="Usage Limit">
               <input type="number" placeholder="100" />
-            </div>
+            </FormField>
           </div>
-          <div className="form-actions" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+          <div className="form-actions" style={{ marginTop: '8px', display: 'flex', gap: '12px' }}>
             <button type="submit" className="btn btn--primary" style={{ flexGrow: 1 }}>Save Coupon</button>
             <button type="button" className="btn btn--outline" onClick={() => setIsModalOpen(false)}>Cancel</button>
           </div>
         </form>
       </Drawer>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        .admin-form .form-group { margin-bottom: 16px; }
-        .admin-form label { display: block; font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 6px; }
-        .admin-form input, .admin-form select { 
-          width: 100%; padding: 10px; background: var(--color-surface); border: 1px solid var(--color-border); 
-          border-radius: 8px; color: var(--color-text); outline: none; 
-        }
-        .admin-form input:focus { border-color: var(--color-primary); }
-      `}} />
     </div>
   );
 }

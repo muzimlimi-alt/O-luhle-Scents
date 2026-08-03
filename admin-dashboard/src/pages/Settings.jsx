@@ -1,218 +1,242 @@
 import React, { useState, useEffect } from 'react';
 import { settingsApi } from '../services/api';
-import { 
-  Settings as SettingsIcon, 
-  Save, 
-  Mail, 
-  MessageCircle, 
-  Truck, 
-  CreditCard, 
-  ShieldCheck, 
-  Loader2,
+import {
+  Settings as SettingsIcon,
+  Save,
+  Phone,
+  Mail,
+  MapPin,
+  Server,
+  CreditCard,
+  ShieldCheck,
   AlertCircle,
-  Smartphone,
-  Globe
+  Truck,
+  RefreshCw
 } from 'lucide-react';
-
-const CONFIG_TABS = [
-  { id: 'communication', label: 'Communication', icon: <MessageCircle size={18} /> },
-  { id: 'logistics', label: 'Logistics', icon: <Truck size={18} /> },
-  { id: 'finance', label: 'Finance', icon: <CreditCard size={18} /> },
-  { id: 'system', label: 'System', icon: <Globe size={18} /> }
-];
+import { PageHeader } from '../components/PageHeader';
+import { FormField } from '../components/FormField';
+import { LoadingState } from '../components/LoadingState';
+import { useMessaging } from '../context/MessagingContext';
 
 export function Settings() {
-  const [activeTab, setActiveTab] = useState('communication');
+  const { showMessage } = useMessaging();
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      const data = await settingsApi.list();
+      // Flatten the server's group-keyed response into a flat key -> {value, group} map —
+      // the merged page defines its own logical grouping for display, independent of
+      // whatever "group" string each key happens to be stored under.
+      const flat = {};
+      Object.keys(data).forEach(group => {
+        data[group].forEach(s => {
+          flat[s.key] = { value: s.value, group: s.group };
+        });
+      });
+      setSettings(flat);
+    } catch (err) {
+      showMessage('error', 'Load Failed', 'Failed to load system configuration.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
   }, []);
 
-  async function fetchSettings() {
-    try {
-      const data = await settingsApi.list();
-      setSettings(data);
-    } catch (err) {
-      console.error('Failed to load settings:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleChange = (group, key, value) => {
+  const handleChange = (key, value) => {
     setSettings(prev => ({
       ...prev,
-      [group]: prev[group].map(s => s.key === key ? { ...s, value } : s)
+      [key]: { ...prev[key], value }
     }));
   };
 
-  const handleSave = async () => {
-    setSubmitting(true);
-    setSuccess(false);
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
     try {
-      // Flatten all groups back into a single array for the API
-      const flattened = Object.values(settings).flat();
-      await settingsApi.update(flattened);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      const payload = Object.keys(settings).map(key => ({
+        key,
+        value: settings[key].value,
+        group: settings[key].group
+      }));
+
+      await settingsApi.update(payload);
+      showMessage('success', 'Settings Saved', 'System configuration has been synchronized.');
     } catch (err) {
-      alert('Failed to synchronize global configuration: ' + err.message);
+      showMessage('error', 'Save Failed', err.message);
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  const renderTabContent = () => {
-    const groupItems = settings[activeTab] || [];
-    
-    if (groupItems.length === 0) {
-      return (
-        <div style={{ padding: '40px', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '12px' }}>
-          <AlertCircle size={32} color="var(--color-text-muted)" style={{ margin: '0 auto 12px' }} />
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>No configuration keys registered for this module.</p>
-          <button 
-            className="btn btn--secondary btn--sm" 
-            style={{ marginTop: '12px' }}
-            onClick={() => handleSeedDefaults(activeTab)}
-          >
-            Deploy Operational Defaults
-          </button>
-        </div>
-      );
-    }
+  const val = (key) => settings[key]?.value || '';
 
-    const getLabel = (key) => {
-      const labels = {
-        'TWILIO_ACCOUNT_SID': 'Twilio Account SID',
-        'TWILIO_AUTH_TOKEN': 'Twilio Auth Token',
-        'TWILIO_WHATSAPP_FROM': 'WhatsApp Outbound Number',
-        'WHATSAPP_PHONE': 'Direct Support WhatsApp',
-        'EMAIL_HOST': 'SMTP Host Address',
-        'EMAIL_PORT': 'SMTP Port',
-        'EMAIL_USER': 'SMTP Outbound Email',
-        'EMAIL_PASS': 'SMTP Secure Password',
-        'BANK_ACCOUNT_NAME': 'Bank Account Holder',
-        'BANK_ACCOUNT_NUMBER': 'Account Number',
-        'BANK_BRANCH_CODE': 'Branch Code',
-        'WAREHOUSE_ADDRESS': 'Fulfillment Center Address',
-        'COURIER_API_KEY': 'Default Courier API Key',
-        'FRONTEND_URL': 'Public Storefront URL'
-      };
-      return labels[key] || key.replace(/_/g, ' ');
-    };
-
-    return (
-      <div className="settings-grid">
-        {groupItems.map(s => (
-          <div key={s.id} className="form-group" style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
-              {getLabel(s.key)}
-            </label>
-            <input 
-              type={s.key.toLowerCase().includes('pass') || s.key.toLowerCase().includes('token') ? 'password' : 'text'}
-              className="settings-input"
-              value={s.value}
-              onChange={e => handleChange(activeTab, s.key, e.target.value)}
-              style={{ width: '100%', padding: '12px 16px', background: 'var(--color-bg-dark)', border: '1px solid var(--color-border)', borderRadius: '8px', color: 'white' }}
-            />
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-
-  const handleSeedDefaults = (group) => {
-    const defaults = {
-      communication: [
-        { key: 'TWILIO_ACCOUNT_SID', value: '', group: 'communication' },
-        { key: 'TWILIO_AUTH_TOKEN', value: '', group: 'communication' },
-        { key: 'TWILIO_WHATSAPP_FROM', value: '', group: 'communication' },
-        { key: 'WHATSAPP_PHONE', value: '', group: 'communication' }
-      ],
-      logistics: [
-        { key: 'WAREHOUSE_ADDRESS', value: '123 Luxury Avenue, Sandton, JHB', group: 'logistics' },
-        { key: 'COURIER_API_KEY', value: '', group: 'logistics' }
-      ],
-      finance: [
-        { key: 'BANK_ACCOUNT_NAME', value: "O'Luhle Scents (Pty) Ltd", group: 'finance' },
-        { key: 'BANK_ACCOUNT_NUMBER', value: '', group: 'finance' },
-        { key: 'BANK_BRANCH_CODE', value: '', group: 'finance' }
-      ],
-      system: [
-        { key: 'EMAIL_HOST', value: 'smtp.gmail.com', group: 'system' },
-        { key: 'EMAIL_PORT', value: '465', group: 'system' },
-        { key: 'EMAIL_USER', value: '', group: 'system' },
-        { key: 'EMAIL_PASS', value: '', group: 'system' },
-        { key: 'FRONTEND_URL', value: 'http://localhost:5173', group: 'system' }
-      ]
-    };
-    
-    setSettings(prev => ({
-      ...prev,
-      [group]: defaults[group]
-    }));
-  };
+  if (loading) return <LoadingState label="Loading settings..." />;
 
   return (
     <div className="settings-page">
-      <div className="content-header" style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h2 className="page-title">Global Configuration Suite</h2>
-            <p className="page-subtitle">Orchestrate O'luhle Scents operational metadata across global fulfillment networks</p>
-          </div>
-          <button 
-            className={`btn btn--primary ${success ? 'btn--success' : ''}`} 
-            onClick={handleSave}
-            disabled={submitting}
-            style={{ minWidth: '160px' }}
-          >
-            {submitting ? <Loader2 className="animate-spin" size={18} /> : success ? <ShieldCheck size={18} /> : <Save size={18} />}
-            <span style={{ marginLeft: '8px' }}>{submitting ? 'Saving...' : success ? 'Synchronized' : 'Save Changes'}</span>
+      <PageHeader
+        icon={<SettingsIcon size={22} />}
+        title="Settings"
+        subtitle="Business identity, integrations, and fulfillment parameters."
+        actions={(
+          <button onClick={handleSave} disabled={saving} className="btn btn--primary">
+            <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
           </button>
+        )}
+      />
+
+      <form onSubmit={handleSave} className="settings-grid">
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <ShieldCheck size={20} color="var(--color-primary)" />
+            <h3>Business Identity</h3>
+          </div>
+          <div className="settings-card-body">
+            <FormField label="WhatsApp Number">
+              <input type="text" value={val('business_whatsapp')} onChange={e => handleChange('business_whatsapp', e.target.value)} placeholder="+27..." />
+            </FormField>
+            <FormField label="Support Email">
+              <input type="email" value={val('business_email')} onChange={e => handleChange('business_email', e.target.value)} placeholder="info@oluhlescents.co.za" />
+            </FormField>
+            <FormField label="Physical Address">
+              <textarea rows={3} value={val('business_address')} onChange={e => handleChange('business_address', e.target.value)} />
+            </FormField>
+          </div>
         </div>
-      </div>
 
-      <div className="settings-container">
-        <aside className="settings-tabs">
-          {CONFIG_TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`nav-link ${activeTab === tab.id ? 'active' : ''}`}
-              style={{ justifyContent: 'flex-start', background: activeTab === tab.id ? 'rgba(212,175,55,0.1)' : 'transparent', color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
-            >
-              <span className="nav-icon">{tab.icon}</span>
-              <span className="nav-label">{tab.label}</span>
-            </button>
-          ))}
-        </aside>
-
-        <main className="card" style={{ padding: '32px' }}>
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-              <Loader2 className="animate-spin" size={32} color="#d4af37" />
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <Server size={20} color="var(--color-primary)" />
+            <h3>Email Fulfillment (SMTP)</h3>
+          </div>
+          <div className="settings-card-body">
+            <div className="settings-row">
+              <FormField label="SMTP Host">
+                <input type="text" value={val('EMAIL_HOST')} onChange={e => handleChange('EMAIL_HOST', e.target.value)} placeholder="smtp.gmail.com (leave blank to use Gmail service)" />
+              </FormField>
+              <FormField label="Port">
+                <input type="text" value={val('EMAIL_PORT') || '587'} onChange={e => handleChange('EMAIL_PORT', e.target.value)} />
+              </FormField>
             </div>
-          ) : renderTabContent()}
-        </main>
-      </div>
+            <FormField label="Username">
+              <input type="text" value={val('EMAIL_USER')} onChange={e => handleChange('EMAIL_USER', e.target.value)} />
+            </FormField>
+            <FormField label="Password">
+              <input type="password" value={val('EMAIL_PASS')} onChange={e => handleChange('EMAIL_PASS', e.target.value)} />
+            </FormField>
+          </div>
+        </div>
+
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <Phone size={20} color="var(--color-primary)" />
+            <h3>WhatsApp Fulfillment (Twilio)</h3>
+          </div>
+          <div className="settings-card-body">
+            <FormField label="Account SID">
+              <input type="text" value={val('TWILIO_ACCOUNT_SID')} onChange={e => handleChange('TWILIO_ACCOUNT_SID', e.target.value)} />
+            </FormField>
+            <FormField label="Auth Token">
+              <input type="password" value={val('TWILIO_AUTH_TOKEN')} onChange={e => handleChange('TWILIO_AUTH_TOKEN', e.target.value)} />
+            </FormField>
+            <FormField label="WhatsApp From" hint="e.g. whatsapp:+14155238886">
+              <input type="text" value={val('TWILIO_WHATSAPP_FROM')} onChange={e => handleChange('TWILIO_WHATSAPP_FROM', e.target.value)} />
+            </FormField>
+          </div>
+        </div>
+
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <CreditCard size={20} color="var(--color-primary)" />
+            <h3>Banking & Settlement</h3>
+          </div>
+          <div className="settings-card-body">
+            <FormField label="Bank Name">
+              <input type="text" value={val('bank_name')} onChange={e => handleChange('bank_name', e.target.value)} />
+            </FormField>
+            <FormField label="Account Holder">
+              <input type="text" value={val('bank_holder')} onChange={e => handleChange('bank_holder', e.target.value)} />
+            </FormField>
+            <div className="settings-row">
+              <FormField label="Account Number">
+                <input type="text" value={val('bank_account')} onChange={e => handleChange('bank_account', e.target.value)} />
+              </FormField>
+              <FormField label="Branch Code">
+                <input type="text" value={val('bank_branch')} onChange={e => handleChange('bank_branch', e.target.value)} />
+              </FormField>
+            </div>
+          </div>
+        </div>
+
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <Truck size={20} color="var(--color-primary)" />
+            <h3>Logistics</h3>
+          </div>
+          <div className="settings-card-body">
+            <FormField label="Fulfillment Center Address">
+              <textarea rows={2} value={val('WAREHOUSE_ADDRESS')} onChange={e => handleChange('WAREHOUSE_ADDRESS', e.target.value)} />
+            </FormField>
+            <FormField label="Default Courier API Key">
+              <input type="password" value={val('COURIER_API_KEY')} onChange={e => handleChange('COURIER_API_KEY', e.target.value)} />
+            </FormField>
+          </div>
+        </div>
+
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <RefreshCw size={20} color="var(--color-primary)" />
+            <h3>Thresholds & Limits</h3>
+          </div>
+          <div className="settings-card-body">
+            <FormField label="Low Stock Threshold">
+              <input type="number" value={val('low_stock_limit') || '5'} onChange={e => handleChange('low_stock_limit', e.target.value)} />
+            </FormField>
+            <FormField label="Free Shipping Limit (R)">
+              <input type="number" value={val('free_shipping_min') || '1500'} onChange={e => handleChange('free_shipping_min', e.target.value)} />
+            </FormField>
+            <div className="settings-info-box">
+              <AlertCircle size={14} />
+              <span>These parameters affect the storefront globally.</span>
+            </div>
+          </div>
+        </div>
+      </form>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .settings-input:focus { border-color: var(--color-primary) !important; outline: none; box-shadow: 0 0 0 2px rgba(212,175,55,0.2); }
-        .btn--success { background-color: #22c55e !important; border-color: #22c55e !important; }
-        .settings-container { display: grid; grid-template-columns: 240px 1fr; gap: 32px; }
-        .settings-tabs { display: flex; flex-direction: column; gap: 8px; }
-        @media (max-width: 900px) {
-          .settings-container { grid-template-columns: 1fr; }
-          .settings-tabs { flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 4px; }
-          .settings-tabs .nav-link { flex-shrink: 0; }
+        .settings-page { padding: 40px; max-width: 1600px; margin: 0 auto; min-height: 100vh; }
+
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+        .settings-card { padding: 0; overflow: hidden; }
+        .settings-card-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--color-border); }
+        .settings-card-header h3 { font-size: 1rem; font-weight: 600; color: var(--color-text-header); margin: 0; }
+        .settings-card-body { padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+
+        .settings-row { display: flex; gap: 16px; }
+        .settings-row .form-field { flex: 1; }
+
+        .settings-info-box {
+          display: flex; align-items: center; gap: 8px;
+          background: rgba(184,155,106,0.08); border: 1px solid rgba(184,155,106,0.2);
+          padding: 12px; border-radius: 4px; font-size: 0.8rem; color: var(--color-text-muted);
+          margin-top: 8px;
+        }
+
+        @media (max-width: 460px) {
+          .settings-page { padding: 20px; }
+          .settings-grid { grid-template-columns: 1fr; }
+          .settings-row { flex-direction: column; gap: 0; }
         }
       `}} />
     </div>
   );
 }
+
+export default Settings;

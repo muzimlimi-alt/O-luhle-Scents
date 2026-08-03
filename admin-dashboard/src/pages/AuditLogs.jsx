@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { StatusBadge } from '../components/StatusBadge';
 import { ScrollText, User, Calendar, Activity } from 'lucide-react';
 
 export function AuditLogs() {
@@ -43,9 +45,7 @@ export function AuditLogs() {
       </div>
     )},
     { key: 'entity', label: 'Entity Type', render: (val) => (
-      <span style={{ fontSize: '0.7rem', padding: '2px 8px', background: 'var(--color-bg-card)', borderRadius: '2px', border: '1.5px solid var(--color-border)', textTransform: 'uppercase', color: 'var(--color-text-header)', fontWeight: 800, letterSpacing: '1px' }}>
-        {val}
-      </span>
+      <StatusBadge tone="neutral" label={val} />
     )},
     { key: 'createdAt', label: 'Timestamp', render: (val) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
@@ -56,21 +56,19 @@ export function AuditLogs() {
 
   return (
     <div className="audit-logs-page">
-      <div className="content-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <ScrollText size={28} color="var(--color-primary)" />
-          <h2 className="page-title">System Audit Logs</h2>
-        </div>
-      </div>
+      <PageHeader
+        icon={<ScrollText size={22} />}
+        title="System Audit Logs"
+        subtitle="Every administrative action, who performed it, and when."
+      />
 
       <div className="card">
-        <DataTable 
-          columns={columns} 
-          data={logs} 
+        <DataTable
+          columns={columns}
+          data={logs}
           loading={loading}
           actions={null}
         />
-
       </div>
     </div>
   );

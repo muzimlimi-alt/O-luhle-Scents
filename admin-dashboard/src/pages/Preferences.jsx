@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
-import { 
+import { useTheme } from '../context/ThemeContext';
+import {
   Palette, 
   Monitor, 
   Smartphone, 
@@ -14,6 +15,7 @@ import {
 
 export function Preferences() {
   const { prefs, updatePrefs, resetPrefs } = usePreferences();
+  const { theme, toggleTheme } = useTheme();
   const [savedStatus, setSavedStatus] = useState(null);
 
   const handleUpdate = (updates) => {
@@ -44,16 +46,16 @@ export function Preferences() {
           <h4 className="pref-title"><Palette size={18} /> Appearance</h4>
           <p className="pref-desc">Select your preferred visual aesthetic for the dashboard.</p>
           <div className="form-grid-2" style={{ marginTop: '20px' }}>
-             <button 
-               className={`theme-card ${prefs.theme === 'dark' ? 'active' : ''}`} 
-               onClick={() => updatePrefs({ theme: 'dark' })}
+             <button
+               className={`theme-card ${theme === 'dark' ? 'active' : ''}`}
+               onClick={() => { if (theme !== 'dark') toggleTheme(); }}
              >
                <div className="theme-preview dark"></div>
                <span>Midnight (Dark)</span>
              </button>
-             <button 
-               className={`theme-card ${prefs.theme === 'light' ? 'active' : ''}`} 
-               onClick={() => updatePrefs({ theme: 'light' })}
+             <button
+               className={`theme-card ${theme === 'light' ? 'active' : ''}`}
+               onClick={() => { if (theme !== 'light') toggleTheme(); }}
              >
                <div className="theme-preview light"></div>
                <span>Signature (Light)</span>
@@ -141,7 +143,7 @@ export function Preferences() {
            </div>
         </section>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
            <button className="btn btn--primary" onClick={() => handleUpdate({})}>
              <Zap size={18} /> Synchronize Preferences
            </button>

@@ -4,14 +4,17 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { settingsApi } from '../services/api';
 import {
+  FileText,
   Save,
   Loader2,
-  AlertCircle,
-  CheckCircle2,
   ExternalLink,
   Upload,
   X,
 } from 'lucide-react';
+import { PageHeader } from '../components/PageHeader';
+import { FormField } from '../components/FormField';
+import { LoadingState } from '../components/LoadingState';
+import { useMessaging } from '../context/MessagingContext';
 
 // react-quill@2 still calls the legacy ReactDOM.findDOMNode, which React 19
 // removed outright — it hard-crashes on mount without this. It's only ever
@@ -31,10 +34,10 @@ const QUILL_MODULES = {
 const QUILL_FORMATS = ['bold', 'italic', 'link'];
 
 export function Content() {
+  const { showMessage } = useMessaging();
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
   const [uploadingKey, setUploadingKey] = useState(null);
 
   const fetchSettings = async () => {
@@ -51,8 +54,7 @@ export function Content() {
       });
       setSettings(flat);
     } catch (err) {
-      console.error('[Content Fetch]', err);
-      setMessage({ type: 'error', text: 'Failed to load site content.' });
+      showMessage('error', 'Load Failed', 'Failed to load site content.');
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,6 @@ export function Content() {
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage(null);
 
     try {
       const payload = Object.keys(settings).map(key => ({
@@ -82,10 +83,9 @@ export function Content() {
       }));
 
       await settingsApi.update(payload);
-      setMessage({ type: 'success', text: 'Site content published successfully.' });
-      setTimeout(() => setMessage(null), 5000);
+      showMessage('success', 'Content Published', 'Site content has been published successfully.');
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      showMessage('error', 'Publish Failed', err.message);
     } finally {
       setSaving(false);
     }
@@ -94,12 +94,11 @@ export function Content() {
   const handleImageUpload = async (key, file) => {
     if (!file) return;
     setUploadingKey(key);
-    setMessage(null);
     try {
       const { url } = await settingsApi.uploadImage(file);
       handleChange(key, url);
     } catch (err) {
-      setMessage({ type: 'error', text: 'Image upload failed: ' + err.message });
+      showMessage('error', 'Upload Failed', err.message);
     } finally {
       setUploadingKey(null);
     }
@@ -108,32 +107,31 @@ export function Content() {
   const val = (key) => settings[key]?.value || '';
 
   const Field = ({ label, k, placeholder, warning }) => (
-    <div className="input-group">
-      <label className="input-label">{label}</label>
+    <FormField label={label} hint={warning}>
       <input
         type="text"
-        className="input-field"
         value={val(k)}
         placeholder={placeholder}
         onChange={e => handleChange(k, e.target.value)}
       />
-      {warning && <div className="content-warning">{warning}</div>}
-    </div>
+    </FormField>
   );
 
   const CharCountField = ({ label, k, max, warning }) => (
-    <div className="input-group">
-      <label className="input-label">
-        {label} <span className={`char-count${val(k).length > max ? ' char-count--over' : ''}`}>{val(k).length}/{max}</span>
-      </label>
+    <FormField
+      label={(
+        <>
+          {label} <span className={`char-count${val(k).length > max ? ' char-count--over' : ''}`}>{val(k).length}/{max}</span>
+        </>
+      )}
+      hint={warning}
+    >
       <textarea
-        className="input-field"
         rows="3"
         value={val(k)}
         onChange={e => handleChange(k, e.target.value)}
       />
-      {warning && <div className="content-warning">{warning}</div>}
-    </div>
+    </FormField>
   );
 
   const isVideoUrl = (url) => /\.(mp4|webm|mov)(\?.*)?$/i.test(url || '');
@@ -142,80 +140,67 @@ export function Content() {
     const isUploading = uploadingKey === k;
     const current = val(k);
     return (
-      <div className="input-group">
-        <label className="input-label">{label}</label>
-        {current && (
-          <div className="image-preview">
-            {isVideoUrl(current) ? (
-              <video src={current} muted loop autoPlay playsInline />
-            ) : (
-              <img src={current} alt="" />
-            )}
-            <button
-              type="button"
-              className="image-preview__remove"
-              onClick={() => handleChange(k, '')}
-              aria-label={`Remove ${label}`}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-        <label className={`image-upload-btn${isUploading ? ' image-upload-btn--busy' : ''}`}>
-          {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-          {isUploading ? 'Uploading...' : current ? 'Replace Media' : 'Upload Image or Video'}
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
-            onChange={e => handleImageUpload(k, e.target.files[0])}
-            disabled={isUploading}
-            style={{ display: 'none' }}
-          />
-        </label>
-        {hint && <div className="content-warning">{hint}</div>}
-      </div>
+      <FormField label={label} hint={hint}>
+        <div>
+          {current && (
+            <div className="image-preview">
+              {isVideoUrl(current) ? (
+                <video src={current} muted loop autoPlay playsInline />
+              ) : (
+                <img src={current} alt="" />
+              )}
+              <button
+                type="button"
+                className="image-preview__remove"
+                onClick={() => handleChange(k, '')}
+                aria-label={`Remove ${label}`}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+          <label className={`image-upload-btn${isUploading ? ' image-upload-btn--busy' : ''}`}>
+            {isUploading ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}
+            {isUploading ? 'Uploading...' : current ? 'Replace Media' : 'Upload Image or Video'}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+              onChange={e => handleImageUpload(k, e.target.files[0])}
+              disabled={isUploading}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+      </FormField>
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex-center h-full">
-        <Loader2 className="animate-spin text-primary" size={48} />
-        <p className="mt-4 text-muted">Loading site content...</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState label="Loading site content..." />;
 
   return (
-    <div className="content-mgmt-container animate-fade-in">
-      <div className="content-header">
-        <div>
-          <h2 className="page-title">Site Content</h2>
-          <p className="page-subtext">Edit the marketing copy shown on the public storefront.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn--outline">
-            <ExternalLink size={16} className="mr-2" /> Preview site
-          </a>
-          <button onClick={handleSave} disabled={saving} className="btn btn--primary">
-            {saving ? <Loader2 className="animate-spin mr-2" size={18} /> : <Save size={18} className="mr-2" />}
-            Publish Changes
-          </button>
-        </div>
-      </div>
-
-      {message && (
-        <div className={`alert alert--${message.type === 'error' ? 'danger' : 'success'} mb-6`}>
-          {message.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
-          <span>{message.text}</span>
-        </div>
-      )}
+    <div className="content-mgmt-page">
+      <PageHeader
+        icon={<FileText size={22} />}
+        title="Site Content"
+        subtitle="Edit the marketing copy shown on the public storefront."
+        actions={(
+          <>
+            <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn--outline">
+              <ExternalLink size={16} /> Preview Site
+            </a>
+            <button onClick={handleSave} disabled={saving} className="btn btn--primary">
+              {saving ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
+              {saving ? 'Publishing...' : 'Publish Changes'}
+            </button>
+          </>
+        )}
+      />
 
       <form onSubmit={handleSave} className="content-mgmt-grid">
         {/* Hero */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Hero</h3></div>
-          <div className="card-body">
+          <div className="content-card-header"><h3>Hero</h3></div>
+          <div className="content-card-body">
             <MediaField
               label="Hero Background Media"
               k="hero_media_url"
@@ -234,15 +219,15 @@ export function Content() {
 
         {/* Features */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Features Strip</h3></div>
-          <div className="card-body">
+          <div className="content-card-header"><h3>Features Strip</h3></div>
+          <div className="content-card-body">
             <Field label="Feature 1 Title" k="feature_1_title" />
             <Field label="Feature 1 Text" k="feature_1_text" />
             <Field label="Feature 2 Title" k="feature_2_title" />
             <Field
               label="Feature 2 Text"
               k="feature_2_text"
-              warning="Display copy only — changing this text does not change the actual free-shipping threshold. Update that under System Config → Free Shipping Limit."
+              warning="Display copy only — changing this text does not change the actual free-shipping threshold. Update that under Settings → Free Shipping Limit."
             />
             <Field label="Feature 3 Title" k="feature_3_title" />
             <Field label="Feature 3 Text" k="feature_3_text" />
@@ -253,8 +238,8 @@ export function Content() {
 
         {/* Collections */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Collections</h3></div>
-          <div className="card-body">
+          <div className="content-card-header"><h3>Collections</h3></div>
+          <div className="content-card-body">
             <Field label="Section Label" k="collections_label" />
             <Field label="Section Heading" k="collections_heading" />
             <Field label="Collection 1 Name" k="collection_1_name" />
@@ -272,28 +257,29 @@ export function Content() {
 
         {/* Featured */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Featured</h3></div>
-          <div className="card-body">
+          <div className="content-card-header"><h3>Featured</h3></div>
+          <div className="content-card-body">
             <Field label="Section Heading" k="featured_heading" />
           </div>
         </div>
 
         {/* Brand Story */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Brand Story</h3></div>
-          <div className="card-body">
+          <div className="content-card-header"><h3>Brand Story</h3></div>
+          <div className="content-card-body">
             <Field label="Section Label" k="story_label" />
             <Field label="Section Heading" k="story_heading" />
-            <div className="input-group">
-              <label className="input-label">Story Body</label>
-              <ReactQuill
-                theme="snow"
-                value={val('story_body')}
-                onChange={value => handleChange('story_body', value)}
-                modules={QUILL_MODULES}
-                formats={QUILL_FORMATS}
-              />
-            </div>
+            <FormField label="Story Body">
+              <div className="quill-wrapper">
+                <ReactQuill
+                  theme="snow"
+                  value={val('story_body')}
+                  onChange={value => handleChange('story_body', value)}
+                  modules={QUILL_MODULES}
+                  formats={QUILL_FORMATS}
+                />
+              </div>
+            </FormField>
             <Field label="CTA 1 Label" k="story_cta_1_label" />
             <Field label="CTA 1 Link" k="story_cta_1_href" />
             <Field label="CTA 2 Label" k="story_cta_2_label" />
@@ -303,8 +289,8 @@ export function Content() {
 
         {/* Newsletter */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Newsletter</h3></div>
-          <div className="card-body">
+          <div className="content-card-header"><h3>Newsletter</h3></div>
+          <div className="content-card-body">
             <Field label="Section Label" k="newsletter_label" />
             <Field label="Section Heading" k="newsletter_heading" />
             <CharCountField label="Text" k="newsletter_text" max={500} />
@@ -314,19 +300,16 @@ export function Content() {
 
         {/* Announcement Bar */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Announcement Bar</h3></div>
-          <div className="card-body">
-            <div className="input-group">
-              <label className="input-label">
-                <input
-                  type="checkbox"
-                  checked={val('announcement_active') === 'true'}
-                  onChange={e => handleChange('announcement_active', e.target.checked ? 'true' : 'false')}
-                  style={{ marginRight: '8px' }}
-                />
-                Show announcement bar
-              </label>
-            </div>
+          <div className="content-card-header"><h3>Announcement Bar</h3></div>
+          <div className="content-card-body">
+            <label className="announcement-toggle">
+              <input
+                type="checkbox"
+                checked={val('announcement_active') === 'true'}
+                onChange={e => handleChange('announcement_active', e.target.checked ? 'true' : 'false')}
+              />
+              Show announcement bar
+            </label>
             <CharCountField label="Message" k="announcement_message" max={120} />
             <Field label="Link (optional)" k="announcement_href" />
           </div>
@@ -334,35 +317,49 @@ export function Content() {
 
         {/* Footer */}
         <div className="card content-card">
-          <div className="card-header"><h3 className="card-title">Footer</h3></div>
-          <div className="card-body">
+          <div className="content-card-header"><h3>Footer</h3></div>
+          <div className="content-card-body">
             <CharCountField label="Footer Note" k="footer_note" max={300} />
           </div>
         </div>
       </form>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .content-mgmt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; padding-bottom: 40px; }
-        @media (max-width: 460px) {
-          .content-mgmt-grid { grid-template-columns: 1fr; }
-        }
-        .content-card { border: 1px solid var(--color-border); background: var(--color-bg-card); }
-        .card-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--color-border); }
-        .card-title { font-size: 1.1rem; font-weight: 600; color: white; }
-        .card-body { padding: 20px; }
-        .char-count { float: right; font-weight: 400; opacity: 0.6; }
-        .char-count--over { opacity: 1; color: #e0554f; font-weight: 600; }
-        .content-warning { display: flex; align-items: center; background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.15); padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; color: var(--color-text-muted); margin: 4px 0 12px; }
-        .image-preview { position: relative; margin-bottom: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-bg-alt, #1a1a1a); }
+        .content-mgmt-page { padding: 40px; max-width: 1600px; margin: 0 auto; min-height: 100vh; }
+
+        .content-mgmt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+        .content-card { padding: 0; overflow: hidden; }
+        .content-card-header { padding: 16px 20px; border-bottom: 1px solid var(--color-border); }
+        .content-card-header h3 { font-size: 1rem; font-weight: 600; color: var(--color-text-header); margin: 0; }
+        .content-card-body { padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+
+        .char-count { float: right; font-weight: 400; opacity: 0.7; text-transform: none; letter-spacing: normal; }
+        .char-count--over { opacity: 1; color: var(--color-error-text); font-weight: 700; }
+
+        .image-preview { position: relative; margin-bottom: 10px; border-radius: 4px; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface); }
         .image-preview img, .image-preview video { width: 100%; height: 160px; object-fit: cover; display: block; }
         .image-preview__remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: #fff; border: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
         .image-preview__remove:hover { background: rgba(0,0,0,0.85); }
-        .image-upload-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px dashed var(--color-border); border-radius: 6px; font-size: 0.8rem; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s; }
-        .image-upload-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .image-preview__remove:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
+
+        .image-upload-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px dashed var(--color-border); border-radius: 4px; font-size: 0.8rem; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s; }
+        .image-upload-btn:hover { border-color: var(--color-primary); color: var(--color-primary-text); }
         .image-upload-btn--busy { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
+        .image-upload-btn:has(input:focus-visible) { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
+
+        .announcement-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--color-text); cursor: pointer; margin-bottom: 16px; }
+        .announcement-toggle input { width: 16px; height: 16px; accent-color: var(--color-primary); cursor: pointer; }
+
+        .quill-wrapper { background: #fff; border-radius: 4px; overflow: hidden; }
         .ql-editor { min-height: 160px; background: #fff; color: #1a1a1a; }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
+
+        @media (max-width: 460px) {
+          .content-mgmt-page { padding: 20px; }
+          .content-mgmt-grid { grid-template-columns: 1fr; }
+        }
       `}} />
     </div>
   );

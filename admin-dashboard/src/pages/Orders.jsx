@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ordersApi, adminOpsApi } from '../services/api';
 import { Drawer } from '../components/Drawer';
-import { ShoppingBag, Eye, User, Search, Truck, Filter, ChevronRight, Hash, Clock, Landmark, RotateCcw } from 'lucide-react';
+import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { StatusBadge } from '../components/StatusBadge';
+import { FormField } from '../components/FormField';
+import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
+import { useMessaging } from '../context/MessagingContext';
+import { ShoppingBag, Search, Truck, Filter, Hash, Landmark, RotateCcw } from 'lucide-react';
 
 const COURIERS = [
   { key: 'THE_COURIER_GUY', name: 'The Courier Guy' },
@@ -10,8 +17,18 @@ const COURIERS = [
   { key: 'POST_OFFICE', name: 'SAPO' }
 ];
 
+const STATUS_TONE = {
+  pending: 'neutral',
+  paid: 'success',
+  shipped: 'info',
+  delivered: 'success',
+  cancelled: 'error',
+};
+
 export function Orders() {
+  const { showMessage } = useMessaging();
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showFulfillModal, setShowFulfillModal] = useState(false);
   const [fulfillData, setFulfillData] = useState({ trackingNumber: '', courierKey: 'THE_COURIER_GUY', estimatedDelivery: '' });
@@ -24,14 +41,17 @@ export function Orders() {
   const [returnSubmitting, setReturnSubmitting] = useState(false);
 
   const fetchOrders = useCallback(async () => {
+    setLoading(true);
     try {
-      const items = await ordersApi.list({ 
-        status: statusFilter || undefined, 
-        paymentStatus: paymentFilter || undefined 
+      const items = await ordersApi.list({
+        status: statusFilter || undefined,
+        paymentStatus: paymentFilter || undefined
       });
       setOrders(items);
     } catch (err) {
       console.warn('Orders API failed:', err.message);
+    } finally {
+      setLoading(false);
     }
   }, [statusFilter, paymentFilter]);
 
@@ -52,7 +72,7 @@ export function Orders() {
       setShowFulfillModal(false);
       fetchOrders();
     } catch (err) {
-      alert('Fulfillment failed: ' + err.message);
+      showMessage('error', 'Fulfillment Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -73,7 +93,7 @@ export function Orders() {
       });
       setReturnLines(initialLines);
     } catch (err) {
-      alert('Failed to load order detail: ' + err.message);
+      showMessage('error', 'Load Failed', err.message);
     }
   };
 
@@ -84,7 +104,7 @@ export function Orders() {
   const handleSubmitReturns = async (e) => {
     e.preventDefault();
     const toProcess = Object.entries(returnLines).filter(([, line]) => parseInt(line.quantity) > 0);
-    if (!toProcess.length) return alert('Enter a quantity for at least one item to return.');
+    if (!toProcess.length) return showMessage('warning', 'No Items Selected', 'Enter a quantity for at least one item to return.');
 
     setReturnSubmitting(true);
     try {
@@ -99,7 +119,7 @@ export function Orders() {
       setReturnOrder(null);
       fetchOrders();
     } catch (err) {
-      alert('Return processing failed: ' + err.message);
+      showMessage('error', 'Return Failed', err.message);
     } finally {
       setReturnSubmitting(false);
     }
@@ -111,14 +131,37 @@ export function Orders() {
     o.trackingNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const columns = [
+    { key: 'id', label: 'Order', render: (val) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--color-primary-text)', fontFamily: 'var(--font-display)' }}>
+        <Hash size={13} /> {val.substring(0, 8).toUpperCase()}
+      </div>
+    )},
+    { key: 'customer', label: 'Customer', render: (val) => (
+      <div>
+        <p style={{ margin: 0, fontWeight: 600 }}>{val?.name || 'Private Client'}</p>
+        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{val?.email || 'Guest checkout'}</p>
+      </div>
+    )},
+    { key: 'totalAmount', label: 'Total', render: (val) => <span style={{ fontWeight: 700 }}>R{Number(val).toLocaleString()}</span> },
+    { key: 'status', label: 'Status', render: (val) => (
+      <StatusBadge tone={STATUS_TONE[val?.toLowerCase()] || 'neutral'} label={val?.toUpperCase()} />
+    )},
+    { key: 'trackingNumber', label: 'Tracking', render: (val) => (
+      <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: val ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+        {val || 'Awaiting fulfillment'}
+      </span>
+    )},
+    { key: 'createdAt', label: 'Date', render: (val) => new Date(val).toLocaleDateString() },
+  ];
+
   return (
     <div className="elite-orders-container animate-fade-in">
-      <div className="atelier-header">
-        <div className="header-titles">
-          <h1 className="couture-text">Order Portfolio</h1>
-          <p className="couture-subtext">Precision tracking for global fragrance acquisitions</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={<ShoppingBag size={22} />}
+        title="Orders"
+        subtitle="Track fulfillment status and process returns."
+      />
 
       <div className="atelier-discovery">
         <div className="search-glass-wrapper">
@@ -156,106 +199,59 @@ export function Orders() {
         </div>
       </div>
 
-      <div className="atelier-grid">
-        {filteredOrders.map(o => (
-          <div key={o.id} className="elite-glass order-card fade-in-blur">
-            <div className="order-card-header">
-              <div className="order-id-tag">
-                <Hash size={14} />
-                <span>{o.id.substring(0, 8).toUpperCase()}</span>
+      {loading ? (
+        <LoadingState label="Loading orders..." />
+      ) : (
+        <div className="card">
+          <DataTable
+            columns={columns}
+            data={filteredOrders}
+            emptyState={<EmptyState icon={<ShoppingBag size={40} />} title="No orders yet" description="Orders will appear here as customers check out." />}
+            actions={(o) => (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {o.status === 'paid' && !o.trackingNumber && (
+                  <button className="btn btn--primary btn--sm" onClick={() => handleOpenFulfill(o)}>
+                    <Truck size={14} /> Dispatch
+                  </button>
+                )}
+                {['paid', 'SHIPPED', 'DELIVERED'].includes(o.status) && (
+                  <button className="icon-btn" title="Process return" onClick={() => handleOpenReturn(o)}>
+                    <RotateCcw size={16} />
+                  </button>
+                )}
               </div>
-              <span className={`status-indicator ${o.status.toLowerCase()}`}>
-                {o.status.toUpperCase()}
-              </span>
-            </div>
-
-            <div className="order-patron">
-              <div className="patron-avatar">
-                <User size={18} />
-              </div>
-              <div className="patron-details">
-                <span className="patron-name">{o.customer?.name || 'Private Client'}</span>
-                <span className="patron-email">{o.customer?.email || 'Guest Acquisition'}</span>
-              </div>
-            </div>
-
-            <div className="order-metrics">
-              <div className="metric-item">
-                <span className="metric-label">Valuation</span>
-                <span className="metric-value">R{Number(o.totalAmount).toLocaleString()}</span>
-              </div>
-              <div className="metric-item">
-                <span className="metric-label">Timestamp</span>
-                <span className="metric-value">{new Date(o.createdAt).toLocaleDateString()}</span>
-              </div>
-            </div>
-
-            <div className="order-tracking">
-              <span className="tracking-label">Logistics Tracking</span>
-              <span className="tracking-value">
-                {o.trackingNumber || 'Awaiting Fulfillment'}
-              </span>
-            </div>
-
-            <div className="order-actions">
-              <button className="btn-mini-action" title="View Dossier">
-                <Eye size={16} /> Inspect
-              </button>
-              {o.status === 'paid' && !o.trackingNumber && (
-                <button
-                  className="elite-btn-ship"
-                  onClick={() => handleOpenFulfill(o)}
-                >
-                  <Truck size={14} /> Dispatch
-                </button>
-              )}
-              {['paid', 'SHIPPED', 'DELIVERED'].includes(o.status) && (
-                <button className="btn-mini-action" onClick={() => handleOpenReturn(o)}>
-                  <RotateCcw size={14} /> Return
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-        {filteredOrders.length === 0 && (
-          <div className="elite-empty-state">
-            <ShoppingBag size={48} />
-            <p>The Order Portfolio remains untarnished.</p>
-          </div>
-        )}
-      </div>
+            )}
+          />
+        </div>
+      )}
 
       <Drawer isOpen={showFulfillModal} onClose={() => setShowFulfillModal(false)} title="Logistics Dispatch" width={440}>
         <form onSubmit={handleFulfill} className="elite-form">
-           <div className="elite-input-group">
-             <label className="elite-input-label">Select Logistics Courier</label>
+           <FormField label="Courier" required>
              <select
-                className="elite-glass-input"
                 value={fulfillData.courierKey}
                 onChange={e => setFulfillData({...fulfillData, courierKey: e.target.value})}
                 required
              >
                {COURIERS.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
              </select>
-           </div>
+           </FormField>
 
-           <div className="elite-input-group">
-             <label className="elite-input-label">Consignment Tracking Number</label>
+           <FormField label="Tracking Number" required>
              <input
                type="text"
-               className="elite-glass-input"
                value={fulfillData.trackingNumber}
                onChange={e => setFulfillData({...fulfillData, trackingNumber: e.target.value})}
                required
                placeholder="e.g. TCG-OLUHLE-8849"
              />
-           </div>
+           </FormField>
 
            <div className="modal-actions-elite">
-             <button type="submit" className="elite-btn" disabled={submitting}>
+             <button type="submit" className="btn btn--primary" disabled={submitting}>
                {submitting ? 'Dispatching...' : 'Confirm Shipment'}
              </button>
-             <button type="button" className="elite-btn-outline" onClick={() => setShowFulfillModal(false)}>Cancel</button>
+             <button type="button" className="btn btn--outline" onClick={() => setShowFulfillModal(false)}>Cancel</button>
            </div>
         </form>
       </Drawer>
@@ -300,10 +296,10 @@ export function Orders() {
           })}
 
           <div className="modal-actions-elite">
-            <button type="submit" className="elite-btn" disabled={returnSubmitting}>
+            <button type="submit" className="btn btn--primary" disabled={returnSubmitting}>
               {returnSubmitting ? 'Processing...' : 'Record Return'}
             </button>
-            <button type="button" className="elite-btn-outline" onClick={() => setReturnOrder(null)}>Cancel</button>
+            <button type="button" className="btn btn--outline" onClick={() => setReturnOrder(null)}>Cancel</button>
           </div>
         </form>
       </Drawer>
@@ -316,8 +312,6 @@ export function Orders() {
           min-height: 100vh;
         }
 
-        .atelier-header { margin-bottom: 48px; border-left: 3px solid var(--color-primary); padding-left: 24px; }
-        
         .atelier-discovery {
           display: flex;
           justify-content: space-between;
@@ -354,51 +348,6 @@ export function Orders() {
           background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem;
         }
 
-        .atelier-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 32px;
-        }
-
-        .order-card {
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .order-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .order-id-tag { display: flex; align-items: center; gap: 6px; color: var(--color-primary); font-weight: 700; font-family: var(--font-display); }
-        
-        .status-indicator {
-          font-size: 0.65rem; padding: 4px 10px; border-radius: 2px; font-weight: 600; letter-spacing: 1px;
-        }
-        .status-indicator.pending { background: var(--color-border-light); color: var(--color-primary); }
-        .status-indicator.paid { background: rgba(39, 174, 96, 0.1); color: #2ecc71; }
-        .status-indicator.shipped { background: rgba(41, 128, 185, 0.1); color: #3498db; }
-
-        .order-patron { display: flex; align-items: center; gap: 16px; }
-        .patron-avatar { width: 44px; height: 44px; background: rgba(184,155,106,0.1); border: 1px solid var(--color-border-alt); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); }
-        .patron-name { display: block; font-weight: 600; font-size: 0.95rem; color: var(--color-text-header); }
-        .patron-email { display: block; font-size: 0.75rem; color: var(--color-text-muted); }
-
-        .order-metrics { 
-          display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);
-        }
-        .metric-label { display: block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-muted); margin-bottom: 4px; }
-        .metric-value { font-weight: 700; color: var(--color-text-header); }
-
-        .order-tracking { font-size: 0.8rem; }
-        .tracking-label { display: block; font-size: 0.65rem; color: var(--color-text-muted); margin-bottom: 2px; }
-        .tracking-value { color: var(--color-primary); font-family: monospace; }
-
-        .order-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; }
-        .btn-mini-action { background: none; border: none; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
-        .btn-mini-action:hover { color: var(--color-primary); }
-
-        .elite-btn-ship { background: var(--color-primary); color: #000; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: var(--transition); }
-        .elite-btn-ship:hover { filter: brightness(1.2); transform: translateY(-2px); }
-
         .return-subtitle { font-size: 0.8rem; color: var(--color-text-muted); margin: 0 0 24px; }
 
         .return-line { border: 1px solid var(--color-border); border-radius: 4px; padding: 16px; margin-bottom: 16px; }
@@ -414,21 +363,14 @@ export function Orders() {
           .return-line-header { flex-direction: column; align-items: flex-start; gap: 4px; }
         }
         .return-fulfilled { font-size: 0.75rem; color: var(--color-text-muted); font-style: italic; margin: 0; }
-        
-        .elite-glass-input { width: 100%; background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 12px 16px; color: var(--color-text); outline: none; transition: var(--transition); font-size: 0.9rem; }
-        .elite-glass-input:focus { border-color: var(--color-primary); background: var(--color-border-light); }
 
-        .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
-        .elite-btn { background: var(--color-primary); color: #000; padding: 14px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; transition: var(--transition); }
-        .elite-btn:hover { filter: brightness(1.2); }
-        .elite-btn-outline { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: var(--transition); }
-        .elite-btn-outline:hover { background: var(--color-border-light); }
-
-        @keyframes eliteFadeIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: blur(0); } }
+        .elite-form { display: flex; flex-direction: column; }
+        .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 
         @media (max-width: 768px) {
           .atelier-discovery { flex-direction: column; align-items: stretch; }
-          .atelier-grid { grid-template-columns: 1fr; }
+          .filter-glass-matrix { flex-wrap: wrap; }
+          .select-glass-wrapper { flex: 1 1 140px; }
         }
       `}} />
     </div>

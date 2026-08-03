@@ -7,6 +7,8 @@ import {
 import { ReactSortable } from 'react-sortablejs';
 import { adminOpsApi } from '../services/api';
 import { Drawer } from './Drawer';
+import { FormField } from './FormField';
+import { useMessaging } from '../context/MessagingContext';
 
 const PRODUCT_FAMILIES = [
   { value: 'PERFUME', label: 'Perfume' },
@@ -69,6 +71,7 @@ const EMPTY_VARIANT = {
 };
 
 const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppliers = [], onSave }) => {
+  const { showMessage } = useMessaging();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); // details, images, inventory
@@ -191,7 +194,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
       setAltSuppliers(prev => [...prev, created]);
       setNewAltSupplier({ supplierId: '', supplierSku: '', leadTimeDays: '', minOrderQty: '' });
     } catch (err) {
-      alert('Failed to add supplier: ' + err.message);
+      showMessage('error', 'Add Supplier Failed', err.message);
     }
   };
 
@@ -200,7 +203,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
       await adminOpsApi.productSuppliers.delete(id);
       setAltSuppliers(prev => prev.filter(s => s.id !== id));
     } catch (err) {
-      alert('Failed to remove supplier: ' + err.message);
+      showMessage('error', 'Remove Supplier Failed', err.message);
     }
   };
 
@@ -448,43 +451,41 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                       <Info size={14} /> <span>Identity & Status</span>
                     </div>
 
-                    <div className="field-group span-full">
-                      <label>Fragrance Name</label>
-                      <input 
-                        type="text" 
-                        value={formData.name} 
-                        onChange={e => set('name', e.target.value.slice(0, 150))}
-                        placeholder="e.g. Midnight Silk Oud"
-                        required
-                        maxLength={150}
-                      />
+                    <div className="span-full">
+                      <FormField label="Fragrance Name" required>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={e => set('name', e.target.value.slice(0, 150))}
+                          placeholder="e.g. Midnight Silk Oud"
+                          required
+                          maxLength={150}
+                        />
+                      </FormField>
                     </div>
-                    
-                    <div className="field-group">
-                      <label>House / Brand</label>
-                      <input 
-                        type="text" 
-                        value={formData.brand} 
+
+                    <FormField label="House / Brand">
+                      <input
+                        type="text"
+                        value={formData.brand}
                         onChange={e => set('brand', e.target.value.slice(0, 100))}
                         placeholder="O'luhle Scents"
                         maxLength={100}
                       />
-                    </div>
+                    </FormField>
 
-                    <div className="field-group">
-                      <label>Card Badge</label>
+                    <FormField label="Card Badge">
                       <select value={formData.cardBadge} onChange={e => set('cardBadge', e.target.value)}>
                         <option value="">No Badge</option>
                         <option value="Bestseller">Bestseller</option>
                         <option value="New">New</option>
                         <option value="Popular">Popular</option>
                       </select>
-                    </div>
+                    </FormField>
 
-                    <div className="field-group">
-                      <label>Artisan Supplier</label>
-                      <select 
-                        value={formData.supplierId} 
+                    <FormField label="Artisan Supplier">
+                      <select
+                        value={formData.supplierId}
                         onChange={e => set('supplierId', e.target.value)}
                       >
                         <option value="">Select Boutique Supplier...</option>
@@ -492,32 +493,31 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                           <option key={sup.id} value={sup.id}>{sup.name}</option>
                         ))}
                       </select>
-                    </div>
+                    </FormField>
 
-                    <div className="field-group">
-                      <label>Visibility Status</label>
+                    <FormField label="Visibility Status">
                       <select value={formData.status} onChange={e => set('status', e.target.value)}>
                         <option value="ACTIVE">Active — Public Display</option>
                         <option value="DRAFT">Draft — Not Yet Published</option>
                         <option value="ARCHIVED">Archived — Hidden</option>
                       </select>
-                    </div>
+                    </FormField>
 
-                    <div className="field-group">
-                      <label>Product Family</label>
+                    <FormField label="Product Family">
                       <select value={formData.family} onChange={e => set('family', e.target.value)}>
                         {PRODUCT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                       </select>
-                    </div>
+                    </FormField>
 
-                    <div className="field-group span-full">
-                      <label>Description (Optional)</label>
-                      <textarea
-                        rows={3}
-                        value={formData.description}
-                        onChange={e => set('description', e.target.value)}
-                        placeholder="Describe the sensory notes and inspiration behind this creation..."
-                      />
+                    <div className="span-full">
+                      <FormField label="Description (Optional)">
+                        <textarea
+                          rows={3}
+                          value={formData.description}
+                          onChange={e => set('description', e.target.value)}
+                          placeholder="Describe the sensory notes and inspiration behind this creation..."
+                        />
+                      </FormField>
                     </div>
 
                     {isEdit && (
@@ -538,16 +538,16 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                           {altSuppliers.length === 0 && <p className="alt-supplier-empty">No alternative suppliers linked yet.</p>}
                         </div>
                         <div className="alt-supplier-add">
-                          <select value={newAltSupplier.supplierId} onChange={e => setNewAltSupplier(s => ({ ...s, supplierId: e.target.value }))}>
+                          <select aria-label="Add alternative supplier" value={newAltSupplier.supplierId} onChange={e => setNewAltSupplier(s => ({ ...s, supplierId: e.target.value }))}>
                             <option value="">Add supplier...</option>
                             {suppliers.filter(sup => sup.id !== formData.supplierId).map(sup => (
                               <option key={sup.id} value={sup.id}>{sup.name}</option>
                             ))}
                           </select>
-                          <input type="text" placeholder="Supplier SKU" value={newAltSupplier.supplierSku} onChange={e => setNewAltSupplier(s => ({ ...s, supplierSku: e.target.value }))} />
-                          <input type="number" placeholder="Lead days" value={newAltSupplier.leadTimeDays} onChange={e => setNewAltSupplier(s => ({ ...s, leadTimeDays: e.target.value }))} />
-                          <input type="number" placeholder="MOQ" value={newAltSupplier.minOrderQty} onChange={e => setNewAltSupplier(s => ({ ...s, minOrderQty: e.target.value }))} />
-                          <button type="button" className="elite-btn-modern-variant" onClick={addAltSupplier}><Plus size={14} /></button>
+                          <input aria-label="Supplier SKU" type="text" placeholder="Supplier SKU" value={newAltSupplier.supplierSku} onChange={e => setNewAltSupplier(s => ({ ...s, supplierSku: e.target.value }))} />
+                          <input aria-label="Lead time in days" type="number" placeholder="Lead days" value={newAltSupplier.leadTimeDays} onChange={e => setNewAltSupplier(s => ({ ...s, leadTimeDays: e.target.value }))} />
+                          <input aria-label="Minimum order quantity" type="number" placeholder="MOQ" value={newAltSupplier.minOrderQty} onChange={e => setNewAltSupplier(s => ({ ...s, minOrderQty: e.target.value }))} />
+                          <button type="button" className="elite-btn-modern-variant" onClick={addAltSupplier} aria-label="Add supplier"><Plus size={14} /></button>
                         </div>
                       </div>
                     )}
@@ -564,33 +564,29 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                       <Sparkles size={14} /> <span>Artisan Classification</span>
                     </div>
 
-                    <div className="field-group">
-                      <label>Product Type</label>
+                    <FormField label="Product Type">
                       <select value={formData.type} onChange={e => set('type', e.target.value)}>
                         {["Extrait de Parfum", "Parfum", "Eau de Parfum", "Eau de Toilette", "Eau de Cologne", "Eau Fraîche", "Eau de Senteur", "Splash & Aftershave"].map(t => (
                           <option key={t} value={t}>{t}</option>
                         ))}
                       </select>
-                    </div>
+                    </FormField>
 
-                    <div className="field-group">
-                      <label>Oil Concentration (Auto)</label>
+                    <FormField label="Oil Concentration" hint="Automatically set from Product Type">
                       <input type="text" value={formData.oilConcentration} readOnly className="read-only" />
-                    </div>
+                    </FormField>
 
-                    <div className="field-group">
-                      <label>Longevity Profile (Auto)</label>
+                    <FormField label="Longevity Profile" hint="Automatically set from Product Type">
                       <input type="text" value={formData.longevity} readOnly className="read-only" />
-                    </div><br></br>
+                    </FormField>
 
                     <div className="elite-section-divider span-full">
                       <Layout size={14} /> <span>Sensory & Aromatic Architecture</span>
                     </div>
 
-                    <div className="field-group">
-                      <label>Category Hub</label>
-                      <select 
-                        value={formData.categoryId} 
+                    <FormField label="Category Hub" required>
+                      <select
+                        value={formData.categoryId}
                         onChange={e => set('categoryId', e.target.value)}
                         required
                       >
@@ -599,20 +595,20 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                           <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                       </select>
-                    </div>
+                    </FormField>
 
-                    <div className="field-group">
-                      <label>Scent Family</label>
+                    <FormField label="Scent Family">
                       <select value={formData.scentFamily} onChange={e => set('scentFamily', e.target.value)}>
                         {["Aquatic", "Floral", "Woody", "Oriental", "Citrus", "Fruity", "Herbal"].map(f => (
                           <option key={f} value={f}>{f}</option>
                         ))}
                       </select>
-                    </div>
+                    </FormField>
 
-                    <div className="field-group span-full">
-                      <label>Classification Characteristic (Auto)</label>
-                      <input type="text" value={formData.characteristic} readOnly className="read-only" />
+                    <div className="span-full">
+                      <FormField label="Classification Characteristic" hint="Automatically set from Scent Family">
+                        <input type="text" value={formData.characteristic} readOnly className="read-only" />
+                      </FormField>
                     </div>
 
                     <div className="span-full aromatic-notes-section">
@@ -675,19 +671,17 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                         <Boxes size={14} /> <span>{PRODUCT_FAMILIES.find(f => f.value === formData.family)?.label} Attributes</span>
                       </div>
 
-                      <div className="field-group">
-                        <label>Category Hub</label>
+                      <FormField label="Category Hub" required>
                         <select value={formData.categoryId} onChange={e => set('categoryId', e.target.value)} required>
                           <option value="">Select Category...</option>
                           {categories.map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                           ))}
                         </select>
-                      </div>
+                      </FormField>
 
                       {attributeDefs.filter(d => !d.appliesToVariant).map(def => (
-                        <div className="field-group" key={def.id}>
-                          <label>{def.label}{def.unit ? ` (${def.unit})` : ''}</label>
+                        <FormField label={`${def.label}${def.unit ? ` (${def.unit})` : ''}`} key={def.id}>
                           {def.dataType === 'ENUM' ? (
                             <select value={attributeValues[def.id] || ''} onChange={e => setAttributeValue(def.id, e.target.value)}>
                               <option value="">Select...</option>
@@ -705,7 +699,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                               onChange={e => setAttributeValue(def.id, e.target.value)}
                             />
                           )}
-                        </div>
+                        </FormField>
                       ))}
 
                       {attributeDefs.filter(d => !d.appliesToVariant).length === 0 && (
@@ -801,8 +795,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                           </button>
                         </div>
                         <div className="variant-grid">
-                          <div className="field">
-                            <label>Designation / Size</label>
+                          <FormField label="Designation / Size">
                             <select value={v.size} onChange={e => {
                               const val = e.target.value;
                               updateVariant(i, 'size', val);
@@ -813,43 +806,31 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                               <option value="Travel Size">Travel Size</option>
                               <option value="Other">Other</option>
                             </select>
-                          </div>
-                          <div className="field">
-                            <label>UOM (ml/mg/ea)</label>
+                          </FormField>
+                          <FormField label="UOM (ml/mg/ea)">
                             <input type="text" value={v.uom} onChange={e => updateVariant(i, 'uom', e.target.value)} placeholder="ml" maxLength={20} />
-                          </div>
-                          <div className="field">
-                            <label>Volume (Numerical)</label>
+                          </FormField>
+                          <FormField label="Volume (Numerical)">
                             <input type="number" value={v.volume} onChange={e => updateVariant(i, 'volume', e.target.value)} readOnly={v.size !== 'Other'} className={v.size !== 'Other' ? 'read-only' : ''} />
-                          </div>
-                          <div className="field">
-                            <label>Retail Price (R)</label>
-                            <div className="input-with-icon">
-                              <input type="number" step="0.01" value={v.price} onChange={e => updateVariant(i, 'price', e.target.value)} placeholder="1250" />
-                            </div>
-                          </div>
-                          <div className="field">
-                            <label>Cost Price (R)</label>
-                            <div className="input-with-icon">
-                              <input type="number" step="0.01" value={v.costPrice} onChange={e => updateVariant(i, 'costPrice', e.target.value)} placeholder="450" />
-                            </div>
-                          </div>
-                          <div className="field">
-                            <label>Current Stock</label>
+                          </FormField>
+                          <FormField label="Retail Price (R)">
+                            <input type="number" step="0.01" value={v.price} onChange={e => updateVariant(i, 'price', e.target.value)} placeholder="1250" />
+                          </FormField>
+                          <FormField label="Cost Price (R)">
+                            <input type="number" step="0.01" value={v.costPrice} onChange={e => updateVariant(i, 'costPrice', e.target.value)} placeholder="450" />
+                          </FormField>
+                          <FormField label="Current Stock">
                             <input type="number" value={v.quantity} onChange={e => updateVariant(i, 'quantity', e.target.value)} placeholder="10" />
-                          </div>
-                          <div className="field">
-                            <label>SKU Registry</label>
+                          </FormField>
+                          <FormField label="SKU Registry">
                             <input type="text" value={v.sku} onChange={e => updateVariant(i, 'sku', e.target.value)} placeholder="PRD-50-UD" />
-                          </div>
-                          <div className="field">
-                            <label>Low Stock Alert</label>
+                          </FormField>
+                          <FormField label="Low Stock Alert">
                             <input type="number" value={v.lowStockThreshold} onChange={e => updateVariant(i, 'lowStockThreshold', e.target.value)} placeholder="5" />
-                          </div>
-                          <div className="field">
-                            <label>Weight (g)</label>
+                          </FormField>
+                          <FormField label="Weight (g)">
                             <input type="number" value={v.weightGrams} onChange={e => updateVariant(i, 'weightGrams', e.target.value)} placeholder="150" />
-                          </div>
+                          </FormField>
                         </div>
                       </div>
                     ))}
@@ -941,16 +922,14 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           }
           .elite-close-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
-          .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--color-primary); background: var(--color-border-light); }
-          .field-group select option { background: var(--color-bg-card); color: var(--color-text); font-size: 0.85rem; }
-          .field-group input.read-only { background: var(--color-surface); border-color: var(--color-border-light); cursor: not-allowed; color: var(--color-text-muted); }
+          .form-input.read-only { background: var(--color-surface); cursor: not-allowed; color: var(--color-text-muted); }
 
           .alt-supplier-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
           .alt-supplier-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: 2px; font-size: 0.78rem; }
           .alt-supplier-name { font-weight: 600; flex-shrink: 0; }
           .alt-supplier-meta { color: var(--color-text-muted); font-size: 0.72rem; }
           .alt-supplier-remove { margin-left: auto; background: none; border: none; color: var(--color-text-muted); cursor: pointer; }
-          .alt-supplier-remove:hover { color: var(--color-error); }
+          .alt-supplier-remove:hover { color: var(--color-error-text); }
           .alt-supplier-empty { font-size: 0.78rem; color: var(--color-text-muted); font-style: italic; }
           .alt-supplier-add { display: grid; grid-template-columns: 2fr 1fr 90px 90px 40px; gap: 8px; }
           .alt-supplier-add select, .alt-supplier-add input {
@@ -960,14 +939,13 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
           .aromatic-notes-section { margin-top: 24px; display: flex; flex-direction: column; gap: 32px; }
           .note-group { display: flex; flex-direction: column; gap: 12px; }
-          .checkbox-grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; 
-            max-height: 180px; overflow-y: auto; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border);
-            scrollbar-width: thin;
+
+          .elite-error {
+            display: flex; align-items: center; gap: 10px; margin: 24px 32px 0;
+            padding: 12px 16px; border-radius: 4px; font-size: 0.82rem;
+            background: rgba(192, 57, 43, 0.1); color: var(--color-error-text);
+            border: 1px solid rgba(192, 57, 43, 0.25);
           }
-          .checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: var(--color-text); cursor: pointer; }
-          .checkbox-item input { width: 14px; height: 14px; accent-color: var(--color-primary); }
-          .checkbox-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
           .elite-main-form { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
           .elite-scroll-area { flex: 1; overflow-y: auto; padding: 32px; scrollbar-width: thin; scrollbar-color: rgba(184,155,106,0.2) transparent; }
@@ -991,28 +969,9 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
           /* ── Grid & Inputs ── */
           .elite-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+          .elite-grid .form-field { margin-bottom: 0; }
           .field-group { display: flex; flex-direction: column; gap: 8px; }
           .field-group.span-full { grid-column: 1 / -1; }
-          .field-group label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-primary); opacity: 0.7; }
-          .field-group input, .field-group select, .field-group textarea {
-            background: var(--color-bg-card); border: 1.5px solid var(--color-border);
-            padding: 12px 16px; border-radius: 2px; color: var(--color-text); font-size: 0.85rem; outline: none;
-            transition: all 0.3s; font-family: inherit;
-          }
-          .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--color-primary); background: var(--color-border-light); }
-          .field-group select option { background: var(--color-bg-card); color: var(--color-text); }
-
-          .elite-status-toggle {
-            display: flex; align-items: center; gap: 12px;
-            background: var(--color-surface); border: 1px solid var(--color-border);
-            padding: 10px 16px; border-radius: 2px; cursor: pointer; transition: all 0.3s;
-          }
-          .elite-status-toggle:hover { border-color: var(--color-primary); }
-          .elite-status-toggle span { font-size: 0.72rem; color: var(--color-text); flex: 1; letter-spacing: 0.05em; }
-          .elite-switch { width: 32px; height: 16px; border-radius: 20px; background: var(--color-border); position: relative; transition: 0.3s; }
-          .elite-switch::after { content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #999; top: 3px; left: 3px; transition: 0.3s; }
-          .elite-switch.active { background: var(--color-primary); }
-          .elite-switch.active::after { transform: translateX(16px); background: #fff; }
 
           /* ── Images ── */
           .elite-asset-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
@@ -1052,7 +1011,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
             border-radius: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 12px; color: rgba(184,155,106,0.5); cursor: pointer; transition: all 0.3s;
           }
-          .elite-add-asset:hover { border-color: #b89b6a; background: rgba(184,155,106,0.05); color: #b89b6a; }
+          .elite-add-asset:hover { border-color: var(--color-primary); background: rgba(184,155,106,0.05); color: var(--color-primary); }
           .elite-add-asset span { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; }
 
           /* ── Inventory ── */
@@ -1061,7 +1020,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           .variant-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
           .variant-label { font-size: 0.55rem; letter-spacing: 0.25em; color: var(--color-primary); font-weight: 600; opacity: 0.6; }
           .variant-del { background: transparent; border: none; color: var(--color-text-muted); cursor: pointer; transition: color 0.2s; }
-          .variant-del:hover { color: var(--color-error); }
+          .variant-del:hover { color: var(--color-error-text); }
           .variant-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
           .variant-grid .field { display: flex; flex-direction: column; gap: 8px; }
           .variant-grid label { font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-primary); opacity: 0.7; }
@@ -1088,6 +1047,18 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
           }
           .elite-btn-save:hover:not(:disabled) { background: var(--color-primary-light); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
           .elite-btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+          .elite-nav-item:focus-visible,
+          .elite-close-btn:focus-visible,
+          .elite-btn-cancel:focus-visible,
+          .elite-btn-save:focus-visible,
+          .elite-btn-modern-variant:focus-visible,
+          .variant-del:focus-visible,
+          .asset-del:focus-visible,
+          .elite-add-asset:focus-visible,
+          .note-chip:focus-within {
+            outline: none; box-shadow: 0 0 0 3px var(--color-border-focus);
+          }
           .spin { animation: eliteSpin 1s linear infinite; }
 
           /* New Search & Note Styling */

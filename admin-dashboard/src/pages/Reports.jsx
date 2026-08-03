@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
+import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { LoadingState } from '../components/LoadingState';
+import { useMessaging } from '../context/MessagingContext';
 import { FileBarChart, Download, Calendar, Loader2, Boxes, AlertTriangle, Ban, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
 
 const FINANCE_PERIODS = [
@@ -11,6 +15,7 @@ const FINANCE_PERIODS = [
 ];
 
 export function Reports() {
+  const { showMessage } = useMessaging();
   const [loading, setLoading] = useState(false);
   const [monthOffset, setMonthOffset] = useState(1);
   const [summary, setSummary] = useState(null);
@@ -46,7 +51,7 @@ export function Reports() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Report Generation Failed: ' + err.message);
+      showMessage('error', 'Report Generation Failed', err.message);
     } finally {
       setLoading(false);
     }
@@ -54,9 +59,7 @@ export function Reports() {
 
   return (
     <div className="reports-page">
-      <div className="content-header">
-        <h2 className="page-title">Executive Intelligence</h2>
-      </div>
+      <PageHeader icon={<FileBarChart size={22} />} title="Reports" subtitle="Financial and inventory intelligence for the business." />
 
       <div className="card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
@@ -75,7 +78,7 @@ export function Reports() {
         </div>
 
         {financeLoading ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Calculating margin...</p>
+          <LoadingState label="Calculating margin..." />
         ) : finance ? (
           <>
             <div className="inv-stat-grid finance-stat-grid">
@@ -107,32 +110,17 @@ export function Reports() {
             )}
 
             {finance.topProducts?.length > 0 && (
-              <div className="finance-table-wrap">
-                <table className="finance-table">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Units</th>
-                      <th>Revenue</th>
-                      <th>COGS</th>
-                      <th>Gross Profit</th>
-                      <th>Margin</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {finance.topProducts.map(p => (
-                      <tr key={p.productName}>
-                        <td>{p.productName}</td>
-                        <td>{p.unitsSold}</td>
-                        <td>R{p.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                        <td>{p.cogs != null ? `R${p.cogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}</td>
-                        <td>{p.grossProfit != null ? `R${p.grossProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}</td>
-                        <td>{p.marginPercent != null ? `${p.marginPercent.toFixed(1)}%` : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={[
+                  { key: 'productName', label: 'Product' },
+                  { key: 'unitsSold', label: 'Units' },
+                  { key: 'revenue', label: 'Revenue', render: (val) => `R${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+                  { key: 'cogs', label: 'COGS', render: (val) => val != null ? `R${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—' },
+                  { key: 'grossProfit', label: 'Gross Profit', render: (val) => val != null ? `R${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—' },
+                  { key: 'marginPercent', label: 'Margin', render: (val) => val != null ? `${val.toFixed(1)}%` : '—' },
+                ]}
+                data={finance.topProducts}
+              />
             )}
           </>
         ) : (
@@ -183,7 +171,7 @@ export function Reports() {
             <h3 style={{ margin: 0 }}>Inventory Health</h3>
           </div>
           {summaryLoading ? (
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Loading inventory snapshot...</p>
+            <LoadingState label="Loading inventory snapshot..." />
           ) : summary ? (
             <div className="inv-stat-grid">
               <div className="inv-stat">
@@ -265,21 +253,20 @@ export function Reports() {
         .inv-stat-value { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
         .finance-coverage-note {
-          font-size: 0.78rem; color: var(--color-warning-text, #92400e); background: rgba(251, 191, 36, 0.1);
+          font-size: 0.78rem; color: var(--color-warning-text); background: rgba(251, 191, 36, 0.1);
           border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 4px; padding: 10px 14px; margin-bottom: 16px;
         }
-
-        .finance-table-wrap { overflow-x: auto; }
-        .finance-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-        .finance-table th { text-align: left; padding: 8px 12px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); border-bottom: 1px solid var(--color-border); white-space: nowrap; }
-        .finance-table td { padding: 8px 12px; border-bottom: 1px solid var(--color-border-light, var(--color-border)); font-variant-numeric: tabular-nums; white-space: nowrap; }
-        .finance-table tr:last-child td { border-bottom: none; }
 
         .report-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
         .report-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; }
         .report-row-title { display: block; font-size: 0.85rem; font-weight: 600; }
         .report-row-subtitle { display: block; font-size: 0.7rem; color: var(--color-text-muted); }
-        .report-row-value { font-size: 0.8rem; font-weight: 700; color: var(--color-primary); white-space: nowrap; margin-left: 12px; }
+        .report-row-value { font-size: 0.8rem; font-weight: 700; color: var(--color-primary-text); white-space: nowrap; margin-left: 12px; }
+
+        @media (max-width: 480px) {
+          .inv-stat-grid { grid-template-columns: 1fr; }
+          .report-row { flex-wrap: wrap; gap: 4px; }
+        }
       `}} />
     </div>
   );

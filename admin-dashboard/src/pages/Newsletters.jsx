@@ -2,13 +2,19 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { newsletterApi } from '../services/api';
 import { Modal } from '../components/Modal';
 import { Drawer } from '../components/Drawer';
+import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { StatusBadge } from '../components/StatusBadge';
+import { FormField } from '../components/FormField';
+import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
+import { useMessaging } from '../context/MessagingContext';
 import {
   Users, Mail, Plus, Search, Filter, Trash2,
-  RefreshCw, CheckCircle, XCircle, Send, Paperclip, Edit2
+  RefreshCw, XCircle, Send, Paperclip, Edit2
 } from 'lucide-react';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
-import { useMessaging } from '../context/MessagingContext';
 
 const quillModules = {
   toolbar: [
@@ -20,6 +26,8 @@ const quillModules = {
   ],
 };
 
+const SUB_STATUS_TONE = { active: 'success', unsubscribed: 'neutral' };
+const CAMP_STATUS_TONE = { sent: 'success', sending: 'info', draft: 'neutral' };
 
 export function Newsletters() {
   const { showMessage } = useMessaging();
@@ -51,7 +59,7 @@ export function Newsletters() {
   const [subError, setSubError] = useState(null);
   const [selectedSubscribers, setSelectedSubscribers] = useState(new Set());
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
-  
+
   const [isCampModalOpen, setIsCampModalOpen] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const [campForm, setCampForm] = useState({ id: null, subject: '', contentHtml: '', attachments: [] });
@@ -209,7 +217,7 @@ export function Newsletters() {
         theme: 'snow',
         modules: quillModules
       });
-      
+
       if (campForm.contentHtml) {
         quillInstance.current.root.innerHTML = campForm.contentHtml;
       }
@@ -224,8 +232,6 @@ export function Newsletters() {
           const file = input.files[0];
           if (!file) return;
 
-          // Add a loading indicator in the editor maybe? 
-          // For now, let's just upload
           try {
             const res = await newsletterApi.campaigns.uploadImage(file);
             const range = quillInstance.current.getSelection();
@@ -306,7 +312,7 @@ export function Newsletters() {
     if (!targetId) {
       // If no ID yet (new campaign), we must save it first
       await handleSaveCampaign();
-      return; 
+      return;
     }
 
     // Secondary validation for open modal
@@ -357,308 +363,271 @@ export function Newsletters() {
     });
   };
 
+  const subscriberColumns = [
+    {
+      key: 'select',
+      label: (
+        <input
+          type="checkbox"
+          aria-label="Select all subscribers"
+          onChange={handleToggleSelectAll}
+          checked={subscribers.length > 0 && selectedSubscribers.size === subscribers.length}
+        />
+      ),
+      render: (_val, row) => (
+        <input
+          type="checkbox"
+          aria-label={`Select ${row.email}`}
+          checked={selectedSubscribers.has(row.id)}
+          onChange={() => handleToggleSelect(row.id)}
+        />
+      )
+    },
+    { key: 'email', label: 'Email' },
+    { key: 'status', label: 'Status', render: (val) => (
+      <StatusBadge tone={SUB_STATUS_TONE[val] || 'neutral'} label={val.toUpperCase()} />
+    )},
+    { key: 'source', label: 'Source', render: (val, row) => `${val.toUpperCase()}${row.addedBy ? ` (${row.addedBy})` : ''}` },
+    { key: 'createdAt', label: 'Added', render: (val) => new Date(val).toLocaleDateString() },
+  ];
+
   return (
-    <div className="elite-products-container">
-      {/* HEADER */}
-      <div className="atelier-header">
-        <div className="header-badge">
-          <Mail size={14} className="mr-1" />
-          COMMUNICATION HUB
-        </div>
-        <div className="header-main">
-          <div className="header-titles">
-            <h1 className="atelier-title">Newletter</h1>
-            <p className="atelier-subtitle">Manage your audience and send email broadcasts.</p>
-          </div>
-          <div className="tab-buttons">
-            <button 
-              className={`btn-tab ${activeTab === 'subscribers' ? 'active' : ''}`}
-              onClick={() => setActiveTab('subscribers')}
-            >
-              <Users size={16} className="mr-1"/> Subscribers
-            </button>
-            <button 
-              className={`btn-tab ${activeTab === 'campaigns' ? 'active' : ''}`}
-              onClick={() => setActiveTab('campaigns')}
-            >
-              <Send size={16} className="mr-1"/> Campaigns
-            </button>
-          </div>
-        </div>
+    <div className="newsletters-page animate-fade-in">
+      <PageHeader
+        icon={<Mail size={22} />}
+        title="Newsletters"
+        subtitle="Manage your audience and send email broadcasts."
+      />
+
+      <div className="tab-glass-panel">
+        <button
+          className={`tab-glass-btn ${activeTab === 'subscribers' ? 'active' : ''}`}
+          onClick={() => setActiveTab('subscribers')}
+        >
+          <Users size={18} /> Subscribers
+        </button>
+        <button
+          className={`tab-glass-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
+          onClick={() => setActiveTab('campaigns')}
+        >
+          <Send size={18} /> Campaigns
+        </button>
       </div>
 
       {/* SUBSCRIBERS TAB */}
       {activeTab === 'subscribers' && (
-        <div className="tab-pane animate-in">
+        <div className="tab-pane">
           <div className="atelier-discovery">
-            <div className="search-glass-container">
-              <Search className="search-icon" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search email..." 
+            <div className="search-glass-wrapper">
+              <Search size={18} className="glass-icon" />
+              <input
+                type="text"
                 className="search-glass-input"
+                placeholder="Search by email..."
                 value={subSearch}
                 onChange={(e) => setSubSearch(e.target.value)}
               />
             </div>
-            <div className="filter-group">
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--atelier-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>START DATE</label>
-                <input type="date" title="Start Date" className="search-glass-input" style={{ width: '130px', padding: '10px', fontSize: '0.75rem', height: '42px' }} value={subStartDate} onChange={e => { setSubStartDate(e.target.value); setSubPage(1); }} />
+            <div className="filter-glass-matrix">
+              <FormField label="Start Date">
+                <input type="date" value={subStartDate} onChange={e => { setSubStartDate(e.target.value); setSubPage(1); }} />
+              </FormField>
+              <FormField label="End Date">
+                <input type="date" value={subEndDate} onChange={e => { setSubEndDate(e.target.value); setSubPage(1); }} />
+              </FormField>
+              <div className="select-glass-wrapper">
+                <Filter size={14} className="glass-icon" />
+                <select value={subStatus} onChange={(e) => { setSubStatus(e.target.value); setSubPage(1); }}>
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="unsubscribed">Unsubscribed</option>
+                </select>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--atelier-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>END DATE</label>
-                <input type="date" title="End Date" className="search-glass-input" style={{ width: '130px', padding: '10px', fontSize: '0.75rem', height: '42px' }} value={subEndDate} onChange={e => { setSubEndDate(e.target.value); setSubPage(1); }} />
-              </div>
-              <div className="select-glass-wrapper" style={{ marginTop: 'auto' }}>
-                 <Filter size={16} className="select-icon" />
-                 <select 
-                   className="select-glass"
-                   value={subStatus}
-                   onChange={(e) => { setSubStatus(e.target.value); setSubPage(1); }}
-                 >
-                    <option value="all">ALL STATUSES</option>
-                    <option value="active">ACTIVE</option>
-                    <option value="unsubscribed">UNSUBSCRIBED</option>
-                 </select>
-              </div>
-              <button onClick={() => setIsSubModalOpen(true)} className="btn-elite-primary" style={{ padding: '10px 20px', marginLeft: '10px' }}>
-                <Plus size={16} className="mr-1" /> ADD SUBSCRIBER
+              <button onClick={() => setIsSubModalOpen(true)} className="btn btn--primary">
+                <Plus size={16} /> Add Subscriber
               </button>
             </div>
           </div>
 
           {selectedSubscribers.size > 0 && (
-            <div className="elite-glass animate-in" style={{ padding: '12px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--atelier-gold)' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--atelier-gold)', fontWeight: 600 }}>{selectedSubscribers.size} Subscriber(s) Selected</span>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button className="btn-pagination" onClick={() => handleBulkAction('unsubscribe')}>UNSUBSCRIBE SELECTED</button>
-                <button className="btn-pagination" style={{ color: 'var(--atelier-error)', borderColor: 'var(--atelier-error)' }} onClick={() => handleBulkAction('delete')}>DELETE SELECTED</button>
+            <div className="bulk-action-bar">
+              <span>{selectedSubscribers.size} subscriber(s) selected</span>
+              <div className="bulk-action-buttons">
+                <button className="btn btn--outline btn--sm" onClick={() => handleBulkAction('unsubscribe')}>Unsubscribe Selected</button>
+                <button className="btn btn--outline btn--sm btn--danger-outline" onClick={() => handleBulkAction('delete')}>Delete Selected</button>
               </div>
             </div>
           )}
 
-          <div className="elite-glass" style={{ padding: '20px' }}>
-            {subLoading ? (
-               <div className="text-center" style={{ padding: '40px', color: 'var(--atelier-gold)' }}>Loading...</div>
-            ) : (
-              <div className="table-responsive">
-              <table className="matrix-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: '40px' }}><input type="checkbox" onChange={handleToggleSelectAll} checked={subscribers.length > 0 && selectedSubscribers.size === subscribers.length} style={{ cursor: 'pointer' }} /></th>
-                    <th>EMAIL</th>
-                    <th>STATUS</th>
-                    <th>SOURCE</th>
-                    <th>ADDED DATE</th>
-                    <th>ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subscribers.length === 0 ? (
-                    <tr><td colSpan="5" className="text-center" style={{ padding: '20px' }}>No subscribers found.</td></tr>
-                  ) : subscribers.map(s => (
-                    <tr key={s.id}>
-                      <td><input type="checkbox" checked={selectedSubscribers.has(s.id)} onChange={() => handleToggleSelect(s.id)} style={{ cursor: 'pointer' }} /></td>
-                      <td className="price-primary">{s.email}</td>
-                      <td>
-                        <span className={`badge-status ${s.status === 'active' ? 'active' : 'archived'}`} style={{ display: 'inline-block' }}>
-                          {s.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="sku-text">{s.source.toUpperCase()} {s.addedBy && `(${s.addedBy})`}</td>
-                      <td className="sku-text">{new Date(s.createdAt).toLocaleDateString()}</td>
-                      <td>
-                        <button onClick={() => handleToggleSubStatus(s)} className="btn-mini-action" title="Toggle Status">
-                          <RefreshCw size={14} />
-                        </button>
-                        <button onClick={() => setDeleteConfirmTarget({ id: s.id, type: 'subscriber' })} className="btn-mini-action danger" title="Delete">
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            )}
-            <div className="atelier-pagination" style={{ marginTop: '20px', borderTop: '1px solid var(--atelier-border)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '20px' }}>
-              <div className="pagination-info" style={{ fontSize: '0.85rem', color: 'var(--atelier-text-muted)', fontFamily: 'var(--atelier-font-header)' }}>
-                Showing {subscribers.length} of {subTotal} Subscribers
-              </div>
-              <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                <button className="btn-pagination" disabled={subPage <= 1} onClick={() => setSubPage(subPage - 1)}>PREVIOUS</button>
-                <div className="page-summary" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--atelier-gold)', letterSpacing: '0.1em' }}>PAGE {subPage} OF {subTotalPages || 1}</div>
-                <button className="btn-pagination" disabled={subPage >= subTotalPages} onClick={() => setSubPage(subPage + 1)}>NEXT</button>
-              </div>
-            </div>
+          <div className="card">
+            <DataTable
+              loading={subLoading}
+              columns={subscriberColumns}
+              data={subscribers}
+              page={subPage}
+              totalPages={subTotalPages}
+              onPageChange={setSubPage}
+              emptyState={<EmptyState icon={<Users size={40} />} title="No subscribers found" description="Adjust your search or filters." />}
+              actions={(row) => (
+                <>
+                  <button onClick={() => handleToggleSubStatus(row)} className="icon-btn" title="Toggle status">
+                    <RefreshCw size={14} />
+                  </button>
+                  <button onClick={() => setDeleteConfirmTarget({ id: row.id, type: 'subscriber' })} className="icon-btn danger" title="Delete">
+                    <Trash2 size={14} />
+                  </button>
+                </>
+              )}
+            />
           </div>
         </div>
       )}
 
       {/* CAMPAIGNS TAB */}
       {activeTab === 'campaigns' && (
-        <div className="tab-pane animate-in">
+        <div className="tab-pane">
           <div className="atelier-discovery">
-            <div className="filter-group">
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--atelier-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>START DATE</label>
-                <input type="date" title="Start Date" className="search-glass-input" style={{ width: '130px', padding: '10px', fontSize: '0.75rem', height: '42px' }} value={campStartDate} onChange={e => { setCampStartDate(e.target.value); setCampPage(1); }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--atelier-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>END DATE</label>
-                <input type="date" title="End Date" className="search-glass-input" style={{ width: '130px', padding: '10px', fontSize: '0.75rem', height: '42px' }} value={campEndDate} onChange={e => { setCampEndDate(e.target.value); setCampPage(1); }} />
-              </div>
+            <div className="filter-glass-matrix">
+              <FormField label="Start Date">
+                <input type="date" value={campStartDate} onChange={e => { setCampStartDate(e.target.value); setCampPage(1); }} />
+              </FormField>
+              <FormField label="End Date">
+                <input type="date" value={campEndDate} onChange={e => { setCampEndDate(e.target.value); setCampPage(1); }} />
+              </FormField>
             </div>
-            <button onClick={() => handleOpenCampModal()} className="btn-elite-primary" style={{ padding: '10px 20px' }}>
-              <Plus size={16} className="mr-1" /> COMPOSE NEW CAMPAIGN
+            <button onClick={() => handleOpenCampModal()} className="btn btn--primary">
+              <Plus size={16} /> Compose New Campaign
             </button>
           </div>
 
-          <div className="atelier-grid">
-             {campLoading ? (
-               <div style={{ color: 'var(--atelier-gold)' }}>Loading campaigns...</div>
-             ) : campaigns.length === 0 ? (
-               <div style={{ padding: '40px', color: 'var(--atelier-text-muted)' }}>No campaigns drafted yet.</div>
-             ) : campaigns.map(c => (
-               <div key={c.id} className="atelier-card elite-glass" style={{ padding: '24px' }}>
-                 <div className="card-top" style={{ padding: 0, border: 'none', marginBottom: '16px' }}>
-                   <div>
-                     <span className={`badge-status ${c.status === 'sent' ? 'active' : 'archived'}`} style={{ display: 'inline-flex', marginBottom: '8px' }}>
-                       {c.status.toUpperCase()}
-                     </span>
-                     <h3 className="product-name" style={{ fontSize: '1.4rem' }}>{c.subject}</h3>
-                   </div>
-                   <div className="card-actions">
-                     {c.status !== 'sent' && (
-                       <>
-                         <button onClick={() => handleOpenCampModal(c)} className="btn-mini-action"><Edit2 size={14}/></button>
-                         <button onClick={() => handleDeleteCampaign(c.id)} className="btn-mini-action danger"><Trash2 size={14}/></button>
-                       </>
-                     )}
-                   </div>
-                 </div>
-                 
-                 <div className="sidebar-meta" style={{ marginBottom: '20px' }}>
-                    <div className="meta-item"><span className="label">Sent Count:</span> <span className="value">{c.sentCount}</span></div>
-                    {c.sentAt && <div className="meta-item"><span className="label">Sent At:</span> <span className="value">{new Date(c.sentAt).toLocaleString()}</span></div>}
-                 </div>
+          {campLoading ? (
+            <LoadingState label="Loading campaigns..." />
+          ) : campaigns.length === 0 ? (
+            <EmptyState icon={<Send size={40} />} title="No campaigns yet" description="Compose your first newsletter to get started." />
+          ) : (
+            <div className="campaign-grid">
+              {campaigns.map(c => (
+                <div key={c.id} className="card campaign-card">
+                  <div className="campaign-card-top">
+                    <div>
+                      <StatusBadge tone={CAMP_STATUS_TONE[c.status] || 'neutral'} label={c.status.toUpperCase()} />
+                      <h3 className="campaign-subject">{c.subject}</h3>
+                    </div>
+                    {c.status !== 'sent' && (
+                      <div className="campaign-card-actions">
+                        <button onClick={() => handleOpenCampModal(c)} className="icon-btn" title="Edit"><Edit2 size={14} /></button>
+                        <button onClick={() => handleDeleteCampaign(c.id)} className="icon-btn danger" title="Delete"><Trash2 size={14} /></button>
+                      </div>
+                    )}
+                  </div>
 
-                 {c.status !== 'sent' && c.status !== 'sending' && (
-                   <button onClick={() => handleSendCampaign(c.id)} className="btn-elite-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                     <Send size={16} /> BROADCAST NOW
-                   </button>
-                 )}
-               </div>
-             ))}
-           </div>
-           
-          <div className="atelier-pagination" style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
-             <div className="pagination-info" style={{ color: 'var(--atelier-text-muted)', fontSize: '0.85rem' }}>Total: {campTotal} | Page {campPage} of {campTotalPages || 1}</div>
-             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-               <button className="btn-pagination" disabled={campPage <= 1} onClick={() => setCampPage(campPage - 1)}>PREVIOUS</button>
-               <button className="btn-pagination" disabled={campPage >= campTotalPages} onClick={() => setCampPage(campPage + 1)}>NEXT</button>
-             </div>
+                  <div className="campaign-meta">
+                    <div className="campaign-meta-item"><span>Sent Count:</span> {c.sentCount}</div>
+                    {c.sentAt && <div className="campaign-meta-item"><span>Sent At:</span> {new Date(c.sentAt).toLocaleString()}</div>}
+                  </div>
+
+                  {c.status !== 'sent' && c.status !== 'sending' && (
+                    <button onClick={() => handleSendCampaign(c.id)} className="btn btn--primary campaign-send-btn">
+                      <Send size={16} /> Broadcast Now
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="table-footer campaign-pagination">
+            <div className="pagination">
+              <button className="page-btn" disabled={campPage <= 1} onClick={() => setCampPage(campPage - 1)} aria-label="Previous page">Previous</button>
+              <span className="page-info">Page {campPage} of {campTotalPages || 1}</span>
+              <button className="page-btn" disabled={campPage >= campTotalPages} onClick={() => setCampPage(campPage + 1)} aria-label="Next page">Next</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* SUBSCRIBER MODAL */}
+      {/* SUBSCRIBER DRAWER */}
       <Drawer isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} title="Add Subscriber" width={440}>
-        <form onSubmit={handleAddSubscriber}>
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>EMAIL ADDRESS</label>
+        <form onSubmit={handleAddSubscriber} className="newsletter-form">
+          <FormField label="Email Address" required error={subError}>
             <input
               type="email"
               required
-              className="search-glass-input"
-              style={{ paddingLeft: '16px' }}
               value={newSubEmail}
               onChange={e => setNewSubEmail(e.target.value)}
             />
-          </div>
-          {subError && (
-            <div style={{ padding: '12px', background: 'rgba(192,57,43,0.1)', color: 'var(--atelier-error)', borderLeft: '3px solid var(--atelier-error)', marginBottom: '20px', borderRadius: '4px', fontSize: '0.85rem' }}>
-              {subError}
-            </div>
-          )}
-          <div className="modal-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button type="button" className="btn-pagination" onClick={() => setIsSubModalOpen(false)}>CANCEL</button>
-            <button type="submit" className="btn-elite-primary">ADD SUBSCRIBER</button>
+          </FormField>
+          <div className="drawer-actions">
+            <button type="button" className="btn btn--outline" onClick={() => setIsSubModalOpen(false)}>Cancel</button>
+            <button type="submit" className="btn btn--primary">Add Subscriber</button>
           </div>
         </form>
       </Drawer>
 
       {/* CAMPAIGN DRAWER — raw mode: Quill's own layout/toolbar don't fit the generic title/body chrome */}
       <Drawer isOpen={isCampModalOpen} onClose={() => setIsCampModalOpen(false)} raw>
-        <div className="campaign-modal-panel elite-glass">
-          <h2 className="atelier-title" style={{ fontSize: '2rem', marginBottom: '24px' }}>
-            {campForm.id ? 'Edit Campaign' : 'Compose Newsletters'}
+        <div className="campaign-drawer-panel">
+          <h2 className="campaign-drawer-title">
+            {campForm.id ? 'Edit Campaign' : 'Compose Newsletter'}
           </h2>
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>SUBJECT LINE</label>
-            <input
-              type="text"
-              className="search-glass-input"
-              style={{ paddingLeft: '16px' }}
-              value={campForm.subject}
-              onChange={e => setCampForm({...campForm, subject: e.target.value})}
-              placeholder="e.g. The Spring Collection is Here"
-            />
-          </div>
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>EMAIL CONTENT (RICH TEXT)</label>
-            <div style={{ background: 'var(--color-bg-card)', borderRadius: '8px', overflow: 'hidden', minHeight: '340px' }} className="quill-container-override">
-              {!editorReady && (
-                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text)' }}>
-                   <RefreshCw className="spinner" size={24} />
-                   <span style={{ marginLeft: '10px' }}>Loading Designer Studio...</span>
-                </div>
-              )}
-              <div
-                ref={quillRef}
-                style={{
-                  display: editorReady ? 'block' : 'none',
-                  height: '300px',
-                  color: 'var(--color-text)'
-                }}
+          <div className="newsletter-form">
+            <FormField label="Subject Line">
+              <input
+                type="text"
+                value={campForm.subject}
+                onChange={e => setCampForm({...campForm, subject: e.target.value})}
+                placeholder="e.g. The Spring Collection is Here"
               />
-            </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--atelier-gold)', marginTop: '12px' }}>
-              * Click the image icon inside the toolbar above to embed images directly into the text layout. Attachments can still be appended silently below.
+            </FormField>
+            <FormField label="Email Content (Rich Text)">
+              <div className="quill-container-override">
+                {!editorReady && (
+                  <div className="quill-loading">
+                    <RefreshCw className="spin" size={24} />
+                    <span>Loading editor...</span>
+                  </div>
+                )}
+                <div
+                  ref={quillRef}
+                  style={{ display: editorReady ? 'block' : 'none', height: '300px', color: 'var(--color-text)' }}
+                />
+              </div>
+            </FormField>
+            <p className="campaign-hint">
+              Click the image icon inside the toolbar above to embed images directly into the text layout. Attachments can still be appended silently below.
             </p>
-          </div>
-          <div className="form-group" style={{ marginBottom: '30px' }}>
-            <label style={{ display:'block', marginBottom:'8px', color:'var(--atelier-text-muted)', fontSize:'0.8rem' }}>ATTACHMENTS</label>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-              {campForm.attachments.map((att, i) => (
-                <div key={i} className="atelier-tag" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Paperclip size={12}/>
-                  <span style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace:'nowrap' }}>{att.filename}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(i)}
-                    aria-label={`Remove attachment ${att.filename}`}
-                    style={{ background: 'none', border: 'none', padding: 0, display: 'inline-flex', cursor: 'pointer', color: 'var(--atelier-error)' }}
-                  >
-                    <XCircle size={12} />
-                  </button>
+            <FormField label="Attachments">
+              <div>
+                <div className="attachment-list">
+                  {campForm.attachments.map((att, i) => (
+                    <div key={i} className="attachment-chip">
+                      <Paperclip size={12}/>
+                      <span>{att.filename}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(i)}
+                        aria-label={`Remove attachment ${att.filename}`}
+                      >
+                        <XCircle size={12} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <label className="btn-pagination" style={{ display: 'inline-flex', cursor: 'pointer' }}>
-              {uploadingFiles ? 'UPLOADING...' : 'ADD ATTACHMENT'}
-              <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} disabled={uploadingFiles} />
-            </label>
+                <label className="btn btn--outline btn--sm attachment-upload-label">
+                  {uploadingFiles ? 'Uploading...' : 'Add Attachment'}
+                  <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} disabled={uploadingFiles} />
+                </label>
+              </div>
+            </FormField>
           </div>
 
-          <div className="modal-actions" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end', borderTop: '1px solid rgba(184,155,106,0.2)', paddingTop: '24px' }}>
-            <button type="button" className="btn-pagination" onClick={() => setIsCampModalOpen(false)}>CLOSE</button>
-            <button type="button" className="btn-pagination" style={{ color: 'var(--atelier-gold)' }} onClick={handleSaveCampaign} disabled={isSaving || isSending}>
-              {isSaving ? 'SAVING...' : 'SAVE DRAFT'}
+          <div className="drawer-actions campaign-drawer-actions">
+            <button type="button" className="btn btn--outline" onClick={() => setIsCampModalOpen(false)}>Close</button>
+            <button type="button" className="btn btn--outline" onClick={handleSaveCampaign} disabled={isSaving || isSending}>
+              {isSaving ? 'Saving...' : 'Save Draft'}
             </button>
-            <button type="button" className="btn-elite-primary" onClick={() => handleSendCampaign()} disabled={isSaving || isSending}>
-              {isSending ? 'SENDING...' : 'SEND CAMPAIGN'}
+            <button type="button" className="btn btn--primary" onClick={() => handleSendCampaign()} disabled={isSaving || isSending}>
+              {isSending ? 'Sending...' : 'Send Campaign'}
             </button>
           </div>
         </div>
@@ -668,146 +637,84 @@ export function Newsletters() {
       <Modal isOpen={!!deleteConfirmTarget} onClose={() => setDeleteConfirmTarget(null)} title="Are you sure?" maxWidth={400}>
         {deleteConfirmTarget && (
           <div style={{ textAlign: 'center' }}>
-            <Trash2 size={40} color="var(--atelier-error)" style={{ margin: '0 auto 20px auto' }} />
-            <p style={{ color: 'var(--atelier-text-muted)', fontSize: '0.9rem', marginBottom: '30px' }}>
+            <Trash2 size={40} color="var(--color-error-text)" style={{ margin: '0 auto 20px auto' }} />
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '30px' }}>
               This action cannot be undone. This {deleteConfirmTarget.type} will be permanently deleted from the database.
             </p>
-            <div className="modal-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <button type="button" className="btn-pagination" onClick={() => setDeleteConfirmTarget(null)}>CANCEL</button>
-              <button type="button" className="btn-elite-primary" style={{ background: 'var(--atelier-error)' }} onClick={confirmDelete}>YES, DELETE IT</button>
+            <div className="drawer-actions" style={{ justifyContent: 'center' }}>
+              <button type="button" className="btn btn--outline" onClick={() => setDeleteConfirmTarget(null)}>Cancel</button>
+              <button type="button" className="btn btn--danger" onClick={confirmDelete}>Yes, Delete It</button>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* STYLES (inheriting mostly from Products.jsx container scope, adding specific overrides here) */}
       <style dangerouslySetInnerHTML={{ __html: `
-        .elite-products-container {
-          padding: 40px;
-          min-height: 100vh;
-          background: var(--color-bg-dark);
-          color: var(--color-text);
-          font-family: var(--atelier-font-body);
-        }
+        .newsletters-page { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
 
-        .atelier-header { margin-bottom: 40px; }
-        .header-badge {
-          display: inline-flex; align-items: center;
-          padding: 6px 14px; border-radius: 40px;
-          background: var(--color-border-light); border: 1px solid var(--color-border);
-          color: var(--color-primary); font-size: 0.65rem; font-weight: 700;
-          letter-spacing: 0.2em; margin-bottom: 16px;
-        }
-        .header-main { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
-        .atelier-title { 
-          font-family: var(--atelier-font-header); font-size: 2.8rem; font-weight: 300;
-          letter-spacing: -0.02em; line-height: 1.1; margin: 0;
-        }
-        .atelier-subtitle { color: var(--color-text-muted); font-size: 1rem; margin-top: 10px; max-width: 500px; }
-        
-        .tab-buttons { display: flex; gap: 10px; }
-        .btn-tab {
-          background: rgba(255,255,255,0.02); color: var(--atelier-text-muted);
-          border: 1px solid var(--atelier-border); border-radius: 8px; padding: 12px 24px;
-          display: flex; align-items: center; font-family: var(--atelier-font-header);
-          font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s;
-        }
-        .btn-tab.active {
-          background: var(--color-border-light); color: var(--color-primary); border-color: var(--color-primary);
-        }
-        .btn-tab:hover:not(.active) { background: rgba(255,255,255,0.05); }
+        .tab-glass-panel { background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 4px; display: inline-flex; gap: 4px; margin-bottom: 24px; }
+        .tab-glass-btn { background: none; border: none; color: var(--color-text-muted); padding: 8px 16px; border-radius: 2px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
+        .tab-glass-btn.active { background: var(--color-primary); color: #1a1611; }
+        .tab-glass-btn:hover:not(.active) { color: var(--color-text); background: var(--color-border-light); }
 
-        .btn-elite-primary {
-          background: var(--color-primary); color: #000;
-          border: none; border-radius: 8px; padding: 14px 28px;
-          display: flex; align-items: center; gap: 12px;
-          font-family: var(--atelier-font-header); font-size: 0.85rem; font-weight: 600;
-          letter-spacing: 0.1em; cursor: pointer; transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-        .btn-elite-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(184,155,106,0.25); filter: brightness(1.1); }
+        .atelier-discovery { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; gap: 24px; flex-wrap: wrap; }
+        .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; flex: 1; max-width: 400px; height: 42px; }
+        .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
+        .filter-glass-matrix { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-glass-matrix .form-field { margin-bottom: 0; }
+        .filter-glass-matrix input[type="date"] { height: 42px; width: 150px; }
+        .select-glass-wrapper { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; height: 42px; }
+        .select-glass-wrapper select { background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem; }
 
-        .atelier-discovery { 
-          display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 24px; animation: slideIn 0.8s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-        .search-glass-container { flex: 1; max-width: 400px; position: relative; display: flex; align-items: center; }
-        .search-icon { position: absolute; left: 20px; color: var(--color-primary); opacity: 0.6; }
-        .search-glass-input {
-          width: 100%; padding: 14px 20px 14px 54px;
-          background: var(--color-bg-card); border: 1.5px solid var(--color-border);
-          border-radius: 12px; color: var(--color-text); font-size: 0.9rem;
-          transition: all 0.3s; backdrop-filter: blur(10px);
-        }
-        .search-glass-input:focus { border-color: var(--color-primary); outline: none; }
-        
-        .filter-group { display: flex; gap: 12px; flex-wrap: wrap; }
-        .select-glass-wrapper { position: relative; display: flex; align-items: center; }
-        .select-icon { position: absolute; left: 16px; color: var(--color-primary); pointer-events: none; opacity: 0.7; }
-        .select-glass {
-          background: var(--color-bg-card); border: 1.5px solid var(--color-border);
-          border-radius: 12px; color: var(--color-text); padding: 14px 20px 14px 44px;
-          font-size: 0.75rem; letter-spacing: 0.1em; cursor: pointer; text-transform: uppercase;
-        }
+        .bulk-action-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; margin-bottom: 20px; background: var(--color-border-light); border: 1px solid var(--color-primary); border-radius: 4px; font-size: 0.85rem; font-weight: 600; color: var(--color-primary-text); flex-wrap: wrap; gap: 12px; }
+        .bulk-action-buttons { display: flex; gap: 10px; }
+        .btn--danger-outline { color: var(--color-error-text); border-color: var(--color-error-text); }
 
-        .elite-glass {
-          background: var(--glass-bg); border: 1.5px solid var(--color-border);
-          border-radius: 20px; backdrop-filter: blur(12px);
-        }
+        .campaign-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .campaign-card { display: flex; flex-direction: column; gap: 16px; }
+        .campaign-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .campaign-subject { font-size: 1.1rem; font-weight: 600; color: var(--color-text-header); margin: 8px 0 0 0; }
+        .campaign-card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .campaign-meta { display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--color-text-muted); }
+        .campaign-meta-item span { font-weight: 600; margin-right: 6px; }
+        .campaign-send-btn { justify-content: center; }
 
-        .matrix-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .matrix-table th { padding: 16px; font-size: 0.65rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--color-border); }
-        .matrix-table td { padding: 16px; font-size: 0.85rem; border-bottom: 1px solid var(--color-border-light); }
+        .table-footer.campaign-pagination { border: none; padding: 0; justify-content: flex-start; }
+        .pagination { display: flex; align-items: center; gap: 12px; }
+        .page-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+        .page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
+        .page-info { font-size: 0.8rem; color: var(--color-text-muted); }
 
-        .badge-status { 
-          display: flex; align-items: center; gap: 6px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
-          padding: 6px 12px; border-radius: 4px;
-        }
-        .badge-status.active { color: var(--atelier-success); background: rgba(39, 174, 96, 0.1); border: 1px solid rgba(39, 174, 96, 0.3); }
-        .badge-status.archived { color: var(--atelier-text-muted); background: rgba(255,255,255,0.05); }
+        .newsletter-form { display: flex; flex-direction: column; gap: 20px; }
+        .drawer-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
 
-        .btn-mini-action {
-          width: 32px; height: 32px; border: 1px solid var(--atelier-border);
-          border-radius: 8px; background: transparent; color: var(--atelier-text-muted);
-          display: inline-flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: all 0.3s; margin-right: 8px;
-        }
-        .btn-mini-action:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-border-light); }
-        .btn-mini-action.danger:hover { border-color: var(--color-error-text); color: var(--color-error-text); background: rgba(192,57,43,0.1); }
+        .campaign-drawer-panel { padding: 40px; width: 800px; max-width: 90vw; height: 100%; overflow-y: auto; background: var(--color-bg-card); display: flex; flex-direction: column; gap: 24px; }
+        .campaign-drawer-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 500; color: var(--color-text-header); margin: 0; }
+        .campaign-drawer-actions { border-top: 1px solid var(--color-border); padding-top: 24px; }
 
-        .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
-        .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .quill-container-override { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; min-height: 340px; }
+        .quill-loading { height: 300px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--color-text-muted); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
 
-        .campaign-modal-panel {
-          padding: 40px; width: 800px; max-width: 90vw; height: 100%;
-          overflow-y: auto; border-radius: 0; border-top: none; border-bottom: none; border-right: none;
-          animation: drawerSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes drawerSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @media (prefers-reduced-motion: reduce) {
-          .campaign-modal-panel { animation-duration: 0.01s; }
-        }
+        .campaign-hint { font-size: 0.75rem; color: var(--color-text-muted); margin: -8px 0 0 0; }
 
-        .btn-pagination {
-          background: transparent; border: 1px solid var(--atelier-border);
-          color: var(--atelier-text); padding: 10px 20px; border-radius: 8px;
-          font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em;
-          cursor: pointer; transition: all 0.3s;
-        }
-        .btn-pagination:hover { border-color: var(--atelier-gold); color: var(--atelier-gold); }
-
-        .animate-in { animation: cardIn 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards; opacity: 0; transform: translateY(10px); }
-        @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .attachment-list { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        .attachment-chip { display: flex; align-items: center; gap: 6px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; padding: 6px 10px; font-size: 0.75rem; }
+        .attachment-chip span { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .attachment-chip button { background: none; border: none; padding: 0; display: inline-flex; cursor: pointer; color: var(--color-error-text); }
+        .attachment-upload-label { display: inline-flex; cursor: pointer; }
 
         @media (max-width: 768px) {
-          .elite-products-container { padding: 20px; }
-          .header-main { flex-direction: column; align-items: stretch; }
-          .atelier-title { font-size: 2rem; }
+          .newsletters-page { padding: 20px; }
           .atelier-discovery { flex-direction: column; align-items: stretch; }
-          .search-glass-container { max-width: none; }
-          .tab-buttons { flex-wrap: wrap; }
-          .atelier-grid { grid-template-columns: 1fr; }
-          .campaign-modal-panel { padding: 24px; width: 100vw; max-width: 100vw; }
+          .search-glass-wrapper { max-width: none; }
+          .filter-glass-matrix { flex-direction: column; align-items: stretch; }
+          .filter-glass-matrix input[type="date"] { width: 100%; }
+          .campaign-grid { grid-template-columns: 1fr; }
+          .campaign-drawer-panel { padding: 24px; width: 100vw; max-width: 100vw; }
         }
       `}} />
     </div>

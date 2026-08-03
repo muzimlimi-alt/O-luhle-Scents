@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { useMessaging } from '../context/MessagingContext';
 import { FileText, Download, User, ShoppingBag, Archive } from 'lucide-react';
 
 export function Invoices() {
+  const { showMessage } = useMessaging();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -40,7 +43,7 @@ export function Invoices() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Bulk Download Failed: ' + err.message);
+      showMessage('error', 'Bulk Download Failed', err.message);
     }
   };
 
@@ -61,7 +64,7 @@ export function Invoices() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Error: ' + err.message);
+      showMessage('error', 'Download Failed', err.message);
     }
   };
 
@@ -101,16 +104,16 @@ export function Invoices() {
 
   return (
     <div className="invoices-page">
-      <div className="content-header">
-        <h2 className="page-title">Digital Documentation</h2>
-        <div className="actions">
-           {selectedIds.length > 0 && (
-             <button className="btn btn--primary btn--sm" onClick={handleBulkDownload}>
-                <Archive size={16} /> Download Selected ({selectedIds.length})
-             </button>
-           )}
-        </div>
-      </div>
+      <PageHeader
+        icon={<FileText size={22} />}
+        title="Invoices"
+        subtitle="Generated invoices for every order, ready to download individually or in bulk."
+        actions={selectedIds.length > 0 && (
+          <button className="btn btn--primary btn--sm" onClick={handleBulkDownload}>
+            <Archive size={16} /> Download Selected ({selectedIds.length})
+          </button>
+        )}
+      />
 
       <div className="card">
         <DataTable 

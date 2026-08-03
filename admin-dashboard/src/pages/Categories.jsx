@@ -2,11 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { categoriesApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { Drawer } from '../components/Drawer';
+import { PageHeader } from '../components/PageHeader';
+import { StatusBadge } from '../components/StatusBadge';
+import { FormField } from '../components/FormField';
+import { useMessaging } from '../context/MessagingContext';
 import { FolderTree, Plus, Edit2, Archive, CornerDownRight } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', description: '', parentId: '', displayOrder: '0' };
 
 export function Categories() {
+  const { showMessage } = useMessaging();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -77,7 +82,7 @@ export function Categories() {
       setShowModal(false);
       fetchCategories();
     } catch (err) {
-      alert('Failed to save category: ' + err.message);
+      showMessage('error', 'Save Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +94,7 @@ export function Categories() {
       await categoriesApi.delete(category.id);
       fetchCategories();
     } catch (err) {
-      alert(err.message);
+      showMessage('error', 'Archive Failed', err.message);
     }
   };
 
@@ -103,7 +108,7 @@ export function Categories() {
     { key: 'slug', label: 'Slug', render: (val) => <code style={{ fontSize: '0.75rem' }}>{val}</code> },
     { key: '_count', label: 'Products', render: (val) => val?.products ?? 0 },
     { key: 'isActive', label: 'Status', render: (val) => (
-      <span className={`status-badge ${val ? 'active' : 'archived'}`}>{val ? 'Active' : 'Archived'}</span>
+      <StatusBadge tone={val ? 'success' : 'neutral'} label={val ? 'Active' : 'Archived'} />
     )},
   ];
 
@@ -111,12 +116,16 @@ export function Categories() {
 
   return (
     <div className="categories-page">
-      <div className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 className="page-title"><FolderTree size={20} style={{ verticalAlign: 'text-bottom', marginRight: 8 }} />Categories</h2>
-        <button className="btn btn--primary" onClick={openCreate}>
-          <Plus size={16} /> New Category
-        </button>
-      </div>
+      <PageHeader
+        icon={<FolderTree size={22} />}
+        title="Categories"
+        subtitle="Organize the catalog into a browsable hierarchy."
+        actions={(
+          <button className="btn btn--primary" onClick={openCreate}>
+            <Plus size={16} /> New Category
+          </button>
+        )}
+      />
 
       <div className="card">
         <DataTable
@@ -134,25 +143,21 @@ export function Categories() {
 
       <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Category' : 'New Category'} width={480}>
         <form onSubmit={handleSubmit} className="cat-form">
-          <div className="cat-field">
-            <label>Name</label>
+          <FormField label="Name" required>
             <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required placeholder="e.g. Candles" />
-          </div>
-          <div className="cat-field">
-            <label>Parent Category</label>
+          </FormField>
+          <FormField label="Parent Category">
             <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}>
               <option value="">None — top level</option>
               {availableParents.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-          </div>
-          <div className="cat-field">
-            <label>Description</label>
+          </FormField>
+          <FormField label="Description">
             <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-          </div>
-          <div className="cat-field">
-            <label>Display Order</label>
+          </FormField>
+          <FormField label="Display Order">
             <input type="number" value={form.displayOrder} onChange={e => setForm(f => ({ ...f, displayOrder: e.target.value }))} />
-          </div>
+          </FormField>
           <div className="cat-actions">
             <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
             <button type="submit" className="btn btn--primary" disabled={submitting}>
@@ -163,13 +168,7 @@ export function Categories() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .cat-form { display: flex; flex-direction: column; gap: 16px; }
-        .cat-field { display: flex; flex-direction: column; gap: 6px; }
-        .cat-field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
-        .cat-field input, .cat-field select, .cat-field textarea {
-          background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
-          padding: 10px 12px; color: var(--color-text); font-size: 0.85rem; font-family: inherit;
-        }
+        .cat-form { display: flex; flex-direction: column; }
         .cat-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
       `}} />
     </div>

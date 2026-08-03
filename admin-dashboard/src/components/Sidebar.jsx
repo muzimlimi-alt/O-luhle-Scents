@@ -43,7 +43,7 @@ const sidebarLinks = [
   { path: '/newsletters', label: 'Newsletters', icon: <Mail size={18} /> },
   { path: '/audit-logs', label: 'Audit Logs', icon: <ScrollText size={18} /> },
   { path: '/content', label: 'Site Content', icon: <Layout size={18} /> },
-  { path: '/config', label: 'System Config', icon: <Settings size={18} /> },
+  { path: '/settings', label: 'Settings', icon: <Settings size={18} /> },
 ];
 
 export function Sidebar({ isOpen = false, onNavigate }) {

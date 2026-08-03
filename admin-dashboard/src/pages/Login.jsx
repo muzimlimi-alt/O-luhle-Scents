@@ -153,7 +153,7 @@ export function Login() {
 
           .login-card-classic {
             width: 100%; max-width: 440px;
-            background: rgba(26, 22, 17, 0.9);
+            background: var(--glass-bg);
             backdrop-filter: blur(2px);
             border: 1px solid rgba(184, 155, 106, 0.2);
             box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(184, 155, 106, 0.1);
@@ -224,7 +224,22 @@ export function Login() {
             display: flex; justify-content: space-between; align-items: center;
             font-size: 0.75rem; margin-bottom: 36px;
           }
-          .classic-checkbox-container { display: flex; align-items: center; gap: 8px; cursor: pointer; color: rgba(245, 240, 232, 0.6); }
+          .classic-checkbox-container { display: flex; align-items: center; gap: 8px; cursor: pointer; color: rgba(245, 240, 232, 0.6); position: relative; }
+          .classic-checkbox-container input { position: absolute; opacity: 0; width: 16px; height: 16px; margin: 0; cursor: pointer; }
+          .classic-checkmark {
+            flex-shrink: 0; width: 16px; height: 16px; border-radius: 2px;
+            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(184, 155, 106, 0.35);
+            transition: all 0.2s; position: relative;
+          }
+          .classic-checkbox-container:hover .classic-checkmark { border-color: var(--color-primary); }
+          .classic-checkbox-container input:checked ~ .classic-checkmark { background: var(--color-primary); border-color: var(--color-primary); }
+          .classic-checkmark::after {
+            content: ''; position: absolute; display: none;
+            left: 5px; top: 1px; width: 4px; height: 8px;
+            border: solid var(--color-bg-dark); border-width: 0 2px 2px 0; transform: rotate(45deg);
+          }
+          .classic-checkbox-container input:checked ~ .classic-checkmark::after { display: block; }
+          .classic-checkbox-container input:focus-visible ~ .classic-checkmark { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
           .classic-forgot-link { color: var(--color-primary); text-decoration: none; font-weight: 500; }
 
           .classic-login-btn {
@@ -243,8 +258,8 @@ export function Login() {
             display: flex; align-items: center; gap: 10px;
             font-size: 0.8rem; border-radius: 2px; text-align: left;
           }
-          .alert--danger { background: rgba(192, 57, 43, 0.12); border: 1px solid rgba(192, 57, 43, 0.3); color: #e57373; }
-          .alert--success { background: rgba(39, 174, 96, 0.12); border: 1px solid rgba(39, 174, 96, 0.3); color: #d1fae5; }
+          .alert--danger { background: rgba(192, 57, 43, 0.12); border: 1px solid rgba(192, 57, 43, 0.3); color: var(--color-error-text); }
+          .alert--success { background: rgba(39, 174, 96, 0.12); border: 1px solid rgba(39, 174, 96, 0.3); color: var(--color-success-text); }
         `}} />
       </div>
     </div>

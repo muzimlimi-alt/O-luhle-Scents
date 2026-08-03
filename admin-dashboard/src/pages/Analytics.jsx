@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { metricsApi } from '../services/api';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Users, 
+import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { LoadingState } from '../components/LoadingState';
+import {
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
   ShoppingCart,
-  Percent
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { 
@@ -76,16 +77,11 @@ export function Analytics() {
     }]
   };
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--color-primary)' }}>Loading Insights...</div>;
+  if (loading) return <LoadingState label="Loading insights..." />;
 
   return (
     <div className="analytics-page">
-      <div className="content-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <BarChart3 size={28} color="var(--color-primary)" />
-          <h2 className="page-title">Business Analytics</h2>
-        </div>
-      </div>
+      <PageHeader icon={<BarChart3 size={22} />} title="Business Analytics" subtitle="Revenue trends and product performance." />
 
       <div className="kpi-grid">
         <div className="kpi-card">
@@ -127,13 +123,13 @@ export function Analytics() {
                     color: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(184, 155, 106, 0.15)' 
                   },
                   ticks: {
-                    color: theme === 'dark' ? 'rgba(232, 226, 216, 0.48)' : '#4a4640'
+                    color: theme === 'dark' ? 'rgba(232, 226, 216, 0.55)' : '#4a4640'
                   }
                 }, 
                 x: { 
                   grid: { display: false },
                   ticks: {
-                    color: theme === 'dark' ? 'rgba(232, 226, 216, 0.48)' : '#4a4640'
+                    color: theme === 'dark' ? 'rgba(232, 226, 216, 0.55)' : '#4a4640'
                   }
                 } 
               },
@@ -152,26 +148,14 @@ export function Analytics() {
       <div className="analytics-grid">
         <div className="card">
           <h3 style={{ marginBottom: '20px' }}>Top Performing Products</h3>
-          <div className="table-responsive">
-             <table className="modern-table">
-               <thead>
-                 <tr>
-                    <th>Product</th>
-                    <th>Units Sold</th>
-                    <th>Revenue Generated</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {data.topProducts.map((p, idx) => (
-                   <tr key={idx}>
-                      <td style={{ fontWeight: 600 }}>{p.name}</td>
-                      <td>{p.totalUnits}</td>
-                      <td style={{ color: 'var(--color-primary)' }}>R{p.totalRevenue.toLocaleString()}</td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
-          </div>
+          <DataTable
+            columns={[
+              { key: 'name', label: 'Product', render: (val) => <span style={{ fontWeight: 600 }}>{val}</span> },
+              { key: 'totalUnits', label: 'Units Sold' },
+              { key: 'totalRevenue', label: 'Revenue Generated', render: (val) => <span style={{ color: 'var(--color-primary-text)' }}>R{val.toLocaleString()}</span> },
+            ]}
+            data={data.topProducts}
+          />
         </div>
 
         <div className="card">
@@ -187,6 +171,7 @@ export function Analytics() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .analytics-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+        .analytics-grid > .card { min-width: 0; }
         @media (max-width: 900px) {
           .analytics-grid { grid-template-columns: 1fr; }
         }

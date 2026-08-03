@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PreferencesContext, PREF_KEY } from './PreferencesContext';
 
 const DEFAULT_PREFS = {
-  theme: 'dark',
   compactMode: false,
   privacyMode: false,
   autoRefresh: 'off',
@@ -26,8 +25,9 @@ export function PreferencesProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
-    // Apply globally accessible CSS classes to document root
-    document.documentElement.setAttribute('data-theme', prefs.theme);
+    // Apply globally accessible CSS classes to document root.
+    // Theme itself is owned by ThemeContext/ThemeProvider (the .theme-dark/.theme-light
+    // classes that every stylesheet actually reads) — not duplicated here.
     document.documentElement.classList.toggle('compact-mode', prefs.compactMode);
     document.documentElement.classList.toggle('privacy-mode', prefs.privacyMode);
   }, [prefs]);

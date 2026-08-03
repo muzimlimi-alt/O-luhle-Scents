@@ -1,16 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { productsApi, categoriesApi } from '../services/api';
-import { 
-  Plus, Search, Filter, Edit2, Trash2, Package, 
-  Sparkles, ImageIcon, Loader2, Tag, Truck, 
-  BarChart3, Layers, ShoppingBag, Eye, EyeOff,
-  AlertCircle, DollarSign, Fingerprint
+import {
+  Plus, Search, Filter, Edit2, Trash2, Package,
+  ImageIcon, Tag, Truck,
+  BarChart3, Layers, Eye, EyeOff,
+  AlertCircle, Fingerprint
 } from 'lucide-react';
 import ProductModal from '../components/ProductModal';
+import { PageHeader } from '../components/PageHeader';
+import { StatusBadge } from '../components/StatusBadge';
+import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
+import { useMessaging } from '../context/MessagingContext';
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
 
+const STATUS_TONE = { ACTIVE: 'success', DRAFT: 'warning', ARCHIVED: 'neutral' };
+
 export function Products() {
+  const { showMessage } = useMessaging();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +64,7 @@ export function Products() {
         status: selectedStatus,
         search: searchTerm
       });
-      
+
       setProducts(response.products || []);
       setTotalPages(response.totalPages || 1);
       setTotalProducts(response.total || 0);
@@ -108,227 +116,203 @@ export function Products() {
     try {
       if (id) {
         await productsApi.update(id, formData);
+        showMessage('success', 'Product Updated', 'Changes have been saved.');
       } else {
         await productsApi.create(formData);
+        showMessage('success', 'Product Created', 'The new product is now in your catalog.');
       }
       await fetchProducts();
     } catch (err) {
       console.error('Failed to preserve product state:', err);
-      alert('Preservation failed: ' + err.message);
+      showMessage('error', 'Save Failed', err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to decommission this product?')) {
+    if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await productsApi.delete(id);
+        showMessage('success', 'Product Deleted', 'The product has been removed from your catalog.');
         fetchProducts();
       } catch (err) {
-        alert('Failed to delete product: ' + err.message);
+        showMessage('error', 'Delete Failed', err.message);
       }
     }
   };
 
   return (
-    <div className="elite-products-container">
-      {/* ATELIER EXPLORER HEADER */}
-      <div className="atelier-header">
-        <div className="header-badge">
-          <Sparkles size={14} className="mr-1" />
-          MASTER INVENTORY
-        </div>
-        <div className="header-main">
-          <div className="header-titles">
-            <h1 className="atelier-title">O'luhle Products</h1>
-            <p className="atelier-subtitle">Curating the finest artisanal fragrances in the O'luhle collection.</p>
-          </div>
-          <button onClick={handleCreate} className="btn-elite-primary">
-            <Plus size={20} />
-            <span>CREATE NEW FRAGRANCE</span>
+    <div className="products-page">
+      <PageHeader
+        icon={<Package size={22} />}
+        title="Products"
+        subtitle="Curating the finest artisanal fragrances in the O'luhle collection."
+        actions={(
+          <button onClick={handleCreate} className="btn btn--primary">
+            <Plus size={18} /> Create Product
           </button>
-        </div>
-      </div>
+        )}
+      />
 
       {/* DISCOVERY BAR */}
       <div className="atelier-discovery">
-        <div className="search-glass-container">
-          <Search className="search-icon" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search by name, brand, or SKU..." 
+        <div className="search-glass-wrapper">
+          <Search size={18} className="glass-icon" />
+          <input
+            type="text"
+            placeholder="Search by name, brand, or SKU..."
             className="search-glass-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
-        <div className="filter-group">
-          {/* Status Filter */}
+
+        <div className="filter-glass-matrix">
           <div className="select-glass-wrapper">
-             <Filter size={16} className="select-icon" />
-             <select 
-               className="select-glass"
-               value={selectedStatus}
-               onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
-             >
-                <option value="all">ALL PORTFOLIO</option>
-                <option value="active">LIVE PRODUCTS</option>
-                <option value="draft">DRAFT</option>
-                <option value="archived">ARCHIVED</option>
-             </select>
+            <Filter size={14} className="glass-icon" />
+            <select
+              value={selectedStatus}
+              onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Live</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
+            </select>
           </div>
 
-          {/* Category Filter */}
           <div className="select-glass-wrapper">
-             <Package size={16} className="select-icon" />
-             <select 
-               className="select-glass"
-               value={selectedCategory}
-               onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-             >
-                <option value="all">ALL CATEGORIES</option>
-                {orderedCategories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{'—'.repeat(cat.depth)} {cat.name?.toUpperCase()}</option>
-                ))}
-             </select>
+            <Package size={14} className="glass-icon" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
+            >
+              <option value="all">All Categories</option>
+              {orderedCategories.map(cat => (
+                <option key={cat.id} value={cat.id}>{'—'.repeat(cat.depth)} {cat.name}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Sort Control */}
           <div className="select-glass-wrapper">
-             <BarChart3 size={16} className="select-icon" />
-             <select 
-               className="select-glass"
-               value={sortBy}
-               onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
-             >
-                <option value="newest">NEWEST FIRST</option>
-                <option value="oldest">OLDEST FIRST</option>
-                <option value="name-asc">NAME A-Z</option>
-                <option value="name-desc">NAME Z-A</option>
-             </select>
+            <BarChart3 size={14} className="glass-icon" />
+            <select
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name-asc">Name A-Z</option>
+              <option value="name-desc">Name Z-A</option>
+            </select>
           </div>
         </div>
       </div>
 
       {/* PRODUCT GALLERY */}
-      <div className="products-atelier-gallery">
+      <div className="products-gallery">
         {loading && products.length === 0 ? (
-          <div className="atelier-loading">
-            <Loader2 className="spinner" size={40} />
-            <p>SYNCHRONIZING ATELIER DATA...</p>
-          </div>
+          <LoadingState label="Loading products..." />
+        ) : products.length === 0 ? (
+          <EmptyState icon={<Package size={40} />} title="No products found" description="Adjust your search or filters, or create your first product." />
         ) : (
           <>
             <div className={`atelier-grid ${loading ? 'opacity-50' : ''}`}>
               {products.map(product => (
-                <div key={product.id} className="atelier-card-wrapper animate-in">
-                  <div className="atelier-card elite-glass">
-                    {/* CARD HEADER: STATUS & BRAND */}
-                    <div className="card-top">
-                      <div className="status-indicator">
-                        {product.status === 'DRAFT' ? (
-                          <span className="badge-status draft">
-                            <EyeOff size={12} /> DRAFT
-                          </span>
-                        ) : product.status === 'ARCHIVED' ? (
-                          <span className="badge-status archived">
-                            <EyeOff size={12} /> ARCHIVED
-                          </span>
+                <div key={product.id} className="card atelier-card">
+                  {/* CARD HEADER: STATUS & BRAND */}
+                  <div className="card-top">
+                    <StatusBadge
+                      tone={STATUS_TONE[product.status] || 'neutral'}
+                      icon={product.status === 'ACTIVE' ? <Eye size={12} /> : <EyeOff size={12} />}
+                      label={product.status === 'ACTIVE' ? 'Live' : product.status === 'DRAFT' ? 'Draft' : 'Archived'}
+                    />
+                    <div className="card-actions">
+                      <button onClick={() => handleEdit(product)} className="icon-btn" title="Edit"><Edit2 size={14} /></button>
+                      <button onClick={() => handleDelete(product.id)} className="icon-btn danger" title="Delete"><Trash2 size={14} /></button>
+                    </div>
+                  </div>
+
+                  <div className="card-content-layout">
+                    {/* LEFT: THUMBNAIL */}
+                    <div className="card-visual-sidebar">
+                      <div className="image-atelier-frame">
+                        {product.primaryImage ? (
+                          <img src={`${API_ORIGIN}/images/products/${product.primaryImage}`} alt={product.name} />
                         ) : (
-                          <span className="badge-status active">
-                            <Eye size={12} /> LIVE
-                          </span>
+                          <div className="image-placeholder">
+                            <ImageIcon size={32} opacity={0.3} />
+                          </div>
                         )}
                       </div>
-                      <div className="card-actions">
-                        <button onClick={() => handleEdit(product)} className="btn-mini-action" title="Edit Portfolio"><Edit2 size={14} /></button>
-                        <button onClick={() => handleDelete(product.id)} className="btn-mini-action danger" title="Decommission"><Trash2 size={14} /></button>
+
+                      <div className="sidebar-meta">
+                        <div className="meta-item">
+                          <Tag size={12} />
+                          <span className="label">Category:</span>
+                          <span className="value">{product.category?.name || 'Uncategorized'}</span>
+                        </div>
+                        <div className="meta-item">
+                          <Truck size={12} />
+                          <span className="label">Supplier:</span>
+                          <span className="value">{product.supplier?.name || 'In-House'}</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="card-content-layout">
-                      {/* LEFT: THUMBNAIL */}
-                      <div className="card-visual-sidebar">
-                        <div className="image-atelier-frame">
-                          {product.primaryImage ? (
-                            <img src={`${API_ORIGIN}/images/products/${product.primaryImage}`} alt={product.name} />
-                          ) : (
-                            <div className="image-placeholder">
-                              <ImageIcon size={32} opacity={0.3} />
-                            </div>
-                          )}
-                          <div className="image-overlay-glow"></div>
-                        </div>
-                        
-                        <div className="sidebar-meta">
-                          <div className="meta-item">
-                            <Tag size={12} />
-                            <span className="label">Category:</span>
-                            <span className="value">{product.category?.name || 'Uncategorized'}</span>
+                    {/* RIGHT: DETAILS & VARIANTS */}
+                    <div className="card-main-body">
+                      <div className="product-identity">
+                        <span className="brand-eyebrow">{product.brand || "O'luhle Scents"}</span>
+                        <h3 className="product-name">{product.name}</h3>
+                        {product.tags?.length > 0 && (
+                          <div className="tag-cloud">
+                            {product.tags.map((tag, idx) => (
+                              <span key={idx} className="atelier-tag">{tag}</span>
+                            ))}
                           </div>
-                          <div className="meta-item">
-                            <Truck size={12} />
-                            <span className="label">Artisan:</span>
-                            <span className="value">{product.supplier?.name || 'In-House'}</span>
-                          </div>
-                        </div>
+                        )}
                       </div>
 
-                      {/* RIGHT: DETAILS & VARIANTS */}
-                      <div className="card-main-body">
-                        <div className="product-identity">
-                          <span className="brand-eyebrow">{product.brand || "O'luhle Scents"}</span>
-                          <h3 className="product-name">{product.name}</h3>
-                          {product.tags?.length > 0 && (
-                            <div className="tag-cloud">
-                              {product.tags.map((tag, idx) => (
-                                <span key={idx} className="atelier-tag">{tag}</span>
-                              ))}
-                            </div>
-                          )}
+                      <div className="variant-matrix-container">
+                        <div className="matrix-header">
+                          <Layers size={14} />
+                          <span>Variants</span>
                         </div>
-
-                        <div className="variant-matrix-container">
-                          <div className="matrix-header">
-                            <Layers size={14} />
-                            <span>VARIATION MATRIX</span>
-                          </div>
-                          <div className="matrix-scroll">
-                            <table className="matrix-table">
-                              <thead>
-                                <tr>
-                                  <th>SIZE</th>
-                                  <th>RETAIL</th>
-                                  <th>COST</th>
-                                  <th>STOCK</th>
-                                  <th>SKU/BARCODE</th>
+                        <div className="matrix-scroll">
+                          <table className="matrix-table">
+                            <thead>
+                              <tr>
+                                <th>Size</th>
+                                <th>Retail</th>
+                                <th>Cost</th>
+                                <th>Stock</th>
+                                <th>SKU/Barcode</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {product.variants?.map(v => (
+                                <tr key={v.id}>
+                                  <td>{v.size}</td>
+                                  <td className="price-primary">R{v.price}</td>
+                                  <td className="price-cost">R{v.costPrice || '--'}</td>
+                                  <td>
+                                    <div className="stock-level-indicator">
+                                      <span className={`stock-count ${v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) ? 'low' : ''}`}>
+                                        {v.inventory?.quantity || 0}
+                                      </span>
+                                      {v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) && (
+                                        <AlertCircle size={12} className="low-stock-icon" />
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="sku-cell">
+                                    <span className="sku-text" title={`Barcode: ${v.barcode || 'N/A'}`}>{v.sku}</span>
+                                    {v.barcode && <Fingerprint size={10} className="barcode-icon" />}
+                                  </td>
                                 </tr>
-                              </thead>
-                              <tbody>
-                                {product.variants?.map(v => (
-                                  <tr key={v.id}>
-                                    <td className="font-outfit">{v.size}</td>
-                                    <td className="price-primary">R{v.price}</td>
-                                    <td className="price-cost">R{v.costPrice || '--'}</td>
-                                    <td>
-                                      <div className="stock-level-indicator">
-                                        <span className={`stock-count ${v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) ? 'low' : ''}`}>
-                                          {v.inventory?.quantity || 0}
-                                        </span>
-                                        {v.inventory?.quantity <= (v.inventory?.lowStockThreshold || 5) && (
-                                          <AlertCircle size={12} className="low-stock-icon" />
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="sku-cell">
-                                      <span className="sku-text" title={`Barcode: ${v.barcode || 'N/A'}`}>{v.sku}</span>
-                                      {v.barcode && <Fingerprint size={10} className="barcode-icon" />}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>
@@ -338,27 +322,27 @@ export function Products() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="atelier-pagination">
+            <div className="table-footer products-pagination">
               <div className="pagination-info">
-                Showing {products.length} of {totalProducts} Products
+                Showing {products.length} of {totalProducts} products
               </div>
-              <div className="pagination-controls">
-                <button 
-                  className="btn-pagination" 
+              <div className="pagination">
+                <button
+                  className="page-btn"
                   disabled={page === 1 || loading}
                   onClick={() => setPage(p => p - 1)}
+                  aria-label="Previous page"
                 >
-                  PREVIOUS
+                  Previous
                 </button>
-                <div className="page-summary">
-                  PAGE {page} OF {totalPages}
-                </div>
-                <button 
-                  className="btn-pagination" 
+                <span className="page-info">Page {page} of {totalPages}</span>
+                <button
+                  className="page-btn"
                   disabled={page === totalPages || loading}
                   onClick={() => setPage(p => p + 1)}
+                  aria-label="Next page"
                 >
-                  NEXT
+                  Next
                 </button>
               </div>
             </div>
@@ -375,245 +359,104 @@ export function Products() {
       />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .elite-products-container {
-          padding: 40px;
-          min-height: 100vh;
-          background: var(--color-bg-dark);
-          color: var(--color-text);
-          font-family: var(--atelier-font-body);
-        }
-
-        /* HEADER STYLES */
-        .atelier-header { margin-bottom: 40px; }
-        .header-badge {
-          display: inline-flex; align-items: center;
-          padding: 6px 14px; border-radius: 40px;
-          background: var(--color-border-light); border: 1px solid var(--color-border);
-          color: var(--color-primary); font-size: 0.65rem; font-weight: 700;
-          letter-spacing: 0.2em; margin-bottom: 16px;
-        }
-        .header-main { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
-        .atelier-title { 
-          font-family: var(--atelier-font-header); font-size: 2.8rem; font-weight: 300;
-          letter-spacing: -0.02em; line-height: 1.1; margin: 0;
-        }
-        .atelier-subtitle { color: var(--color-text-muted); font-size: 1rem; margin-top: 10px; max-width: 500px; }
-        
-        .btn-elite-primary {
-          background: var(--color-primary); color: #000;
-          border: none; border-radius: 8px; padding: 14px 28px;
-          display: flex; align-items: center; gap: 12px;
-          font-family: var(--atelier-font-header); font-size: 0.85rem; font-weight: 600;
-          letter-spacing: 0.1em; cursor: pointer; transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-          box-shadow: 0 10px 30px rgba(184,155,106,0.15);
-        }
-        .btn-elite-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(184,155,106,0.25); filter: brightness(1.1); }
+        .products-page { padding: 40px; max-width: 1600px; margin: 0 auto; min-height: 100vh; }
 
         /* DISCOVERY BAR */
-        .atelier-discovery { 
-          display: flex; 
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 16px; 
-          margin-bottom: 40px; 
-          animation: slideIn 0.8s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-        .search-glass-container {
-          flex: 1; 
-          min-width: 280px;
-          position: relative; 
-          display: flex; 
-          align-items: center;
-        }
-        .search-icon { position: absolute; left: 20px; color: var(--color-primary); opacity: 0.6; }
-        .search-glass-input {
-          width: 100%; padding: 14px 20px 14px 54px;
-          background: var(--color-bg-card); border: 1.5px solid var(--color-border);
-          border-radius: 12px; color: var(--color-text); font-size: 0.9rem;
-          transition: all 0.3s; backdrop-filter: blur(10px);
-        }
-        .search-glass-input:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 20px rgba(184,155,106,0.1); }
-
-        .filter-group { 
-          display: flex; 
-          flex-wrap: wrap;
-          gap: 12px;
-          flex: 2;
-          justify-content: flex-end;
-        }
-
-        /* Responsive stack for discovery */
-        @media (max-width: 992px) {
-          .atelier-discovery { flex-direction: column; align-items: stretch; }
-          .filter-group { justify-content: flex-start; flex: none; }
-          .select-glass-wrapper { flex: 1; min-width: 150px; }
-          .select-glass { width: 100%; min-width: unset; }
-        }
-
-        /* SELECT GLASS */
-        .select-glass-wrapper { position: relative; display: flex; align-items: center; }
-        .select-icon { position: absolute; left: 16px; color: var(--color-primary); pointer-events: none; opacity: 0.7; }
-        .select-glass {
-          background: var(--color-bg-card); border: 1.5px solid var(--color-border);
-          border-radius: 12px; color: var(--color-text); padding: 14px 20px 14px 44px;
-          font-size: 0.75rem; letter-spacing: 0.1em; cursor: pointer; transition: all 0.3s;
-          appearance: none; -webkit-appearance: none; min-width: 160px; backdrop-filter: blur(10px);
-          text-transform: uppercase;
-        }
-        .select-glass:hover { border-color: var(--color-primary); background: var(--color-border-light); }
-        .select-glass:focus { outline: none; border-color: var(--color-primary); }
-        .select-glass option { background: var(--color-bg-card); color: var(--color-text); }
+        .atelier-discovery { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 32px; }
+        .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; flex: 1; min-width: 280px; max-width: 420px; }
+        .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
+        .filter-glass-matrix { display: flex; flex-wrap: wrap; gap: 12px; }
+        .select-glass-wrapper { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
+        .select-glass-wrapper select { background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem; }
 
         /* GALLERY GRID */
-        .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); gap: 30px; }
-        /* Grid items default to min-width:auto too — same shrink-to-content
-           trap as flex items. Without this, a 1fr track still renders at
-           the card's full intrinsic content width instead of the track size. */
-        .atelier-card-wrapper { min-width: 0; }
+        .atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(600px, 1fr)); gap: 24px; }
+        .atelier-card-wrapper, .atelier-card { min-width: 0; }
         @media (max-width: 1400px) { .atelier-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 768px) {
-          .elite-products-container { padding: 20px; }
-          .card-content-layout { flex-direction: column; align-items: center; }
-          .card-visual-sidebar { width: 100%; max-width: 300px; }
-          /* Flex items default to min-width:auto, which refuses to shrink
-             below the variant table's natural content width even though
-             .matrix-scroll has overflow-x:auto — that's what was pushing
-             the whole card (and page) wider than the viewport. */
-          .card-main-body { width: 100%; min-width: 0; }
-          .atelier-pagination { flex-direction: column; gap: 20px; text-align: center; }
-          .atelier-title { font-size: 2rem; }
+
+        .card-top {
+          padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 1px solid var(--color-border-light);
         }
+        .card-actions { display: flex; gap: 8px; }
 
-        .atelier-card-wrapper { transition: transform 0.4s; }
-        .atelier-card-wrapper:hover { transform: translateY(-5px); }
+        .card-content-layout { display: flex; padding: 20px; gap: 20px; }
 
-        .elite-glass {
-          background: var(--glass-bg);
-          border: 1.5px solid var(--color-border);
-          border-radius: 20px;
-          backdrop-filter: blur(12px);
-          overflow: hidden;
-          transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-        .atelier-card:hover { border-color: var(--color-primary); box-shadow: var(--shadow-lg); }
-
-        .card-top { 
-          padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;
-          border-bottom: 1px solid rgba(184,155,106,0.1);
-        }
-        .badge-status { 
-          display: flex; align-items: center; gap: 6px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
-          padding: 4px 10px; border-radius: 4px;
-        }
-        .badge-status.active { color: var(--atelier-success); background: rgba(39, 174, 96, 0.1); }
-        .badge-status.draft { color: #e6a23c; background: rgba(230, 162, 60, 0.1); }
-        .badge-status.archived { color: var(--atelier-text-muted); background: rgba(255,255,255,0.05); }
-
-        .btn-mini-action {
-          width: 32px; height: 32px; border: 1px solid var(--color-border);
-          border-radius: 8px; background: transparent; color: var(--color-text-muted);
-          display: inline-flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: all 0.3s; margin-left: 8px;
-        }
-        .btn-mini-action:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-border-light); }
-        .btn-mini-action.danger:hover { border-color: var(--color-error-text); color: var(--color-error-text); background: rgba(192,57,43,0.1); }
-
-        .card-content-layout { display: flex; padding: 24px; gap: 24px; }
-
-        /* SBAR: VISUALS */
         .card-visual-sidebar { width: 180px; flex-shrink: 0; }
         .image-atelier-frame {
-          width: 100%; height: 220px; border-radius: 12px; overflow: hidden;
+          width: 100%; height: 200px; border-radius: 4px; overflow: hidden;
           background: var(--color-surface); border: 1px solid var(--color-border);
-          position: relative; margin-bottom: 16px;
+          margin-bottom: 16px;
         }
-        .image-atelier-frame img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s; }
-        .atelier-card:hover .image-atelier-frame img { transform: scale(1.05); }
-        .image-overlay-glow {
-          position: absolute; inset: 0; 
-          background: linear-gradient(to top, rgba(15,14,13,0.6) 0%, transparent 50%);
-        }
-        .image-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--atelier-gold); }
+        .image-atelier-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .image-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); }
 
         .sidebar-meta { display: flex; flex-direction: column; gap: 8px; }
-        .meta-item { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: var(--atelier-text-muted); }
-        .meta-item .label { opacity: 0.6; }
-        .meta-item .value { color: var(--color-primary); font-weight: 500; }
+        .meta-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--color-text-muted); }
+        .meta-item .label { opacity: 0.7; }
+        .meta-item .value { color: var(--color-primary-text); font-weight: 500; }
 
-        /* BODY: CONTENT */
-        .card-main-body { flex: 1; }
-        .brand-eyebrow { 
-          font-size: 0.7rem; font-weight: 700; letter-spacing: 0.25em; 
-          color: var(--color-primary); text-transform: uppercase; margin-bottom: 6px; display: block;
+        .card-main-body { flex: 1; min-width: 0; }
+        .brand-eyebrow {
+          font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em;
+          color: var(--color-primary-text); text-transform: uppercase; margin-bottom: 6px; display: block;
         }
-        .product-name { font-family: var(--atelier-font-header); font-size: 1.7rem; font-weight: 400; margin: 0 0 12px 0; color: var(--color-text-header); }
-        
-        .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; }
-        .atelier-tag { 
-          font-size: 0.6rem; padding: 4px 10px; border-radius: 4px;
-          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-          color: var(--atelier-text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+        .product-name { font-family: var(--font-display); font-size: 1.6rem; font-weight: 500; margin: 0 0 12px 0; color: var(--color-text-header); }
+
+        .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+        .atelier-tag {
+          font-size: 0.65rem; padding: 4px 10px; border-radius: 4px;
+          background: var(--color-surface); border: 1px solid var(--color-border);
+          color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em;
         }
 
-        /* MATRIX TABLE */
-        .variant-matrix-container {
-          background: var(--color-bg-dark); border-radius: 12px; border: 1px solid var(--color-border);
-          overflow: hidden;
-        }
-        .matrix-header { 
+        /* VARIANT TABLE */
+        .variant-matrix-container { background: var(--color-bg-dark); border-radius: 4px; border: 1px solid var(--color-border); overflow: hidden; }
+        .matrix-header {
           padding: 10px 16px; border-bottom: 1px solid var(--color-border);
           display: flex; align-items: center; gap: 8px; font-size: 0.65rem; font-weight: 700;
-          color: var(--color-primary); letter-spacing: 0.1em;
+          color: var(--color-primary-text); letter-spacing: 0.1em; text-transform: uppercase;
         }
         .matrix-scroll { overflow-x: auto; }
         .matrix-table { width: 100%; border-collapse: collapse; }
-        .matrix-table th { 
-          text-align: left; padding: 10px 16px; font-size: 0.55rem; color: var(--atelier-text-muted);
-          text-transform: uppercase; letter-spacing: 0.1em; background: rgba(255,255,255,0.015);
+        .matrix-table th {
+          text-align: left; padding: 10px 16px; font-size: 0.65rem; color: var(--color-text-muted);
+          text-transform: uppercase; letter-spacing: 0.08em;
         }
-        .matrix-table td { padding: 12px 16px; font-size: 0.8rem; border-bottom: 1px solid var(--color-border-light); }
+        .matrix-table td { padding: 10px 16px; font-size: 0.8rem; border-bottom: 1px solid var(--color-border-light); }
         .matrix-table tr:last-child td { border-bottom: none; }
 
         .price-primary { color: var(--color-text-header); font-weight: 600; }
         .price-cost { color: var(--color-text-muted); font-size: 0.75rem; }
-        
+
         .stock-level-indicator { display: flex; align-items: center; gap: 6px; }
         .stock-count { font-weight: 700; }
-        .stock-count.low { color: #e67e22; }
-        .low-stock-icon { color: #e67e22; }
+        .stock-count.low { color: var(--color-warning-text); }
+        .low-stock-icon { color: var(--color-warning-text); }
 
         .sku-cell { display: flex; align-items: center; gap: 6px; }
         .sku-text { font-family: monospace; font-size: 0.7rem; color: var(--color-text-muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .barcode-icon { color: var(--color-primary); opacity: 0.5; }
+        .barcode-icon { color: var(--color-primary); opacity: 0.6; }
 
-        /* UTILS */
         .opacity-50 { opacity: 0.5; pointer-events: none; }
-        .animate-in { animation: cardIn 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards; opacity: 0; transform: translateY(20px); }
-        @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
-        .font-outfit { font-family: var(--atelier-font-header); }
-        .mr-1 { margin-right: 4px; }
-        .atelier-loading { padding: 100px 0; text-align: center; color: var(--color-primary); }
-        .spinner { animation: spin 2s linear infinite; margin-bottom: 15px; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
         /* PAGINATION */
-        .atelier-pagination {
-          margin-top: 50px; padding: 24px; border-top: 1px solid var(--color-border);
-          display: flex; justify-content: space-between; align-items: center;
-          background: var(--color-bg-card); border-radius: 20px;
+        .table-footer.products-pagination { margin-top: 32px; padding: 20px 4px; border-top: 1px solid var(--color-border); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; }
+        .pagination-info { font-size: 0.85rem; color: var(--color-text-muted); }
+        .pagination { display: flex; align-items: center; gap: 16px; }
+        .page-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 8px 18px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .page-btn:not(:disabled):hover { border-color: var(--color-primary); color: var(--color-primary-text); background: var(--color-border-light); }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
+        .page-info { font-size: 0.8rem; font-weight: 600; color: var(--color-text-header); }
+
+        @media (max-width: 768px) {
+          .products-page { padding: 20px; }
+          .card-content-layout { flex-direction: column; align-items: center; }
+          .card-visual-sidebar { width: 100%; max-width: 300px; }
+          .card-main-body { width: 100%; min-width: 0; }
+          .products-pagination { flex-direction: column; text-align: center; }
         }
-        .pagination-info { font-size: 0.85rem; color: var(--color-text-muted); font-family: var(--atelier-font-header); }
-        .pagination-controls { display: flex; align-items: center; gap: 24px; }
-        .btn-pagination {
-          background: transparent; border: 1px solid var(--color-border);
-          color: var(--color-text); padding: 10px 20px; border-radius: 8px;
-          font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em;
-          cursor: pointer; transition: all 0.3s;
-        }
-        .btn-pagination:not(:disabled):hover { background: var(--color-primary); color: #000; border-color: var(--color-primary); transform: translateY(-2px); }
-        .btn-pagination:disabled { opacity: 0.3; cursor: not-allowed; }
-        .page-summary { font-size: 0.75rem; font-weight: 700; color: var(--color-primary); letter-spacing: 0.1em; }
       `}} />
     </div>
   );
