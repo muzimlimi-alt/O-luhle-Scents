@@ -47,9 +47,17 @@
               <span style="color:var(--color-text-light);">Subtotal</span>
               <span id="order-subtotal"></span>
             </div>
+            <div id="order-discount-row" style="display:none;justify-content:space-between;font-size:0.85rem;margin-bottom:6px;color:#2e7d32;">
+              <span>Discount<span id="order-coupon-code"></span></span>
+              <span id="order-discount"></span>
+            </div>
             <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:6px;">
               <span style="color:var(--color-text-light);">Shipping</span>
               <span id="order-shipping"></span>
+            </div>
+            <div id="order-tax-row" style="display:none;justify-content:space-between;font-size:0.85rem;margin-bottom:6px;">
+              <span id="order-tax-label" style="color:var(--color-text-light);">Tax</span>
+              <span id="order-tax"></span>
             </div>
             <div style="display:flex;justify-content:space-between;font-weight:600;margin-top:8px;">
               <span>Total</span>
@@ -106,16 +114,36 @@
           `).join('');
         }
 
-        const subtotal = parseFloat(order.totalAmount) - parseFloat(order.shippingCost);
-        
-        const subtotalEl = document.getElementById('order-subtotal');
-        const shippingEl = document.getElementById('order-shipping');
-        const totalEl    = document.getElementById('order-total');
+        const subtotal = (order.items || []).reduce((s, item) => s + parseFloat(item.priceAtPurchase) * item.quantity, 0);
+        const discountAmount = parseFloat(order.discountAmount) || 0;
+        const taxAmount = parseFloat(order.taxAmount) || 0;
+
+        const subtotalEl    = document.getElementById('order-subtotal');
+        const shippingEl    = document.getElementById('order-shipping');
+        const totalEl       = document.getElementById('order-total');
+        const discountRowEl = document.getElementById('order-discount-row');
+        const discountEl    = document.getElementById('order-discount');
+        const couponCodeEl  = document.getElementById('order-coupon-code');
+        const taxRowEl      = document.getElementById('order-tax-row');
+        const taxEl         = document.getElementById('order-tax');
+        const taxLabelEl    = document.getElementById('order-tax-label');
 
         if (subtotalEl) subtotalEl.textContent = `R${subtotal.toLocaleString()}`;
         if (shippingEl) shippingEl.textContent = `R${parseFloat(order.shippingCost).toLocaleString()}`;
         if (totalEl)    totalEl.textContent    = `R${parseFloat(order.totalAmount).toLocaleString()}`;
-        
+
+        if (discountAmount > 0) {
+          if (discountRowEl) discountRowEl.style.display = 'flex';
+          if (discountEl) discountEl.textContent = `-R${discountAmount.toLocaleString()}`;
+          if (couponCodeEl && order.coupon?.code) couponCodeEl.textContent = ` (${order.coupon.code})`;
+        }
+
+        if (taxAmount > 0) {
+          if (taxRowEl) taxRowEl.style.display = 'flex';
+          if (taxEl) taxEl.textContent = `R${taxAmount.toLocaleString()}`;
+          if (taxLabelEl && order.taxRate?.name) taxLabelEl.textContent = `Tax (${order.taxRate.name})`;
+        }
+
         if (summaryEl) summaryEl.style.display = 'block';
       } catch (err) {
         console.error('[Success Page] Error loading order:', err);

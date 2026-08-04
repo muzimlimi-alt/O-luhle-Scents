@@ -1,22 +1,26 @@
 import prisma from './prisma.js'
 
-export const COURIERS = {
-  THE_COURIER_GUY: { name: 'The Courier Guy', trackingUrl: 'https://portal.thecourierguy.co.za/track/' },
-  ARAMEX: { name: 'Aramex', trackingUrl: 'https://www.aramex.com/track/results?shipmentNumber=' },
-  FEDEX: { name: 'FedEx', trackingUrl: 'https://www.fedex.com/fedextrack/?trknbr=' },
-  POST_OFFICE: { name: 'SAPO', trackingUrl: 'https://trackmyparcel.co.za/track/' }
+// Admin-configurable courier list — see ShippingMethod model / the Shipping
+// Methods admin page. This replaces what used to be a hardcoded COURIERS map;
+// Order.courierName stays a plain string snapshot of courier.name so existing
+// orders and every other reader of that field are unaffected.
+export async function listActiveShippingMethods() {
+  return prisma.shippingMethod.findMany({
+    where: { active: true },
+    orderBy: { name: 'asc' }
+  })
 }
 
 export async function fulfillOrder(orderId, { trackingNumber, courierKey, estimatedDelivery }) {
-  const courier = COURIERS[courierKey]
-  if (!courier) throw new Error('Invalid courier selection')
+  const courier = await prisma.shippingMethod.findUnique({ where: { key: courierKey } })
+  if (!courier || !courier.active) throw new Error('Invalid courier selection')
 
   return await prisma.$transaction(async (tx) => {
     // 1. Update Order
     const order = await tx.order.update({
       where: { id: orderId },
       data: {
-        status: 'SHIPPED',
+        status: 'shipped',
         trackingNumber,
         courierName: courier.name,
         shippedAt: new Date(),
@@ -36,6 +40,31 @@ export async function fulfillOrder(orderId, { trackingNumber, courierKey, estima
     })
 
     return order
+  })
+}
+
+// Appends a subsequent tracking event (SHIPPED only ever writes the first —
+// this is the only way to record OUT_FOR_DELIVERY/DELIVERED/etc afterward).
+// Optionally advances Order.status/shippingStatus to keep the summary fields
+// in sync with the latest event.
+export async function addTrackingEvent(orderId, { status, message, location, advanceOrderStatus }) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({ where: { id: orderId } })
+    if (!order) throw Object.assign(new Error('Order not found'), { status: 404 })
+
+    const event = await tx.logisticsEvent.create({
+      data: { orderId, status, message: message || null, location: location || null }
+    })
+
+    if (advanceOrderStatus) {
+      const data = { shippingStatus: status }
+      if (status === 'DELIVERED') {
+        data.status = 'delivered'
+      }
+      await tx.order.update({ where: { id: orderId }, data })
+    }
+
+    return event
   })
 }
 

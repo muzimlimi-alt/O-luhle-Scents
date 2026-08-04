@@ -27,6 +27,7 @@ import {
   Cog,
   Layout,
   Sliders,
+  Percent,
   Search,
   ChevronDown,
   LogOut
@@ -87,6 +88,8 @@ const NAV = [
       { path: '/settings', label: 'Settings', icon: <Cog size={16} /> },
       { path: '/content', label: 'Site Content', icon: <Layout size={16} /> },
       { path: '/preferences', label: 'Preferences', icon: <Sliders size={16} /> },
+      { path: '/shipping-methods', label: 'Shipping Methods', icon: <Truck size={16} /> },
+      { path: '/tax-rates', label: 'Tax Rates', icon: <Percent size={16} /> },
     ]
   },
 ];

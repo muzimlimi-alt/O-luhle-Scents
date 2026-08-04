@@ -150,13 +150,28 @@
           <div class="cart-summary">
             <h3>Order Summary</h3>
             <div class="checkout-items" id="checkout-items"></div>
-            <div class="cart-summary__row" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--color-border-light);">
+
+            <div style="display:flex;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--color-border-light);">
+              <input type="text" id="coupon-code" placeholder="Coupon code" style="flex:1;padding:8px 10px;border:1px solid var(--color-border);border-radius:var(--radius);font-size:0.82rem;text-transform:uppercase;">
+              <button type="button" id="apply-coupon-btn" class="btn btn--outline-dark btn--sm">Apply</button>
+            </div>
+            <p id="coupon-feedback" style="display:none;font-size:0.75rem;margin:6px 0 0;"></p>
+
+            <div class="cart-summary__row" style="margin-top:12px;">
               <span>Subtotal</span>
               <span class="checkout-subtotal">R0</span>
+            </div>
+            <div class="cart-summary__row checkout-discount-row" style="display:none;color:#2e7d32;">
+              <span>Discount</span>
+              <span class="checkout-discount-val">-R0</span>
             </div>
             <div class="cart-summary__row">
               <span>Shipping</span>
               <span class="checkout-shipping-val">R99</span>
+            </div>
+            <div class="cart-summary__row checkout-tax-row" style="display:none;">
+              <span class="checkout-tax-label">Tax</span>
+              <span class="checkout-tax-val">R0</span>
             </div>
             <div class="cart-summary__row cart-summary__row--total">
               <span>Total</span>
@@ -180,7 +195,7 @@
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
   <script type="module">
-    import { createOrder } from './js/api.js';
+    import { createOrder, getOrderPreview, getShippingEstimate } from './js/api.js';
     import { trackBeginCheckout } from './js/analytics.js';
 
     function getPlaceholderImage(name) {
@@ -305,25 +320,109 @@
         }
       }
 
-      function updateSummaryTotals() {
-        const subtotal = cart.reduce((s, i) => {
+      // --- Coupon + Tax preview ---
+      // Discount and tax are computed server-side (via /api/orders/preview,
+      // the same couponService/taxService the real order-creation path uses)
+      // so these numbers can never drift from what actually gets charged.
+      // Shipping stays the client-selected delivery-method price, unchanged —
+      // calculateShipping() has no per-method pricing yet, so this preview
+      // deliberately doesn't touch the shipping line.
+      let appliedCouponCode = null;
+      let previewDiscount = 0;
+      let previewTax = 0;
+      let previewTaxLabel = 'Tax';
+
+      function currentSubtotal() {
+        return cart.reduce((s, i) => {
           const itemPrice = parseFloat(i.price) || 0;
           const itemQty   = parseInt(i.qty || i.quantity) || 0;
           return s + (itemPrice * itemQty);
         }, 0);
-        
-        const subtotalEl = document.querySelector('.checkout-subtotal');
-        const totalEl    = document.querySelector('.checkout-total');
-        const shippingEl = document.querySelector('.checkout-shipping-val');
+      }
+
+      async function refreshPricingPreview() {
+        if (cart.length === 0) { previewDiscount = 0; previewTax = 0; return; }
+        const province = document.getElementById('province')?.value || '';
+        const postalCode = document.getElementById('postal')?.value.trim() || '';
+        try {
+          const preview = await getOrderPreview({
+            items: cart.map(i => ({ variantId: i.variantId, quantity: parseInt(i.qty || i.quantity) })),
+            couponCode: appliedCouponCode || undefined,
+            shipping: { country: 'South Africa', province, postalCode }
+          });
+          previewDiscount = preview.discountAmount || 0;
+          previewTax = preview.taxAmount || 0;
+          previewTaxLabel = preview.taxRateName ? `Tax (${preview.taxRateName})` : 'Tax';
+
+          const feedbackEl = document.getElementById('coupon-feedback');
+          if (appliedCouponCode && feedbackEl) {
+            if (preview.couponError) {
+              feedbackEl.textContent = preview.couponError;
+              feedbackEl.style.color = '#c0392b';
+              feedbackEl.style.display = 'block';
+              appliedCouponCode = null;
+              previewDiscount = 0;
+            } else {
+              feedbackEl.textContent = `Coupon "${preview.couponCode}" applied.`;
+              feedbackEl.style.color = '#2e7d32';
+              feedbackEl.style.display = 'block';
+            }
+          }
+        } catch (err) {
+          console.error('Pricing preview failed', err);
+          previewDiscount = 0;
+          previewTax = 0;
+        }
+      }
+
+      function updateSummaryTotals() {
+        const subtotal = currentSubtotal();
+
+        const subtotalEl  = document.querySelector('.checkout-subtotal');
+        const totalEl     = document.querySelector('.checkout-total');
+        const shippingEl  = document.querySelector('.checkout-shipping-val');
+        const discountRow = document.querySelector('.checkout-discount-row');
+        const discountEl  = document.querySelector('.checkout-discount-val');
+        const taxRow      = document.querySelector('.checkout-tax-row');
+        const taxEl       = document.querySelector('.checkout-tax-val');
+        const taxLabelEl  = document.querySelector('.checkout-tax-label');
 
         if (subtotalEl) subtotalEl.textContent = `R${subtotal.toLocaleString()}`;
         if (shippingEl) shippingEl.textContent = `R${shippingCost.toLocaleString()}`;
-        if (totalEl)    totalEl.textContent    = `R${(subtotal + shippingCost).toLocaleString()}`;
+
+        if (discountRow) discountRow.style.display = previewDiscount > 0 ? 'flex' : 'none';
+        if (discountEl)  discountEl.textContent = `-R${previewDiscount.toLocaleString()}`;
+
+        if (taxRow) taxRow.style.display = previewTax > 0 ? 'flex' : 'none';
+        if (taxEl)  taxEl.textContent = `R${previewTax.toLocaleString()}`;
+        if (taxLabelEl) taxLabelEl.textContent = previewTaxLabel;
+
+        const total = subtotal - previewDiscount + previewTax + shippingCost;
+        if (totalEl) totalEl.textContent = `R${total.toLocaleString()}`;
       }
 
+      async function refreshAndRenderTotals() {
+        await refreshPricingPreview();
+        updateSummaryTotals();
+      }
+
+      document.getElementById('apply-coupon-btn')?.addEventListener('click', () => {
+        const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+        const feedbackEl = document.getElementById('coupon-feedback');
+        if (!code) {
+          if (feedbackEl) { feedbackEl.style.display = 'none'; }
+          appliedCouponCode = null;
+          refreshAndRenderTotals();
+          return;
+        }
+        appliedCouponCode = code;
+        refreshAndRenderTotals();
+      });
+
       renderCheckoutItems();
-      document.getElementById('postal')?.addEventListener('blur', updateShippingEstimate);
-      document.getElementById('province')?.addEventListener('change', updateShippingEstimate);
+      refreshAndRenderTotals();
+      document.getElementById('postal')?.addEventListener('blur', () => { updateShippingEstimate(); refreshAndRenderTotals(); });
+      document.getElementById('province')?.addEventListener('change', () => { updateShippingEstimate(); refreshAndRenderTotals(); });
 
 
       // --- Place Order ---
@@ -366,6 +465,7 @@
             contact: { email, phone },
             shipping: { firstName, lastName, street, city, province, postalCode, country: 'South Africa' },
             shippingMethod,
+            couponCode: appliedCouponCode || undefined,
             newsletterOptIn,
           });
 

@@ -7,6 +7,8 @@ import { sendNewsletterConfirmation } from '../utils/email.js'
 
 import { calculateShipping } from '../lib/shippingService.js'
 import { reserveStock, RESERVATION_HOLD_MINUTES, InsufficientStockError } from '../lib/inventoryService.js'
+import { validateCoupon, incrementCouponUsage } from '../lib/couponService.js'
+import { resolveTaxRate, calculateTax } from '../lib/taxService.js'
 
 const router = Router()
 
@@ -43,6 +45,57 @@ router.get('/shipping/estimate', async (req, res, next) => {
     const { country = 'South Africa', postalCode, subtotal } = req.query
     const cost = await calculateShipping(country, postalCode || '', subtotal || 0)
     res.json({ cost })
+  } catch (err) { next(err) }
+})
+
+// POST /api/orders/preview — public: live price breakdown for the checkout
+// summary (subtotal/discount/tax/shipping/total) before the customer commits
+// to a payment redirect. Reuses the same couponService/taxService/
+// shippingService the real order creation below uses, so the numbers shown
+// here can never drift from what actually gets charged.
+router.post('/preview', async (req, res, next) => {
+  try {
+    const { items, couponCode, shipping } = req.body
+    if (!items?.length) return res.status(400).json({ error: 'Cart is empty' })
+
+    const variantIds = items.map(i => i.variantId).filter(Boolean)
+    const variants = await prisma.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      include: { product: true }
+    })
+    if (variants.length !== variantIds.length) {
+      return res.status(400).json({ error: 'One or more items are no longer available.' })
+    }
+
+    let subtotal = 0
+    for (const cartItem of items) {
+      const variant = variants.find(v => v.id === cartItem.variantId)
+      subtotal += Number(variant.price) * cartItem.quantity
+    }
+
+    let discountAmount = 0
+    let couponError = null
+    let appliedCouponCode = null
+    if (couponCode) {
+      try {
+        const result = await validateCoupon(couponCode, subtotal)
+        discountAmount = result?.discountAmount || 0
+        appliedCouponCode = result?.coupon.code || null
+      } catch (err) {
+        couponError = err.message
+      }
+    }
+
+    const taxRate = await resolveTaxRate(shipping?.province)
+    const taxAmount = calculateTax(taxRate, subtotal - discountAmount)
+    const shippingCost = await calculateShipping(shipping?.country || 'South Africa', shipping?.postalCode || '', subtotal)
+    const totalAmount = subtotal - discountAmount + taxAmount + shippingCost
+
+    res.json({
+      subtotal, discountAmount, taxAmount, shippingCost, totalAmount,
+      couponCode: appliedCouponCode, couponError,
+      taxRateName: taxRate?.name || null
+    })
   } catch (err) { next(err) }
 })
 
@@ -92,9 +145,23 @@ router.post('/', async (req, res, next) => {
       }
     })
 
+    // Coupon (optional) — validated against expiry/usage-limit, same logic
+    // the admin order-creation flow uses, so the two paths can't drift apart.
+    let appliedCoupon = null
+    let discountAmount = 0
+    if (req.body.couponCode) {
+      appliedCoupon = await validateCoupon(req.body.couponCode, subtotal)
+      discountAmount = appliedCoupon?.discountAmount || 0
+    }
+
+    // Tax — 0 unless an admin has configured an active/default TaxRate, so
+    // this preserves today's no-tax checkout until one exists.
+    const taxRate = await resolveTaxRate(shipping.province)
+    const taxAmount = calculateTax(taxRate, subtotal - discountAmount)
+
     // Dynamic Shipping
     const shippingCost = await calculateShipping(shipping.country || 'South Africa', shipping.postalCode || '', subtotal)
-    const totalAmount = subtotal + shippingCost
+    const totalAmount = subtotal - discountAmount + taxAmount + shippingCost
 
     // 3. Create/Update Customer & Store Order in Transaction
     const reservationExpiresAt = new Date(Date.now() + RESERVATION_HOLD_MINUTES * 60 * 1000)
@@ -128,6 +195,10 @@ router.post('/', async (req, res, next) => {
           shippingAddressId: address.id,
           totalAmount: totalAmount,
           shippingCost: shippingCost,
+          couponId: appliedCoupon?.coupon.id || null,
+          discountAmount,
+          taxRateId: taxRate?.id || null,
+          taxAmount,
           status: 'pending',
           paymentStatus: 'unpaid',
           notes: req.body.notes || '',
@@ -136,6 +207,8 @@ router.post('/', async (req, res, next) => {
           }
         }
       })
+
+      if (appliedCoupon) await incrementCouponUsage(tx, appliedCoupon.coupon.id)
 
       // Hold stock for every line item. This is the real guard against the
       // oversell race (the check above is just a fast, friendly rejection) —
@@ -187,7 +260,10 @@ router.get('/:id', async (req, res, next) => {
       where: { id: req.params.id },
       include: {
         items: { include: { variant: { include: { product: true } }, returnItems: true } },
-        shippingAddress: true
+        shippingAddress: true,
+        logisticsEvents: { orderBy: { createdAt: 'desc' } },
+        coupon: true,
+        taxRate: true
       },
     })
     if (!order) return res.status(404).json({ error: 'Order not found' })
@@ -216,7 +292,7 @@ router.get('/', requireAdmin, async (req, res, next) => {
   }
 })
 
-import { fulfillOrder } from '../lib/logisticsService.js'
+import { fulfillOrder, addTrackingEvent } from '../lib/logisticsService.js'
 import { sendWhatsAppNotification } from '../lib/invoiceService.js'
 
 // PATCH /api/orders/:id/fulfill — admin: fulfill and ship
@@ -245,8 +321,11 @@ router.patch('/:id/fulfill', requireAdmin, async (req, res, next) => {
 // PATCH /api/orders/:id/status — admin: update order status
 router.patch('/:id/status', requireAdmin, async (req, res, next) => {
   try {
-    const validStatuses = ['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']
-    const { status } = req.body
+    // Every other status field in the app is lowercase (pending/paid/...) —
+    // normalize here so a stray uppercase value from an older client can't
+    // slip a mismatched-casing status back in.
+    const validStatuses = ['processing', 'shipped', 'delivered', 'cancelled']
+    const status = String(req.body.status || '').toLowerCase()
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` })
     }
@@ -254,11 +333,47 @@ router.patch('/:id/status', requireAdmin, async (req, res, next) => {
       where: { id: req.params.id },
       data: { status },
     })
+
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'UPDATE_ORDER_STATUS', entity: 'Order', entityId: order.id, details: { status } }
+    })
+
     res.json(order)
   } catch (err) {
     next(err)
   }
 })
 
+// PATCH /api/orders/:id/notes — admin: set internal notes
+router.patch('/:id/notes', requireAdmin, async (req, res, next) => {
+  try {
+    const order = await prisma.order.update({
+      where: { id: req.params.id },
+      data: { internalNotes: req.body.internalNotes ?? null },
+    })
+    res.json(order)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/orders/:id/tracking-events — admin: append a tracking event
+router.post('/:id/tracking-events', requireAdmin, async (req, res, next) => {
+  try {
+    const { status, message, location, advanceOrderStatus } = req.body
+    if (!status?.trim()) return res.status(400).json({ error: 'status is required' })
+
+    const event = await addTrackingEvent(req.params.id, { status: status.trim(), message, location, advanceOrderStatus: !!advanceOrderStatus })
+
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'ADD_TRACKING_EVENT', entity: 'Order', entityId: req.params.id, details: { status } }
+    })
+
+    res.status(201).json(event)
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
 
 export default router

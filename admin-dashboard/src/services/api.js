@@ -77,13 +77,15 @@ export const ordersApi = {
   updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
   getDetail: (id) => api.get(`/orders/${id}`),
   fulfill: (id, data) => api.patch(`/orders/${id}/fulfill`, data),
+  updateNotes: (id, internalNotes) => api.patch(`/orders/${id}/notes`, { internalNotes }),
+  addTrackingEvent: (id, data) => api.post(`/orders/${id}/tracking-events`, data),
 };
 
 
 export const quotesApi = {
   list: () => api.get('/quotes/admin'),
   updateStatus: (id, status) => api.patch(`/quotes/admin/${id}/status`, { status }),
-  convert: (id) => api.post(`/quotes/admin/${id}/convert`),
+  convert: (id, data) => api.post(`/quotes/admin/${id}/convert`, data),
 };
 
 export const settingsApi = {
@@ -185,7 +187,30 @@ export const adminOpsApi = {
   returns: {
     list: () => api.get('/admin/ops/returns'),
     create: (data) => api.post('/admin/ops/returns', data),
-  }
+  },
+  orders: {
+    create: (data) => api.post('/admin/ops/orders', data),
+    getDetail: (id) => api.get(`/admin/ops/orders/${id}`),
+    recordPayment: (id, data) => api.post(`/admin/ops/orders/${id}/payments`, data),
+    issueRefund: (id, data) => api.post(`/admin/ops/orders/${id}/refunds`, data),
+  },
+  exchanges: {
+    list: () => api.get('/admin/ops/exchanges'),
+    create: (data) => api.post('/admin/ops/exchanges', data),
+  },
+  couponValidate: (code, subtotal) => api.post('/admin/ops/coupons/validate', { code, subtotal }),
+  shippingMethods: {
+    list: () => api.get('/admin/ops/shipping-methods'),
+    create: (data) => api.post('/admin/ops/shipping-methods', data),
+    update: (id, data) => api.patch(`/admin/ops/shipping-methods/${id}`, data),
+    delete: (id) => api.delete(`/admin/ops/shipping-methods/${id}`),
+  },
+  taxRates: {
+    list: () => api.get('/admin/ops/tax-rates'),
+    create: (data) => api.post('/admin/ops/tax-rates', data),
+    update: (id, data) => api.patch(`/admin/ops/tax-rates/${id}`, data),
+    delete: (id) => api.delete(`/admin/ops/tax-rates/${id}`),
+  },
 };
 
 export const newsletterApi = {

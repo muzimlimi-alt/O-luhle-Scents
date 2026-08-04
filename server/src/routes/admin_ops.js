@@ -10,6 +10,9 @@ import nodemailer from 'nodemailer'
 import { adjustStock } from '../lib/inventoryService.js'
 import { processReturn, RETURN_CONDITIONS } from '../lib/returnsService.js'
 import { getFinanceSummary } from '../lib/financeService.js'
+import { createAdminOrder, recordPayment, issueRefund } from '../lib/orderAdminService.js'
+import { createExchange } from '../lib/exchangeService.js'
+import { validateCoupon } from '../lib/couponService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const router = Router()
@@ -962,6 +965,230 @@ router.get('/reports/finance-summary', requireAdmin, async (req, res, next) => {
     const period = FINANCE_PERIODS.includes(req.query.period) ? req.query.period : '30d'
     const summary = await getFinanceSummary(period)
     res.json(summary)
+  } catch (err) { next(err) }
+})
+
+// ─── ORDER MANAGEMENT ────────────────────────────────────────────────────────
+// Admin-initiated orders, payments, refunds — the admin-side counterpart to
+// the public checkout in orders.js. See orderAdminService.js for the shared
+// transaction logic.
+router.post('/orders', requireAdmin, async (req, res, next) => {
+  try {
+    const order = await createAdminOrder({ ...req.body, adminUserId: req.adminId })
+    res.status(201).json(order)
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
+
+// GET /admin/ops/orders/:id — full detail view (admin-only; the public
+// GET /api/orders/:id stays lean/safe since it has no auth). Everything an
+// Order Details page needs in one round trip.
+router.get('/orders/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      include: {
+        customer: true,
+        shippingAddress: true,
+        billingAddress: true,
+        coupon: true,
+        taxRate: true,
+        items: { include: { variant: { include: { product: true } }, returnItems: { include: { exchangeRequests: true, refunds: true } } } },
+        payments: { orderBy: { createdAt: 'desc' } },
+        invoices: { orderBy: { issuedDate: 'desc' } },
+        refunds: { orderBy: { createdAt: 'desc' } },
+        paymentMilestones: { orderBy: { dueDate: 'asc' } },
+        logisticsEvents: { orderBy: { createdAt: 'desc' } },
+        quote: true,
+      }
+    })
+    if (!order) return res.status(404).json({ error: 'Order not found' })
+
+    const auditLogs = await prisma.auditLog.findMany({
+      where: { entity: 'Order', entityId: order.id },
+      include: { adminUser: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    res.json({ ...order, auditLogs })
+  } catch (err) { next(err) }
+})
+
+router.post('/orders/:id/payments', requireAdmin, async (req, res, next) => {
+  try {
+    const { method, amount, reference } = req.body
+    const amt = parseFloat(amount)
+    if (!method || !Number.isFinite(amt) || amt <= 0) {
+      return res.status(400).json({ error: 'method and a positive amount are required' })
+    }
+    const result = await recordPayment(req.params.id, { method, amount: amt, reference, adminUserId: req.adminId })
+    res.status(201).json(result)
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
+
+router.post('/orders/:id/refunds', requireAdmin, async (req, res, next) => {
+  try {
+    const { amount, method, returnItemId, notes } = req.body
+    const amt = parseFloat(amount)
+    if (!method || !Number.isFinite(amt) || amt <= 0) {
+      return res.status(400).json({ error: 'method and a positive amount are required' })
+    }
+    const refund = await issueRefund(req.params.id, { amount: amt, method, returnItemId, notes, adminUserId: req.adminId })
+    res.status(201).json(refund)
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
+
+// ─── EXCHANGES ───────────────────────────────────────────────────────────────
+router.post('/exchanges', requireAdmin, async (req, res, next) => {
+  try {
+    const { returnItemId, replacementVariantId } = req.body
+    if (!returnItemId || !replacementVariantId) {
+      return res.status(400).json({ error: 'returnItemId and replacementVariantId are required' })
+    }
+    const exchange = await createExchange({ returnItemId, replacementVariantId, adminUserId: req.adminId })
+    res.status(201).json(exchange)
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
+
+router.get('/exchanges', requireAdmin, async (req, res, next) => {
+  try {
+    const exchanges = await prisma.exchangeRequest.findMany({
+      include: {
+        returnItem: { include: { orderItem: { include: { order: true } } } },
+        replacementVariant: { include: { product: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(exchanges)
+  } catch (err) { next(err) }
+})
+
+// ─── COUPONS: validation preview ─────────────────────────────────────────────
+// Used by the Create Order flow to preview a discount before submitting —
+// doesn't increment usedCount (that only happens once an order is actually
+// created, via incrementCouponUsage).
+router.post('/coupons/validate', requireAdmin, async (req, res, next) => {
+  try {
+    const { code, subtotal } = req.body
+    const result = await validateCoupon(code, parseFloat(subtotal) || 0)
+    if (!result) return res.status(400).json({ error: 'Coupon code is required' })
+    res.json({ code: result.coupon.code, discountAmount: result.discountAmount })
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
+
+// ─── SHIPPING METHODS ────────────────────────────────────────────────────────
+// Admin-configurable courier list — replaces what used to be a hardcoded map
+// in logisticsService.js. See that file for how fulfillOrder() reads this.
+router.get('/shipping-methods', requireAdmin, async (req, res, next) => {
+  try {
+    const methods = await prisma.shippingMethod.findMany({ orderBy: { name: 'asc' } })
+    res.json(methods)
+  } catch (err) { next(err) }
+})
+
+router.post('/shipping-methods', requireAdmin, async (req, res, next) => {
+  try {
+    const { key, name, trackingUrlTemplate, estimatedDays } = req.body
+    if (!key?.trim() || !name?.trim()) return res.status(400).json({ error: 'key and name are required' })
+    const method = await prisma.shippingMethod.create({
+      data: {
+        key: key.trim().toUpperCase().replace(/\s+/g, '_'),
+        name: name.trim(),
+        trackingUrlTemplate: trackingUrlTemplate || null,
+        estimatedDays: estimatedDays ? parseInt(estimatedDays) : null
+      }
+    })
+    res.status(201).json(method)
+  } catch (err) { next(err) }
+})
+
+router.patch('/shipping-methods/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const { name, trackingUrlTemplate, estimatedDays, active } = req.body
+    const method = await prisma.shippingMethod.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(trackingUrlTemplate !== undefined && { trackingUrlTemplate }),
+        ...(estimatedDays !== undefined && { estimatedDays: estimatedDays ? parseInt(estimatedDays) : null }),
+        ...(active !== undefined && { active: !!active }),
+      }
+    })
+    res.json(method)
+  } catch (err) { next(err) }
+})
+
+router.delete('/shipping-methods/:id', requireAdmin, async (req, res, next) => {
+  try {
+    // Soft-disable rather than hard-delete — existing orders' courierName is
+    // a frozen string snapshot, but keeping the row avoids ever losing which
+    // key a historical fulfillment actually used.
+    const method = await prisma.shippingMethod.update({ where: { id: req.params.id }, data: { active: false } })
+    res.json(method)
+  } catch (err) { next(err) }
+})
+
+// ─── TAX RATES ───────────────────────────────────────────────────────────────
+router.get('/tax-rates', requireAdmin, async (req, res, next) => {
+  try {
+    const rates = await prisma.taxRate.findMany({ orderBy: { name: 'asc' } })
+    res.json(rates)
+  } catch (err) { next(err) }
+})
+
+router.post('/tax-rates', requireAdmin, async (req, res, next) => {
+  try {
+    const { name, rate, region, isDefault } = req.body
+    if (!name?.trim() || rate === undefined) return res.status(400).json({ error: 'name and rate are required' })
+
+    const result = await prisma.$transaction(async (tx) => {
+      if (isDefault) await tx.taxRate.updateMany({ data: { isDefault: false }, where: { isDefault: true } })
+      return tx.taxRate.create({
+        data: { name: name.trim(), rate: parseFloat(rate), region: region || null, isDefault: !!isDefault }
+      })
+    })
+    res.status(201).json(result)
+  } catch (err) { next(err) }
+})
+
+router.patch('/tax-rates/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const { name, rate, region, isDefault, active } = req.body
+    const result = await prisma.$transaction(async (tx) => {
+      if (isDefault) await tx.taxRate.updateMany({ data: { isDefault: false }, where: { isDefault: true } })
+      return tx.taxRate.update({
+        where: { id: req.params.id },
+        data: {
+          ...(name !== undefined && { name }),
+          ...(rate !== undefined && { rate: parseFloat(rate) }),
+          ...(region !== undefined && { region }),
+          ...(isDefault !== undefined && { isDefault: !!isDefault }),
+          ...(active !== undefined && { active: !!active }),
+        }
+      })
+    })
+    res.json(result)
+  } catch (err) { next(err) }
+})
+
+router.delete('/tax-rates/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const rate = await prisma.taxRate.update({ where: { id: req.params.id }, data: { active: false, isDefault: false } })
+    res.json(rate)
   } catch (err) { next(err) }
 })
 

@@ -24,6 +24,8 @@ import { Preferences } from './pages/Preferences';
 import { Content } from './pages/Content';
 import { Login } from './pages/Login';
 import { Newsletters } from './pages/Newsletters';
+import { ShippingMethods } from './pages/ShippingMethods';
+import { TaxRates } from './pages/TaxRates';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
 
@@ -93,6 +95,8 @@ function App() {
               <Route path="audit-logs" element={<AuditLogs />} />
               <Route path="preferences" element={<Preferences />} />
               <Route path="content" element={<Content />} />
+              <Route path="shipping-methods" element={<ShippingMethods />} />
+              <Route path="tax-rates" element={<TaxRates />} />
               <Route path="config" element={<Navigate to="/settings" replace />} />
             </Route>
             

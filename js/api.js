@@ -148,6 +148,13 @@ export function getShippingEstimate(country, postalCode, subtotal) {
   return apiFetch(`/api/orders/shipping/estimate?${qs}`)
 }
 
+// Live coupon/tax preview shown in the checkout summary before payment —
+// see POST /api/orders/preview for why shipping cost isn't part of this
+// (that stays the client-selected delivery-method price for now).
+export function getOrderPreview(payload) {
+  return apiFetch('/api/orders/preview', { method: 'POST', body: JSON.stringify(payload) })
+}
+
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 

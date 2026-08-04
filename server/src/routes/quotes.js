@@ -4,6 +4,8 @@ import prisma from '../lib/prisma.js'
 import { requireAdmin, requireAuth } from '../middleware/auth.js'
 import { generateQuotePDF } from '../lib/quoteService.js'
 import { DateTime } from 'luxon'
+import { adjustStock } from '../lib/inventoryService.js'
+import { MANUAL_PAYMENT_METHODS } from '../lib/orderAdminService.js'
 
 const router = Router()
 
@@ -93,17 +95,30 @@ router.patch('/admin/:id/status', requireAdmin, async (req, res, next) => {
 })
 
 // POST /api/admin/ops/quotes/:id/convert — admin: quote to order
+//
+// Historically this force-set the new order to paid/paid with no Payment
+// row ever created — a real data-integrity gap (an order claiming to be
+// paid with zero payment history). Now: pass { paymentMethod, paymentReference }
+// to record a real payment and mark it paid immediately; omit them and the
+// order is created as an honest "processing / unpaid" B2B order instead —
+// never a fabricated "paid" status. Either way, stock is decremented (this
+// didn't happen at all before).
 router.post('/admin/:id/convert', requireAdmin, async (req, res, next) => {
   try {
     const quoteId = req.params.id
+    const { paymentMethod, paymentReference } = req.body || {}
+    if (paymentMethod && !MANUAL_PAYMENT_METHODS.includes(paymentMethod)) {
+      return res.status(400).json({ error: `paymentMethod must be one of: ${MANUAL_PAYMENT_METHODS.join(', ')}` })
+    }
+
     const result = await prisma.$transaction(async (tx) => {
        const quote = await tx.quote.findUnique({
          where: { id: quoteId },
-         include: { items: { include: { variant: true } }, customer: { include: { addresses: true } } }
+         include: { items: { include: { variant: { include: { product: true } } } }, customer: { include: { addresses: true } } }
        })
 
-       if (!quote) throw new Error('Quote not found')
-       if (quote.status === 'converted') throw new Error('Quote already converted')
+       if (!quote) throw Object.assign(new Error('Quote not found'), { status: 404 })
+       if (quote.status === 'converted') throw Object.assign(new Error('Quote already converted'), { status: 400 })
 
        // 1. Create Order
        const order = await tx.order.create({
@@ -111,8 +126,8 @@ router.post('/admin/:id/convert', requireAdmin, async (req, res, next) => {
            customerId: quote.customerId,
            quoteId: quote.id,
            totalAmount: quote.totalAmount,
-           status: 'paid', // Assuming B2B approval implies payment agreement
-           paymentStatus: 'paid',
+           status: paymentMethod ? 'paid' : 'processing',
+           paymentStatus: paymentMethod ? 'paid' : 'unpaid',
            shippingCost: 0, // Manual adjustment if needed
            items: {
              create: quote.items.map(i => ({
@@ -131,7 +146,35 @@ router.post('/admin/:id/convert', requireAdmin, async (req, res, next) => {
          }
        })
 
-       // 2. Mark Quote as Converted
+       // 2. Decrement stock — a confirmed B2B sale, same as any other order.
+       for (const item of quote.items) {
+         if (!item.variantId) continue
+         await adjustStock(tx, {
+           variantId: item.variantId,
+           delta: -item.quantity,
+           changeType: 'SALE',
+           reason: `Quote ${quote.quoteNumber} converted to Order ${order.id.split('-')[0].toUpperCase()}`,
+           referenceId: order.id,
+           productName: item.productNameSnapshot || item.variant?.product?.name,
+           variantSize: item.variantLabelSnapshot || item.variant?.size
+         })
+       }
+
+       // 3. Record a real payment if one was provided at conversion time.
+       if (paymentMethod) {
+         await tx.payment.create({
+           data: {
+             orderId: order.id,
+             paymentMethod,
+             paymentStatus: 'COMPLETE',
+             transactionReference: paymentReference || null,
+             amount: quote.totalAmount,
+             paidAt: new Date()
+           }
+         })
+       }
+
+       // 4. Mark Quote as Converted
        await tx.quote.update({
          where: { id: quoteId },
          data: { status: 'converted' }
@@ -140,7 +183,10 @@ router.post('/admin/:id/convert', requireAdmin, async (req, res, next) => {
        return order
     })
     res.json(result)
-  } catch (err) { next(err) }
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
 })
 
 export default router
