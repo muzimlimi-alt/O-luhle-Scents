@@ -12,6 +12,7 @@ import webhookRoutes from './routes/webhooks.js'
 import categoryRoutes from './routes/categories.js'
 import adminRoutes from './routes/admin.js'
 import adminOpsRoutes from './routes/admin_ops.js'
+import analyticsRoutes from './routes/analytics.js'
 import trackingRoutes from './routes/tracking.js'
 import quoteRoutes from './routes/quotes.js'
 import settingsRoutes from './routes/settings.js'
@@ -63,6 +64,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/admin/ops', adminOpsRoutes)
+app.use('/api/admin/analytics', analyticsRoutes)
 
 app.use('/api/categories', categoryRoutes)
 app.use('/api/webhooks', webhookRoutes)

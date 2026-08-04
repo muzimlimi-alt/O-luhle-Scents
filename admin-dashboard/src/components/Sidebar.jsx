@@ -1,9 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  BarChart3, 
-  Package, 
+  LayoutDashboard,
+  Package,
   Boxes, 
   ShoppingCart, 
   CreditCard, 
@@ -26,7 +25,6 @@ import { useAuth } from '../context/AuthContext';
 
 const sidebarLinks = [
   { path: '/', label: 'Overview', icon: <LayoutDashboard size={18} /> },
-  { path: '/analytics', label: 'Analytics', icon: <BarChart3 size={18} /> },
   { path: '/orders', label: 'Orders', icon: <ShoppingCart size={18} /> },
   { path: '/payments', label: 'Payments', icon: <CreditCard size={18} /> },
   { path: '/products', label: 'Products', icon: <Package size={18} /> },

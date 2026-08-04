@@ -104,6 +104,7 @@ export const metricsApi = {
   predictions: () => api.get('/admin/metrics/predictions'),
   abandoned: () => api.get('/admin/metrics/abandoned'),
   sendRecovery: (orderId) => api.post(`/admin/ops/email/abandoned/${orderId}`),
+  analytics: (period) => api.get('/admin/analytics', { params: { period } }),
 };
 
 

@@ -45,11 +45,11 @@ router.get('/', requireAdmin, async (req, res, next) => {
     // Using $queryRaw for date truncation — Prisma groupBy doesn't support it.
     const dailyRaw = await prisma.$queryRaw`
       SELECT
-        date_trunc('day', "createdAt" AT TIME ZONE 'UTC')::date AS day,
+        date_trunc('day', "created_at" AT TIME ZONE 'UTC')::date AS day,
         COUNT(*)::int                                            AS count,
-        COALESCE(SUM("totalAmount"), 0)::float                  AS revenue
-      FROM "Order"
-      WHERE "createdAt" >= ${since}
+        COALESCE(SUM("total_amount"), 0)::float                 AS revenue
+      FROM "orders"
+      WHERE "created_at" >= ${since}
       GROUP BY day
       ORDER BY day ASC
     `
@@ -60,28 +60,47 @@ router.get('/', requireAdmin, async (req, res, next) => {
     }))
 
     // ── 4. Top 5 products by units sold (all time) ────────────────────────────
-    const topProductsRaw = await prisma.orderItem.groupBy({
-      by:      ['productId'],
-      _sum:    { quantity: true, price: true },
-      orderBy: { _sum: { quantity: 'desc' } },
-      take:    5,
+    // OrderItem has no productId/price column (grouped by variantId, with
+    // priceAtPurchase per unit) — and quantity*price aggregation isn't
+    // something Prisma's groupBy can express, so this is summed in JS.
+    // Uses the frozen productNameSnapshot/skuSnapshot rather than a live
+    // Product join, matching how the rest of the codebase treats historical
+    // line items (a renamed/deleted product must not rewrite past analytics).
+    const allItems = await prisma.orderItem.findMany({
+      select: {
+        variantId: true,
+        quantity: true,
+        priceAtPurchase: true,
+        productNameSnapshot: true,
+        skuSnapshot: true,
+        variant: { select: { sku: true, product: { select: { name: true } } } },
+      },
     })
 
-    // Enrich with product name + SKU
-    const productIds = topProductsRaw.map(r => r.productId)
-    const products   = await prisma.product.findMany({
-      where:  { id: { in: productIds } },
-      select: { id: true, name: true, sku: true },
-    })
-    const productMap = Object.fromEntries(products.map(p => [p.id, p]))
+    const byVariant = {}
+    for (const item of allItems) {
+      const key = item.variantId || item.skuSnapshot || item.productNameSnapshot
+      if (!key) continue
+      if (!byVariant[key]) {
+        // Snapshot fields are only populated from PIM Phase 1 onward — older
+        // rows fall back to the live variant/product relation (per the
+        // schema's own comment), and only read "(deleted)" once both the
+        // snapshot and the live relation are gone.
+        byVariant[key] = {
+          variantId:    item.variantId,
+          name:         item.productNameSnapshot || item.variant?.product?.name || '(deleted)',
+          sku:          item.skuSnapshot || item.variant?.sku || '—',
+          totalUnits:   0,
+          totalRevenue: 0,
+        }
+      }
+      byVariant[key].totalUnits   += item.quantity
+      byVariant[key].totalRevenue += item.quantity * Number(item.priceAtPurchase)
+    }
 
-    const topProducts = topProductsRaw.map(r => ({
-      productId:    r.productId,
-      name:         productMap[r.productId]?.name  || '(deleted)',
-      sku:          productMap[r.productId]?.sku   || '—',
-      totalUnits:   r._sum.quantity || 0,
-      totalRevenue: r._sum.price    || 0,
-    }))
+    const topProducts = Object.values(byVariant)
+      .sort((a, b) => b.totalUnits - a.totalUnits)
+      .slice(0, 5)
 
     // ── 5. This month vs last month revenue (growth) ──────────────────────────
     const now          = new Date()
@@ -111,6 +130,33 @@ router.get('/', requireAdmin, async (req, res, next) => {
       ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100)
       : null
 
+    // ── 6. Customer retention — of customers who ordered within the selected
+    //      period, what fraction had already ordered at least once before it ──
+    const recentCustomers = await prisma.order.findMany({
+      where:    { createdAt: { gte: since }, customerId: { not: null } },
+      select:   { customerId: true },
+      distinct: ['customerId'],
+    })
+    const recentCustomerIds = recentCustomers.map(c => c.customerId)
+
+    let returningCount = 0
+    if (recentCustomerIds.length > 0) {
+      const priorOrders = await prisma.order.findMany({
+        where:    { customerId: { in: recentCustomerIds }, createdAt: { lt: since } },
+        select:   { customerId: true },
+        distinct: ['customerId'],
+      })
+      returningCount = priorOrders.length
+    }
+
+    const retention = {
+      activeCustomers: recentCustomerIds.length,
+      returning:        returningCount,
+      rate:             recentCustomerIds.length > 0
+        ? Math.round((returningCount / recentCustomerIds.length) * 100)
+        : null,
+    }
+
     res.json({
       period,
       revenue: {
@@ -125,6 +171,7 @@ router.get('/', requireAdmin, async (req, res, next) => {
       funnel,
       daily,
       topProducts,
+      retention,
     })
   } catch (err) {
     next(err)

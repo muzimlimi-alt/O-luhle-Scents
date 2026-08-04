@@ -77,7 +77,6 @@ export function Preferences() {
                 onChange={e => updatePrefs({ defaultSection: e.target.value })}
               >
                 <option value="overview">Overview</option>
-                <option value="analytics">Analytics</option>
                 <option value="orders">Orders</option>
                 <option value="products">Products</option>
               </select>
