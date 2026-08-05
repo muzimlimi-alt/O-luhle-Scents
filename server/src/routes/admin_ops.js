@@ -8,11 +8,14 @@ import prisma from '../lib/prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
 import nodemailer from 'nodemailer'
 import { adjustStock } from '../lib/inventoryService.js'
+import { postPurchaseReceivedJournal } from '../lib/accountingService.js'
 import { processReturn, RETURN_CONDITIONS } from '../lib/returnsService.js'
 import { getFinanceSummary } from '../lib/financeService.js'
 import { createAdminOrder, recordPayment, issueRefund } from '../lib/orderAdminService.js'
 import { createExchange } from '../lib/exchangeService.js'
 import { validateCoupon } from '../lib/couponService.js'
+import configStore from '../lib/configStore.js'
+import { createApprovalRequest } from '../lib/approvalService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const router = Router()
@@ -71,7 +74,7 @@ router.post('/suppliers', requireAdmin, async (req, res, next) => {
   }
 })
 
-import { sendRestockNotification } from '../lib/supplierService.js'
+import { sendRestockNotification, payPurchase } from '../lib/supplierService.js'
 
 // Restock Alert
 router.post('/suppliers/restock-alert/:variantId', requireAdmin, async (req, res, next) => {
@@ -218,7 +221,7 @@ router.delete('/product-suppliers/:id', requireAdmin, async (req, res, next) => 
 router.get('/purchases', requireAdmin, async (req, res, next) => {
   try {
     const purchases = await prisma.purchase.findMany({
-      include: { supplier: true, items: { include: { variant: { include: { product: true } } } } },
+      include: { supplier: true, items: { include: { variant: { include: { product: true } } } }, payments: true },
       orderBy: { createdAt: 'desc' }
     })
     res.json(purchases)
@@ -263,13 +266,26 @@ router.patch('/purchases/:id/receive', requireAdmin, async (req, res, next) => {
   try {
     const purchase = await prisma.purchase.findUnique({
       where: { id: req.params.id },
-      include: { items: { include: { variant: { include: { product: true } } } } }
+      include: { items: { include: { variant: { include: { product: true, inventory: true } } } } }
     })
     if (!purchase) return res.status(404).json({ error: 'Purchase order not found' })
     if (purchase.status === 'RECEIVED') return res.status(400).json({ error: 'Purchase order already received' })
 
     const updated = await prisma.$transaction(async (tx) => {
       for (const item of purchase.items) {
+        // Weighted average costing (Finance Phase 11) — captured BEFORE
+        // adjustStock increments quantity below, using the pre-receipt
+        // quantity/cost. Past receipts are unaffected; only future ones
+        // compute a running weighted average instead of last-cost-wins.
+        const existingQty = item.variant?.inventory?.quantity || 0
+        const existingCost = Number(item.variant?.costPrice || 0)
+        const receivedQty = item.quantity
+        const receivedCost = Number(item.costPrice)
+        const totalQty = existingQty + receivedQty
+        const weightedAvgCost = totalQty > 0
+          ? Math.round(((existingQty * existingCost + receivedQty * receivedCost) / totalQty + Number.EPSILON) * 100) / 100
+          : receivedCost
+
         await adjustStock(tx, {
           variantId: item.variantId,
           delta: item.quantity,
@@ -282,13 +298,17 @@ router.patch('/purchases/:id/receive', requireAdmin, async (req, res, next) => {
 
         await tx.productVariant.update({
           where: { id: item.variantId },
-          data: { costPrice: item.costPrice }
+          data: { costPrice: weightedAvgCost }
         })
       }
 
+      // Forms the Accounts Payable liability now that the goods are in —
+      // Debit Inventory + VAT Input / Credit AP. See accountingService.js.
+      const { taxAmount } = await postPurchaseReceivedJournal(tx, purchase)
+
       return tx.purchase.update({
         where: { id: purchase.id },
-        data: { status: 'RECEIVED', receivedAt: new Date() },
+        data: { status: 'RECEIVED', receivedAt: new Date(), taxAmount },
         include: { supplier: true, items: { include: { variant: { include: { product: true } } } } }
       })
     })
@@ -305,6 +325,23 @@ router.patch('/purchases/:id/receive', requireAdmin, async (req, res, next) => {
 
     res.json(updated)
   } catch (err) { next(err) }
+})
+
+// POST /admin/ops/purchases/:id/pay — record an AP settlement against a
+// received purchase order. See supplierService.js payPurchase.
+router.post('/purchases/:id/pay', requireAdmin, async (req, res, next) => {
+  try {
+    const { method, amount, reference, notes } = req.body
+    const amt = parseFloat(amount)
+    if (!method || !Number.isFinite(amt) || amt <= 0) {
+      return res.status(400).json({ error: 'method and a positive amount are required' })
+    }
+    const result = await payPurchase(req.params.id, { method, amount: amt, reference, notes, adminUserId: req.adminId })
+    res.status(201).json(result)
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
 })
 
 // ─── RETURNS ─────────────────────────────────────────────────────────────────
@@ -1031,6 +1068,10 @@ router.post('/orders/:id/payments', requireAdmin, async (req, res, next) => {
   }
 })
 
+// Finance Phase 11 — refunds above refund_approval_threshold (admin-tunable
+// via configStore, same as every other config value, default R1000) require
+// a second admin's sign-off instead of posting immediately. Amounts at or
+// under the threshold are completely unchanged from before this phase.
 router.post('/orders/:id/refunds', requireAdmin, async (req, res, next) => {
   try {
     const { amount, method, returnItemId, notes } = req.body
@@ -1038,6 +1079,17 @@ router.post('/orders/:id/refunds', requireAdmin, async (req, res, next) => {
     if (!method || !Number.isFinite(amt) || amt <= 0) {
       return res.status(400).json({ error: 'method and a positive amount are required' })
     }
+
+    const threshold = Number(await configStore.get('refund_approval_threshold', '1000'))
+    if (Number.isFinite(threshold) && amt > threshold) {
+      const approvalRequest = await createApprovalRequest({
+        entityType: 'REFUND',
+        requestedById: req.adminId,
+        payload: { orderId: req.params.id, amount: amt, method, returnItemId: returnItemId || null, notes: notes || null }
+      })
+      return res.status(202).json({ requiresApproval: true, approvalRequest })
+    }
+
     const refund = await issueRefund(req.params.id, { amount: amt, method, returnItemId, notes, adminUserId: req.adminId })
     res.status(201).json(refund)
   } catch (err) {

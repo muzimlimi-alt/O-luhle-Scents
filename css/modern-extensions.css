@@ -1154,3 +1154,146 @@
   }
 }
 
+/* ============================================================
+   Payment method selector (checkout.html) — a radio list where the
+   selected option expands an inline explanatory panel directly beneath it.
+   ============================================================ */
+.payment-method-list {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.payment-method-option {
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.payment-method-option:last-child {
+  border-bottom: none;
+}
+
+.payment-method-option__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+}
+
+.payment-method-option__label:hover {
+  background: var(--color-bg-alt);
+}
+
+.payment-method-option__radio-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-method-option__radio-group input[type="radio"] {
+  accent-color: var(--color-gold);
+}
+
+.payment-method-option__title {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.payment-method-option__desc {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+}
+
+.payment-method-option__panel {
+  padding: 0 20px 20px;
+  background: var(--color-bg-alt);
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  line-height: 1.7;
+}
+
+/* ============================================================
+   Manual EFT proof-of-payment widget — shared across checkout.html,
+   checkout-success.html, and the customer account order-detail page.
+   See js/eft-proof-upload.js.
+   ============================================================ */
+.eft-proof-widget {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.eft-proof-status {
+  display: inline-block;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.eft-proof-status--neutral { background: var(--color-bg-alt); color: var(--color-text-light); }
+.eft-proof-status--warning { background: rgba(212, 175, 55, 0.15); color: #b8923c; }
+.eft-proof-status--success { background: rgba(90, 168, 105, 0.15); color: #4a9058; }
+.eft-proof-status--error   { background: rgba(217, 83, 79, 0.12); color: #d9534f; }
+
+.eft-proof-reason {
+  font-size: 0.82rem;
+  color: #d9534f;
+  margin: 0 0 12px;
+}
+
+.eft-proof-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius);
+  padding: 28px 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.eft-proof-dropzone:hover,
+.eft-proof-dropzone--drag {
+  border-color: var(--color-gold);
+  background: var(--color-bg-alt);
+}
+
+.eft-proof-dropzone--uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.eft-proof-dropzone-text {
+  font-size: 0.82rem;
+  color: var(--color-text-light);
+}
+
+.eft-proof-hint {
+  font-size: 0.72rem;
+  color: var(--color-text-light);
+  opacity: 0.75;
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+.eft-proof-filename {
+  font-size: 0.8rem;
+  color: var(--color-text);
+  margin-top: 10px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .payment-method-option__label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+

@@ -172,6 +172,37 @@ export function Settings() {
                 <input type="text" value={val('bank_branch')} onChange={e => handleChange('bank_branch', e.target.value)} />
               </FormField>
             </div>
+            <div className="settings-row">
+              <FormField label="Account Type">
+                <input type="text" value={val('bank_account_type')} onChange={e => handleChange('bank_account_type', e.target.value)} placeholder="Cheque / Savings" />
+              </FormField>
+              <FormField label="SWIFT Code (optional)">
+                <input type="text" value={val('bank_swift')} onChange={e => handleChange('bank_swift', e.target.value)} />
+              </FormField>
+            </div>
+          </div>
+        </div>
+
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <CreditCard size={20} color="var(--color-primary)" />
+            <h3>Manual EFT</h3>
+          </div>
+          <div className="settings-card-body">
+            <div className="settings-row">
+              <FormField label="Order Number Prefix" hint="Used for both order references and EFT payment references, e.g. OSC-100548.">
+                <input type="text" value={val('order_number_prefix')} onChange={e => handleChange('order_number_prefix', e.target.value)} placeholder="OSC" />
+              </FormField>
+              <FormField label="Stock Reservation Hold (hours)" hint="How long stock is held for an unpaid EFT order before it's auto-cancelled.">
+                <input type="number" min="1" value={val('eft_reservation_hours')} onChange={e => handleChange('eft_reservation_hours', e.target.value)} placeholder="72" />
+              </FormField>
+            </div>
+            <FormField label="Max Proof-of-Payment File Size (MB)">
+              <input type="number" min="1" value={val('eft_proof_max_size_mb')} onChange={e => handleChange('eft_proof_max_size_mb', e.target.value)} placeholder="10" />
+            </FormField>
+            <FormField label="Verification Notification Emails" hint="Comma-separated — notified whenever a customer uploads proof of payment.">
+              <input type="text" value={val('eft_verification_notify_emails')} onChange={e => handleChange('eft_verification_notify_emails', e.target.value)} placeholder="orders@oluhle.co.za, finance@oluhle.co.za" />
+            </FormField>
           </div>
         </div>
 

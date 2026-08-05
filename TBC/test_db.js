@@ -3,7 +3,7 @@ import prisma from './src/lib/prisma.js';
 async function test() {
   try {
     const products = await prisma.product.findMany({
-      where: { isActive: true },
+      where: { status: 'ACTIVE' },
       include: { 
         category: true,
         supplier: true,
@@ -11,9 +11,11 @@ async function test() {
       },
       take: 2
     });
-    console.log('Success:', products.length);
+    console.log('Success! Products found in DB:', products.length);
   } catch (err) {
     console.error('Error:', err);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 

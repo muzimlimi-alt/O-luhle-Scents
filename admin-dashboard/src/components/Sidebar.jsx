@@ -19,6 +19,13 @@ import {
   Users,
   Mail,
   FileBarChart,
+  Landmark,
+  BookOpen,
+  ReceiptText,
+  PieChart,
+  Banknote,
+  Receipt,
+  History,
   ShieldCheck,
   UserCog,
   ScrollText,
@@ -71,6 +78,17 @@ const NAV = [
     children: [
       { path: '/customers', label: 'Customers', icon: <Users size={16} /> },
       { path: '/newsletters', label: 'Newsletters', icon: <Mail size={16} /> },
+    ]
+  },
+  {
+    type: 'group', id: 'finance', label: 'Finance', icon: <Landmark size={18} />,
+    children: [
+      { path: '/finance/ledger', label: 'General Ledger', icon: <BookOpen size={16} /> },
+      { path: '/finance/journals', label: 'Journals', icon: <ReceiptText size={16} /> },
+      { path: '/finance/statements', label: 'Financial Statements', icon: <PieChart size={16} /> },
+      { path: '/finance/banking', label: 'Banking', icon: <Banknote size={16} /> },
+      { path: '/finance/expenses', label: 'Expenses', icon: <Receipt size={16} /> },
+      { path: '/finance/aged', label: 'Aged Reports', icon: <History size={16} /> },
     ]
   },
   { type: 'link', path: '/reports', label: 'Reports', icon: <FileBarChart size={18} /> },

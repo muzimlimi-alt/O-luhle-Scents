@@ -26,6 +26,13 @@ import { Login } from './pages/Login';
 import { Newsletters } from './pages/Newsletters';
 import { ShippingMethods } from './pages/ShippingMethods';
 import { TaxRates } from './pages/TaxRates';
+import { GeneralLedger } from './pages/GeneralLedger';
+import { Journals } from './pages/Journals';
+import { FinancialStatements } from './pages/FinancialStatements';
+import { Banking } from './pages/Banking';
+import { Reconciliation } from './pages/Reconciliation';
+import { Expenses } from './pages/Expenses';
+import { AgedReports } from './pages/AgedReports';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
 
@@ -97,6 +104,13 @@ function App() {
               <Route path="content" element={<Content />} />
               <Route path="shipping-methods" element={<ShippingMethods />} />
               <Route path="tax-rates" element={<TaxRates />} />
+              <Route path="finance/ledger" element={<GeneralLedger />} />
+              <Route path="finance/journals" element={<Journals />} />
+              <Route path="finance/statements" element={<FinancialStatements />} />
+              <Route path="finance/banking" element={<Banking />} />
+              <Route path="finance/reconciliation/:accountId" element={<Reconciliation />} />
+              <Route path="finance/expenses" element={<Expenses />} />
+              <Route path="finance/aged" element={<AgedReports />} />
               <Route path="config" element={<Navigate to="/settings" replace />} />
             </Route>
             

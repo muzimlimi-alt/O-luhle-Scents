@@ -8,7 +8,7 @@ import { DataTable } from '../components/DataTable';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { useMessaging } from '../context/MessagingContext';
-import { Truck, Plus, Trash2 } from 'lucide-react';
+import { Truck, Plus, Trash2, Pencil } from 'lucide-react';
 
 const EMPTY_FORM = { key: '', name: '', trackingUrlTemplate: '', estimatedDays: '' };
 
@@ -17,6 +17,7 @@ export function ShippingMethods() {
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,21 +35,42 @@ export function ShippingMethods() {
 
   useEffect(() => { fetchMethods(); }, [fetchMethods]);
 
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
+  };
+
+  const openEdit = (method) => {
+    setEditingId(method.id);
+    setForm({ key: method.key, name: method.name, trackingUrlTemplate: method.trackingUrlTemplate || '', estimatedDays: method.estimatedDays?.toString() || '' });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await adminOpsApi.shippingMethods.create({
-        key: form.key,
-        name: form.name,
-        trackingUrlTemplate: form.trackingUrlTemplate || undefined,
-        estimatedDays: form.estimatedDays || undefined,
-      });
+      if (editingId) {
+        await adminOpsApi.shippingMethods.update(editingId, {
+          name: form.name,
+          trackingUrlTemplate: form.trackingUrlTemplate || undefined,
+          estimatedDays: form.estimatedDays || undefined,
+        });
+      } else {
+        await adminOpsApi.shippingMethods.create({
+          key: form.key,
+          name: form.name,
+          trackingUrlTemplate: form.trackingUrlTemplate || undefined,
+          estimatedDays: form.estimatedDays || undefined,
+        });
+      }
       setShowModal(false);
+      setEditingId(null);
       setForm(EMPTY_FORM);
       fetchMethods();
     } catch (err) {
-      showMessage('error', 'Create Failed', err.message);
+      showMessage('error', editingId ? 'Update Failed' : 'Create Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -93,7 +115,7 @@ export function ShippingMethods() {
         title="Shipping Methods"
         subtitle="Couriers available for order dispatch and fulfillment tracking."
         actions={(
-          <button className="btn btn--primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn--primary" onClick={openCreate}>
             <Plus size={16} /> Add Courier
           </button>
         )}
@@ -109,6 +131,7 @@ export function ShippingMethods() {
             emptyState={<EmptyState icon={<Truck size={40} />} title="No shipping methods configured" description="Add a courier to enable order dispatch." />}
             actions={(m) => (
               <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="icon-btn" title="Edit" onClick={() => openEdit(m)}><Pencil size={14} /></button>
                 <button className="btn btn--outline btn--sm" onClick={() => handleToggleActive(m)}>
                   {m.active ? 'Disable' : 'Enable'}
                 </button>
@@ -119,13 +142,13 @@ export function ShippingMethods() {
         </div>
       )}
 
-      <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title="Add Shipping Method" width={440}>
+      <Drawer isOpen={showModal} onClose={() => { setShowModal(false); setEditingId(null); }} title={editingId ? 'Edit Shipping Method' : 'Add Shipping Method'} width={440}>
         <form onSubmit={handleSubmit} className="admin-form">
           <FormField label="Courier Name" required>
-            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, key: f.key || e.target.value.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '') }))} required placeholder="e.g. The Courier Guy" />
+            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, key: editingId ? f.key : (f.key || e.target.value.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '')) }))} required placeholder="e.g. The Courier Guy" />
           </FormField>
-          <FormField label="Key (used internally)" required>
-            <input type="text" value={form.key} onChange={e => setForm(f => ({ ...f, key: e.target.value }))} required placeholder="THE_COURIER_GUY" />
+          <FormField label="Key (used internally)" required hint={editingId ? 'Key cannot be changed after creation.' : undefined}>
+            <input type="text" value={form.key} onChange={e => setForm(f => ({ ...f, key: e.target.value }))} required placeholder="THE_COURIER_GUY" disabled={!!editingId} />
           </FormField>
           <FormField label="Tracking URL Template (optional)" hint="Use {trackingNumber} as a placeholder.">
             <input type="text" value={form.trackingUrlTemplate} onChange={e => setForm(f => ({ ...f, trackingUrlTemplate: e.target.value }))} placeholder="https://example.com/track/{trackingNumber}" />
@@ -134,9 +157,9 @@ export function ShippingMethods() {
             <input type="number" min="1" value={form.estimatedDays} onChange={e => setForm(f => ({ ...f, estimatedDays: e.target.value }))} placeholder="3" />
           </FormField>
           <div className="attr-actions">
-            <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="button" className="btn" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancel</button>
             <button type="submit" className="btn btn--primary" disabled={submitting}>
-              {submitting ? 'Saving...' : 'Add Courier'}
+              {submitting ? 'Saving...' : editingId ? 'Save Changes' : 'Add Courier'}
             </button>
           </div>
         </form>

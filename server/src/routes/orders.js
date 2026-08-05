@@ -9,6 +9,20 @@ import { calculateShipping } from '../lib/shippingService.js'
 import { reserveStock, RESERVATION_HOLD_MINUTES, InsufficientStockError } from '../lib/inventoryService.js'
 import { validateCoupon, incrementCouponUsage } from '../lib/couponService.js'
 import { resolveTaxRate, calculateTax } from '../lib/taxService.js'
+import { nextOrderNumber } from '../lib/orderNumberService.js'
+import configStore from '../lib/configStore.js'
+import { sendEftInstructions } from '../utils/email.js'
+import { uploadProofMiddleware } from '../lib/eftUpload.js'
+import { uploadProof } from '../lib/eftPaymentService.js'
+
+const PUBLIC_BANK_DETAIL_KEYS = ['bank_name', 'bank_holder', 'bank_account', 'bank_branch', 'bank_account_type', 'bank_swift']
+
+async function getPublicBankDetails() {
+  const entries = await Promise.all(
+    PUBLIC_BANK_DETAIL_KEYS.map(async key => [key, await configStore.get(key, '')])
+  )
+  return Object.fromEntries(entries)
+}
 
 const router = Router()
 
@@ -38,6 +52,14 @@ async function handleCheckoutNewsletterOptIn(email) {
     console.warn('[Newsletter/Checkout] Opt-in upsert failed:', err.message)
   }
 }
+
+// GET /api/orders/eft/bank-details — public: only the safe settings subset
+// needed to render checkout instructions, never the full GlobalSetting table.
+router.get('/eft/bank-details', async (req, res, next) => {
+  try {
+    res.json(await getPublicBankDetails())
+  } catch (err) { next(err) }
+})
 
 // GET /api/shipping/estimate
 router.get('/shipping/estimate', async (req, res, next) => {
@@ -102,11 +124,15 @@ router.post('/preview', async (req, res, next) => {
 // POST /api/orders  — create order + return PayFast payment data
 router.post('/', async (req, res, next) => {
   try {
-    const { items, contact, shipping, shippingMethod, newsletterOptIn } = req.body
+    const { items, contact, shipping, shippingMethod, newsletterOptIn, paymentMethod = 'payfast' } = req.body
 
     // 1. Basic validation
     if (!items?.length) return res.status(400).json({ error: 'Cart is empty' })
     if (!contact?.email) return res.status(400).json({ error: 'Email required' })
+    if (!['payfast', 'manual_eft'].includes(paymentMethod)) {
+      return res.status(400).json({ error: 'Invalid payment method' })
+    }
+    const isManualEft = paymentMethod === 'manual_eft'
 
     // 2. Fetch variants and validate stock
     const variantIds = items.map(i => i.variantId).filter(Boolean)
@@ -141,7 +167,9 @@ router.post('/', async (req, res, next) => {
         productNameSnapshot: variant.product.name,
         variantLabelSnapshot: variant.size,
         skuSnapshot: variant.sku,
-        costAtPurchase: variant.costPrice
+        costAtPurchase: variant.costPrice,
+        packagingCostAtPurchase: variant.packagingCost,
+        labellingCostAtPurchase: variant.labellingCost
       }
     })
 
@@ -164,7 +192,14 @@ router.post('/', async (req, res, next) => {
     const totalAmount = subtotal - discountAmount + taxAmount + shippingCost
 
     // 3. Create/Update Customer & Store Order in Transaction
-    const reservationExpiresAt = new Date(Date.now() + RESERVATION_HOLD_MINUTES * 60 * 1000)
+    // Manual EFT gets its own, much longer configurable hold — a bank
+    // transfer can take days to clear, unlike PayFast's near-instant
+    // confirmation. Both reuse the exact same sweepExpiredReservations()
+    // cron (inventoryService.js) unchanged; only the expiry differs.
+    const holdMinutes = isManualEft
+      ? Number(await configStore.get('eft_reservation_hours', '72')) * 60
+      : RESERVATION_HOLD_MINUTES
+    const reservationExpiresAt = new Date(Date.now() + holdMinutes * 60 * 1000)
 
     const order = await prisma.$transaction(async (tx) => {
       // Find or create customer
@@ -191,6 +226,7 @@ router.post('/', async (req, res, next) => {
       // Create Order
       const newOrder = await tx.order.create({
         data: {
+          orderNumber: await nextOrderNumber(tx),
           customerId: customer.id,
           shippingAddressId: address.id,
           totalAmount: totalAmount,
@@ -210,6 +246,25 @@ router.post('/', async (req, res, next) => {
 
       if (appliedCoupon) await incrementCouponUsage(tx, appliedCoupon.coupon.id)
 
+      // Manual EFT: create the Payment row immediately (unlike PayFast, whose
+      // Payment row is only created once the webhook confirms success) so
+      // there's somewhere to attach proof-of-payment and track verification
+      // status from the moment the order is placed.
+      if (isManualEft) {
+        const eftPayment = await tx.payment.create({
+          data: {
+            orderId: newOrder.id,
+            paymentMethod: 'manual_eft',
+            paymentStatus: 'PENDING',
+            amount: totalAmount,
+            eftVerificationStatus: 'PENDING_PROOF',
+          }
+        })
+        await tx.paymentStatusHistory.create({
+          data: { paymentId: eftPayment.id, status: 'PENDING_PROOF', actorType: 'system', note: 'Order placed, awaiting EFT payment' }
+        })
+      }
+
       // Hold stock for every line item. This is the real guard against the
       // oversell race (the check above is just a fast, friendly rejection) —
       // an insufficient-stock failure here rolls back the order and any
@@ -226,18 +281,33 @@ router.post('/', async (req, res, next) => {
       return newOrder
     })
 
-    // 4. Build PayFast data using centralized utility
-    const { payfastUrl, payfastData } = buildPaymentPayload({
-      id: order.id,
-      totalAmount: order.totalAmount,
-      email: contact.email,
-      shippingAddress: { 
-        firstName: shipping.firstName, 
-        lastName: shipping.lastName 
-      }
-    })
+    // 4. Manual EFT: no gateway redirect — respond with bank details and the
+    // order's own reference. PayFast: build the redirect payload exactly as
+    // before (byte-for-byte unchanged from pre-EFT behavior).
+    if (isManualEft) {
+      const bankDetails = await getPublicBankDetails()
+      res.status(201).json({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        paymentMethod: 'manual_eft',
+        bankDetails,
+        reference: order.orderNumber,
+        amount: order.totalAmount,
+      })
+      sendEftInstructions(order.id, bankDetails).catch(e => console.error('[EFT] sendEftInstructions failed:', e.message))
+    } else {
+      const { payfastUrl, payfastData } = buildPaymentPayload({
+        id: order.id,
+        totalAmount: order.totalAmount,
+        email: contact.email,
+        shippingAddress: {
+          firstName: shipping.firstName,
+          lastName: shipping.lastName
+        }
+      })
 
-    res.status(201).json({ orderId: order.id, payfastUrl, payfastData })
+      res.status(201).json({ orderId: order.id, payfastUrl, payfastData })
+    }
 
     // ── Newsletter opt-in (Instruction 3) ────────────────────────────────────
     // Fire-and-forget: response already sent, so this never blocks or crashes it
@@ -263,12 +333,35 @@ router.get('/:id', async (req, res, next) => {
         shippingAddress: true,
         logisticsEvents: { orderBy: { createdAt: 'desc' } },
         coupon: true,
-        taxRate: true
+        taxRate: true,
+        payments: { include: { statusHistory: { orderBy: { createdAt: 'asc' } } } }
       },
     })
     if (!order) return res.status(404).json({ error: 'Order not found' })
     res.json(order)
   } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/orders/:id/proof — public: upload/replace proof of payment.
+// Trusts the order's UUID the same way the public GET /:id above already
+// does (unauthenticated order lookups have always worked this way on this
+// storefront) — lets a guest checkout upload proof immediately without
+// requiring an account. Logged-in customers get an equivalent ownership-
+// checked route under /api/customers/me/orders/:id/proof.
+router.post('/:id/proof', uploadProofMiddleware, async (req, res, next) => {
+  try {
+    const updated = await uploadProof(req.params.id, {
+      filePath: req.file.path,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      actorType: 'customer',
+    })
+    res.status(201).json({ eftVerificationStatus: updated.eftVerificationStatus })
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message })
     next(err)
   }
 })

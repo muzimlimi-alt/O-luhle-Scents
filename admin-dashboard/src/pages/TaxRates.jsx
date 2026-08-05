@@ -8,7 +8,7 @@ import { DataTable } from '../components/DataTable';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { useMessaging } from '../context/MessagingContext';
-import { Percent, Plus, Trash2 } from 'lucide-react';
+import { Percent, Plus, Trash2, Pencil } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', rate: '', region: '', isDefault: false };
 
@@ -17,6 +17,7 @@ export function TaxRates() {
   const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,21 +35,39 @@ export function TaxRates() {
 
   useEffect(() => { fetchRates(); }, [fetchRates]);
 
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
+  };
+
+  const openEdit = (rate) => {
+    setEditingId(rate.id);
+    setForm({ name: rate.name, rate: (Number(rate.rate) * 100).toString(), region: rate.region || '', isDefault: rate.isDefault });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await adminOpsApi.taxRates.create({
+      const payload = {
         name: form.name,
         rate: parseFloat(form.rate) / 100,
-        region: form.region || undefined,
+        region: form.region || null,
         isDefault: form.isDefault,
-      });
+      };
+      if (editingId) {
+        await adminOpsApi.taxRates.update(editingId, payload);
+      } else {
+        await adminOpsApi.taxRates.create(payload);
+      }
       setShowModal(false);
+      setEditingId(null);
       setForm(EMPTY_FORM);
       fetchRates();
     } catch (err) {
-      showMessage('error', 'Create Failed', err.message);
+      showMessage('error', editingId ? 'Update Failed' : 'Create Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -94,7 +113,7 @@ export function TaxRates() {
         title="Tax Rates"
         subtitle="Applied automatically to checkout and admin-created orders based on region, or the default rate if none matches."
         actions={(
-          <button className="btn btn--primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn--primary" onClick={openCreate}>
             <Plus size={16} /> Add Tax Rate
           </button>
         )}
@@ -110,6 +129,7 @@ export function TaxRates() {
             emptyState={<EmptyState icon={<Percent size={40} />} title="No tax rates configured" description="Orders will be created with no tax applied until a rate is added." />}
             actions={(r) => (
               <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="icon-btn" title="Edit" onClick={() => openEdit(r)}><Pencil size={14} /></button>
                 <button className="btn btn--outline btn--sm" onClick={() => handleToggleActive(r)}>
                   {r.active ? 'Disable' : 'Enable'}
                 </button>
@@ -120,7 +140,7 @@ export function TaxRates() {
         </div>
       )}
 
-      <Drawer isOpen={showModal} onClose={() => setShowModal(false)} title="Add Tax Rate" width={440}>
+      <Drawer isOpen={showModal} onClose={() => { setShowModal(false); setEditingId(null); }} title={editingId ? 'Edit Tax Rate' : 'Add Tax Rate'} width={440}>
         <form onSubmit={handleSubmit} className="admin-form">
           <FormField label="Name" required>
             <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required placeholder="e.g. VAT" />
@@ -136,9 +156,9 @@ export function TaxRates() {
             Use as the default rate when no region matches
           </label>
           <div className="attr-actions">
-            <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="button" className="btn" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancel</button>
             <button type="submit" className="btn btn--primary" disabled={submitting}>
-              {submitting ? 'Saving...' : 'Add Tax Rate'}
+              {submitting ? 'Saving...' : editingId ? 'Save Changes' : 'Add Tax Rate'}
             </button>
           </div>
         </form>

@@ -187,15 +187,16 @@ export function Orders() {
   };
 
   const filteredOrders = orders.filter(o =>
+    o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.trackingNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns = [
-    { key: 'id', label: 'Order', render: (val) => (
+    { key: 'orderNumber', label: 'Order', render: (val) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--color-primary-text)', fontFamily: 'var(--font-display)' }}>
-        <Hash size={13} /> {val.substring(0, 8).toUpperCase()}
+        <Hash size={13} /> {val}
       </div>
     )},
     { key: 'customer', label: 'Customer', render: (val) => (
@@ -343,7 +344,7 @@ export function Orders() {
       </Drawer>
 
       <Drawer isOpen={!!returnOrder} onClose={() => setReturnOrder(null)} title="Process Return" width={560}>
-        <p className="return-subtitle">{returnOrder && `Order #${returnOrder.id.substring(0, 8).toUpperCase()} — ${returnOrder.shippingAddress ? `${returnOrder.customer?.name || 'Guest'}` : ''}`}</p>
+        <p className="return-subtitle">{returnOrder && `Order #${returnOrder.orderNumber || returnOrder.id.substring(0, 8).toUpperCase()} — ${returnOrder.shippingAddress ? `${returnOrder.customer?.name || 'Guest'}` : ''}`}</p>
 
         <form onSubmit={handleSubmitReturns} className="elite-form">
           {returnOrder?.items?.map(item => {

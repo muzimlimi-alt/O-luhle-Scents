@@ -139,7 +139,7 @@ export function CreateOrderDrawer({ isOpen, onClose, onCreated }) {
         notes: notes || undefined,
       };
       const order = await adminOpsApi.orders.create(payload);
-      showMessage('success', 'Order Created', `Order #${order.id.slice(0, 8).toUpperCase()} has been created.`);
+      showMessage('success', 'Order Created', `Order #${order.orderNumber || order.id.slice(0, 8).toUpperCase()} has been created.`);
       onCreated?.(order);
       onClose();
     } catch (err) {

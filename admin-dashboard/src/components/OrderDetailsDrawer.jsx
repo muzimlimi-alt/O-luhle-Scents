@@ -127,7 +127,7 @@ export function OrderDetailsDrawer({ orderId, onClose, onChanged }) {
     <Drawer
       isOpen={!!orderId}
       onClose={onClose}
-      title={order ? `Order #${order.id.slice(0, 8).toUpperCase()}` : 'Order Details'}
+      title={order ? `Order #${order.orderNumber || order.id.slice(0, 8).toUpperCase()}` : 'Order Details'}
       width={860}
     >
       {loading ? (

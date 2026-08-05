@@ -2,6 +2,8 @@ import prisma from './prisma.js'
 import { adjustStock } from './inventoryService.js'
 import { validateCoupon, incrementCouponUsage } from './couponService.js'
 import { resolveTaxRate, calculateTax } from './taxService.js'
+import { nextOrderNumber } from './orderNumberService.js'
+import { postSaleRecognitionJournal, postCashReceiptJournal, postOrderPaidJournals, postRefundJournal } from './accountingService.js'
 
 export const MANUAL_PAYMENT_METHODS = ['manual_eft', 'manual_cash', 'manual_card']
 
@@ -63,7 +65,9 @@ export async function createAdminOrder({
       productNameSnapshot: variant.product.name,
       variantLabelSnapshot: variant.size,
       skuSnapshot: variant.sku,
-      costAtPurchase: variant.costPrice
+      costAtPurchase: variant.costPrice,
+      packagingCostAtPurchase: variant.packagingCost,
+      labellingCostAtPurchase: variant.labellingCost
     }
   })
 
@@ -93,6 +97,7 @@ export async function createAdminOrder({
     // 2. Create the order + items
     const order = await tx.order.create({
       data: {
+        orderNumber: await nextOrderNumber(tx),
         customerId: resolvedCustomerId,
         shippingAddressId: shippingAddressId || null,
         billingAddressId: billingAddressId || null,
@@ -135,8 +140,13 @@ export async function createAdminOrder({
           dueDate: m.dueDate ? new Date(m.dueDate) : null
         }))
       })
+
+      // Sale is confirmed now (stock already decremented above) even though
+      // cash arrives later in installments — recordPayment posts only the
+      // cash-receipt journal for each one, not a repeated sale journal.
+      await postSaleRecognitionJournal(tx, order)
     } else {
-      await tx.payment.create({
+      const payment = await tx.payment.create({
         data: {
           orderId: order.id,
           paymentMethod,
@@ -146,6 +156,8 @@ export async function createAdminOrder({
           paidAt: new Date()
         }
       })
+
+      await postOrderPaidJournals(tx, order, payment)
     }
 
     await tx.auditLog.create({
@@ -168,7 +180,11 @@ export async function recordPayment(orderId, { method, amount, reference, adminU
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
-      include: { payments: true, paymentMilestones: { where: { status: 'PENDING' }, orderBy: { dueDate: 'asc' } } }
+      include: {
+        items: true,
+        payments: true,
+        paymentMilestones: { where: { status: 'PENDING' }, orderBy: { dueDate: 'asc' } }
+      }
     })
     if (!order) throw Object.assign(new Error('Order not found'), { status: 404 })
 
@@ -182,6 +198,14 @@ export async function recordPayment(orderId, { method, amount, reference, adminU
         paidAt: new Date()
       }
     })
+
+    // Idempotent — a no-op if the sale was already recognized (milestone
+    // creation, or an earlier payment against this same order); guarantees
+    // AR always has a debit to draw the cash-receipt journal down against,
+    // even for a manual payment against an order that reached here directly
+    // (e.g. cash on delivery) without going through createAdminOrder first.
+    await postSaleRecognitionJournal(tx, order)
+    await postCashReceiptJournal(tx, order, payment)
 
     const nextMilestone = order.paymentMilestones[0]
     if (nextMilestone) {
@@ -217,6 +241,8 @@ export async function issueRefund(orderId, { amount, method, returnItemId, notes
     const refund = await tx.refund.create({
       data: { orderId, returnItemId: returnItemId || null, amount, method, notes: notes || null, adminUserId }
     })
+
+    await postRefundJournal(tx, refund, order)
 
     const totalRefunded = order.refunds.reduce((sum, r) => sum + Number(r.amount), 0) + Number(amount)
     const paymentStatus = totalRefunded >= Number(order.totalAmount) ? 'refunded' : 'partially_refunded'

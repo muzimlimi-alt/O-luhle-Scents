@@ -1,0 +1,218 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { bankingApi, financeApi } from '../services/api';
+import { PageHeader } from '../components/PageHeader';
+import { DataTable } from '../components/DataTable';
+import { Drawer } from '../components/Drawer';
+import { FormField } from '../components/FormField';
+import { StatusBadge } from '../components/StatusBadge';
+import { EmptyState } from '../components/EmptyState';
+import { useMessaging } from '../context/MessagingContext';
+import { Landmark, Plus, ArrowLeftRight, Scale } from 'lucide-react';
+
+const EMPTY_ACCOUNT_FORM = {
+  name: '', bankName: '', accountHolder: '', accountNumber: '', branchCode: '', accountType: '', swift: '', chartAccountCode: '', isDefault: false
+};
+const EMPTY_TXN_FORM = { date: '', description: '', amount: '', reference: '' };
+
+export function Banking() {
+  const navigate = useNavigate();
+  const { showMessage } = useMessaging();
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [chartOptions, setChartOptions] = useState([]);
+
+  const [showAccountDrawer, setShowAccountDrawer] = useState(false);
+  const [accountForm, setAccountForm] = useState(EMPTY_ACCOUNT_FORM);
+  const [accountSubmitting, setAccountSubmitting] = useState(false);
+
+  const [txnAccount, setTxnAccount] = useState(null);
+  const [txnForm, setTxnForm] = useState(EMPTY_TXN_FORM);
+  const [txnSubmitting, setTxnSubmitting] = useState(false);
+
+  const fetchAccounts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await bankingApi.accounts.list();
+      setAccounts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Bank accounts fetch failed:', err.message);
+      setAccounts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts();
+    financeApi.chartOfAccounts().then(setChartOptions).catch(() => setChartOptions([]));
+  }, [fetchAccounts]);
+
+  const openAccountDrawer = () => {
+    setAccountForm(EMPTY_ACCOUNT_FORM);
+    setShowAccountDrawer(true);
+  };
+
+  const handleAccountSubmit = async (e) => {
+    e.preventDefault();
+    if (!accountForm.name || !accountForm.chartAccountCode) {
+      return showMessage('warning', 'Missing Fields', 'Name and linked GL account are required.');
+    }
+    setAccountSubmitting(true);
+    try {
+      await bankingApi.accounts.create(accountForm);
+      setShowAccountDrawer(false);
+      fetchAccounts();
+    } catch (err) {
+      showMessage('error', 'Create Failed', err.message);
+    } finally {
+      setAccountSubmitting(false);
+    }
+  };
+
+  const openTxnDrawer = (account) => {
+    setTxnAccount(account);
+    setTxnForm(EMPTY_TXN_FORM);
+  };
+
+  const handleTxnSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(txnForm.amount);
+    if (!txnForm.date || !txnForm.description || !Number.isFinite(amount) || amount === 0) {
+      return showMessage('warning', 'Missing Fields', 'Date, description, and a non-zero amount are required.');
+    }
+    setTxnSubmitting(true);
+    try {
+      await bankingApi.transactions.create(txnAccount.id, { ...txnForm, amount });
+      setTxnAccount(null);
+      showMessage('success', 'Transaction Added', 'Statement line recorded — reconcile it from the Reconcile action.');
+    } catch (err) {
+      showMessage('error', 'Add Failed', err.message);
+    } finally {
+      setTxnSubmitting(false);
+    }
+  };
+
+  const assetAccounts = chartOptions.filter(a => a.type === 'ASSET');
+
+  const columns = [
+    { key: 'name', label: 'Account', render: (val, row) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+        <Landmark size={14} color="var(--color-primary)" /> {val}
+        {row.isDefault && <StatusBadge tone="info" label="Default" />}
+      </div>
+    )},
+    { key: 'bankName', label: 'Bank', render: (val) => val || '—' },
+    { key: 'accountNumber', label: 'Account #', render: (val) => val || '—' },
+    { key: 'chartAccountCode', label: 'GL Account' },
+    { key: 'isActive', label: 'Status', render: (val) => <StatusBadge tone={val ? 'success' : 'neutral'} label={val ? 'Active' : 'Inactive'} /> },
+  ];
+
+  return (
+    <div className="banking-page">
+      <PageHeader
+        icon={<Landmark size={22} />}
+        title="Banking"
+        subtitle="Bank accounts and the statement lines reconciled against the General Ledger."
+        actions={(
+          <button className="btn btn--primary" onClick={openAccountDrawer}>
+            <Plus size={16} /> Add Bank Account
+          </button>
+        )}
+      />
+
+      <div className="card">
+        <DataTable
+          columns={columns}
+          data={accounts}
+          loading={loading}
+          emptyState={<EmptyState icon={<Landmark size={40} />} title="No bank accounts yet" description="Add one to start recording statement lines and reconciling against the ledger." />}
+          actions={(row) => (
+            <>
+              <button className="icon-btn" title="Add Transaction" onClick={() => openTxnDrawer(row)}>
+                <ArrowLeftRight size={14} />
+              </button>
+              <button className="icon-btn" title="Reconcile" onClick={() => navigate(`/finance/reconciliation/${row.id}`)}>
+                <Scale size={14} />
+              </button>
+            </>
+          )}
+        />
+      </div>
+
+      <Drawer isOpen={showAccountDrawer} onClose={() => setShowAccountDrawer(false)} title="Add Bank Account" width={480}>
+        <form onSubmit={handleAccountSubmit} className="admin-form">
+          <FormField label="Name" required>
+            <input type="text" value={accountForm.name} onChange={e => setAccountForm(f => ({ ...f, name: e.target.value }))} required placeholder="Primary Business Account" />
+          </FormField>
+          <FormField label="Linked GL Account" required hint="Which chart-of-accounts row this bank account's cash movements post to.">
+            <select value={accountForm.chartAccountCode} onChange={e => setAccountForm(f => ({ ...f, chartAccountCode: e.target.value }))} required>
+              <option value="">Select account...</option>
+              {assetAccounts.map(a => <option key={a.code} value={a.code}>{a.code} — {a.name}</option>)}
+            </select>
+          </FormField>
+          <FormField label="Bank Name">
+            <input type="text" value={accountForm.bankName} onChange={e => setAccountForm(f => ({ ...f, bankName: e.target.value }))} />
+          </FormField>
+          <FormField label="Account Holder">
+            <input type="text" value={accountForm.accountHolder} onChange={e => setAccountForm(f => ({ ...f, accountHolder: e.target.value }))} />
+          </FormField>
+          <FormField label="Account Number">
+            <input type="text" value={accountForm.accountNumber} onChange={e => setAccountForm(f => ({ ...f, accountNumber: e.target.value }))} />
+          </FormField>
+          <FormField label="Branch Code">
+            <input type="text" value={accountForm.branchCode} onChange={e => setAccountForm(f => ({ ...f, branchCode: e.target.value }))} />
+          </FormField>
+          <FormField label="Account Type">
+            <input type="text" value={accountForm.accountType} onChange={e => setAccountForm(f => ({ ...f, accountType: e.target.value }))} placeholder="Cheque / Savings" />
+          </FormField>
+          <FormField label="SWIFT">
+            <input type="text" value={accountForm.swift} onChange={e => setAccountForm(f => ({ ...f, swift: e.target.value }))} />
+          </FormField>
+          <label className="banking-default-check">
+            <input type="checkbox" checked={accountForm.isDefault} onChange={e => setAccountForm(f => ({ ...f, isDefault: e.target.checked }))} />
+            Use as the default bank account
+          </label>
+          <div className="banking-actions">
+            <button type="button" className="btn" onClick={() => setShowAccountDrawer(false)}>Cancel</button>
+            <button type="submit" className="btn btn--primary" disabled={accountSubmitting}>
+              {accountSubmitting ? 'Saving...' : 'Add Bank Account'}
+            </button>
+          </div>
+        </form>
+      </Drawer>
+
+      <Drawer isOpen={!!txnAccount} onClose={() => setTxnAccount(null)} title={txnAccount ? `Add Transaction — ${txnAccount.name}` : ''} width={440}>
+        {txnAccount && (
+          <form onSubmit={handleTxnSubmit} className="admin-form">
+            <FormField label="Date" required>
+              <input type="date" value={txnForm.date} onChange={e => setTxnForm(f => ({ ...f, date: e.target.value }))} required />
+            </FormField>
+            <FormField label="Description" required>
+              <input type="text" value={txnForm.description} onChange={e => setTxnForm(f => ({ ...f, description: e.target.value }))} required placeholder="EFT received — customer name" />
+            </FormField>
+            <FormField label="Amount (R)" required hint="Positive = money in, negative = money out — same sign as it reads on the statement.">
+              <input type="number" step="0.01" value={txnForm.amount} onChange={e => setTxnForm(f => ({ ...f, amount: e.target.value }))} required placeholder="e.g. 500.00 or -45.00" />
+            </FormField>
+            <FormField label="Reference (optional)">
+              <input type="text" value={txnForm.reference} onChange={e => setTxnForm(f => ({ ...f, reference: e.target.value }))} />
+            </FormField>
+            <div className="banking-actions">
+              <button type="button" className="btn" onClick={() => setTxnAccount(null)}>Cancel</button>
+              <button type="submit" className="btn btn--primary" disabled={txnSubmitting}>
+                {txnSubmitting ? 'Adding...' : 'Add Transaction'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Drawer>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .banking-default-check { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; }
+        .banking-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+      `}} />
+    </div>
+  );
+}
+
+export default Banking;

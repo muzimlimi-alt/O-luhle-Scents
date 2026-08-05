@@ -121,13 +121,44 @@
             </label>
           </div>
 
-          <!-- Payment placeholder 
+          <!-- Payment Method -->
           <h3 style="margin:32px 0 20px;font-size:1.3rem;">Payment</h3>
-          <div style="padding:32px;background:var(--color-bg-alt);border-radius:var(--radius-lg);text-align:center;border:1px dashed var(--color-border);">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-light)" stroke-width="1.5" style="margin-bottom:12px;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            <p style="color:var(--color-text-light);font-size:0.85rem;margin-bottom:4px;">Payment gateway integration ready</p>
-            <p style="color:var(--color-text-light);font-size:0.75rem;">Supports PayFast, Yoco, or Stripe</p>
-          </div>-->
+          <div class="payment-method-list" id="payment-method-list">
+            <div class="payment-method-option">
+              <label class="payment-method-option__label">
+                <span class="payment-method-option__radio-group">
+                  <input type="radio" name="payment-method" value="payfast" checked>
+                  <span>
+                    <span class="payment-method-option__title">PayFast</span><br>
+                    <span class="payment-method-option__desc">Secure online payment · Instant confirmation</span>
+                  </span>
+                </span>
+              </label>
+              <div class="payment-method-option__panel" data-method="payfast">
+                You'll be redirected to PayFast to complete your purchase securely. Your order is processed immediately once payment is confirmed.
+              </div>
+            </div>
+            <div class="payment-method-option">
+              <label class="payment-method-option__label">
+                <span class="payment-method-option__radio-group">
+                  <input type="radio" name="payment-method" value="manual_eft">
+                  <span>
+                    <span class="payment-method-option__title">Manual EFT</span><br>
+                    <span class="payment-method-option__desc">Bank transfer · Upload proof of payment</span>
+                  </span>
+                </span>
+              </label>
+              <div class="payment-method-option__panel" data-method="manual_eft" style="display:none;">
+                <div id="eft-bank-details">Loading bank details…</div>
+                <ol style="margin:16px 0 0;padding-left:20px;">
+                  <li>Make the EFT using the bank details above.</li>
+                  <li>Use your order reference (shown after you place the order) as the payment reference.</li>
+                  <li>Save your proof of payment.</li>
+                  <li>Upload it below, or from your account later.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
 
           <!-- Newsletter Opt-In -->
           <label class="newsletter-optin" id="newsletter-optin-label" style="display:flex;align-items:flex-start;gap:12px;padding:16px 20px;background:var(--color-bg-alt);border:1px solid var(--color-border-light);border-radius:var(--radius-lg);margin:24px 0;cursor:pointer;">
@@ -195,7 +226,7 @@
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
   <script type="module">
-    import { createOrder, getOrderPreview, getShippingEstimate } from './js/api.js';
+    import { createOrder, getOrderPreview, getShippingEstimate, getEftBankDetails } from './js/api.js';
     import { trackBeginCheckout } from './js/analytics.js';
 
     function getPlaceholderImage(name) {
@@ -212,6 +243,44 @@
       let cart = JSON.parse(localStorage.getItem('oluhle_cart') || '[]');
       if (cart.length > 0) trackBeginCheckout(cart);
       const itemsContainer = document.getElementById('checkout-items');
+
+      // --- Payment method selection ---
+      // Radio list where the selected option expands its own panel directly
+      // below it — no page navigation, matching the reference interaction.
+      let bankDetailsLoaded = false;
+
+      function getSelectedPaymentMethod() {
+        return document.querySelector('input[name="payment-method"]:checked')?.value || 'payfast';
+      }
+
+      async function ensureBankDetailsLoaded() {
+        if (bankDetailsLoaded) return;
+        const el = document.getElementById('eft-bank-details');
+        try {
+          const details = await getEftBankDetails();
+          el.innerHTML = `
+            <table style="width:100%;font-size:0.85rem;">
+              <tr><td style="padding:3px 0;color:var(--color-text-light);">Account Name</td><td style="padding:3px 0;text-align:right;">${details.bank_holder || '—'}</td></tr>
+              <tr><td style="padding:3px 0;color:var(--color-text-light);">Bank</td><td style="padding:3px 0;text-align:right;">${details.bank_name || '—'}</td></tr>
+              <tr><td style="padding:3px 0;color:var(--color-text-light);">Account Number</td><td style="padding:3px 0;text-align:right;">${details.bank_account || '—'}</td></tr>
+              <tr><td style="padding:3px 0;color:var(--color-text-light);">Branch Code</td><td style="padding:3px 0;text-align:right;">${details.bank_branch || '—'}</td></tr>
+              ${details.bank_account_type ? `<tr><td style="padding:3px 0;color:var(--color-text-light);">Account Type</td><td style="padding:3px 0;text-align:right;">${details.bank_account_type}</td></tr>` : ''}
+              ${details.bank_swift ? `<tr><td style="padding:3px 0;color:var(--color-text-light);">SWIFT</td><td style="padding:3px 0;text-align:right;">${details.bank_swift}</td></tr>` : ''}
+            </table>`;
+          bankDetailsLoaded = true;
+        } catch (err) {
+          el.textContent = 'Bank details are temporarily unavailable — please contact us to complete your EFT.';
+        }
+      }
+
+      document.querySelectorAll('input[name="payment-method"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          document.querySelectorAll('.payment-method-option__panel').forEach(panel => {
+            panel.style.display = panel.dataset.method === radio.value ? 'block' : 'none';
+          });
+          if (radio.value === 'manual_eft') ensureBankDetailsLoaded();
+        });
+      });
 
       // --- Render order summary ---
       function renderCheckoutItems() {
@@ -458,6 +527,8 @@
         btn.disabled = true;
         btn.textContent = 'Processing…';
 
+        const paymentMethod = getSelectedPaymentMethod();
+
         try {
           const newsletterOptIn = document.getElementById('newsletter-optin')?.checked || false
           const data = await createOrder({
@@ -467,18 +538,24 @@
             shippingMethod,
             couponCode: appliedCouponCode || undefined,
             newsletterOptIn,
+            paymentMethod,
           });
 
-
-          // Logic for clearing cart: 
-          // We clear it here because the user is successfully handing off to PayFast.
+          // Clearing the cart here: the order now exists server-side either
+          // way — PayFast hands off to the gateway, Manual EFT lands on the
+          // success page with instructions. Nothing left to check out.
           localStorage.removeItem('oluhle_cart');
+
+          if (paymentMethod === 'manual_eft') {
+            window.location.href = `checkout-success.html?order=${data.orderId}`;
+            return;
+          }
 
           // Submit to PayFast via a hidden auto-submitting form
           const form = document.createElement('form');
           form.method = 'POST';
           form.action = data.payfastUrl;
-          
+
           for (const [key, value] of Object.entries(data.payfastData)) {
             const input = document.createElement('input');
             input.type = 'hidden';
@@ -486,7 +563,7 @@
             input.value = value;
             form.appendChild(input);
           }
-          
+
           document.body.appendChild(form);
           form.submit();
 

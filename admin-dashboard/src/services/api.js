@@ -82,6 +82,13 @@ export const ordersApi = {
 };
 
 
+export const paymentsApi = {
+  list: (eftStatus) => api.get('/admin/payments', { params: eftStatus ? { eftStatus } : {} }),
+  verify: (id) => api.post(`/admin/payments/${id}/verify`),
+  reject: (id, reason) => api.post(`/admin/payments/${id}/reject`, { reason }),
+  proofUrl: (id) => `${API_BASE_URL}/admin/payments/${id}/proof`,
+};
+
 export const quotesApi = {
   list: () => api.get('/quotes/admin'),
   updateStatus: (id, status) => api.patch(`/quotes/admin/${id}/status`, { status }),
@@ -130,6 +137,7 @@ export const adminOpsApi = {
     list: () => api.get('/admin/ops/purchases'),
     create: (data) => api.post('/admin/ops/purchases', data),
     receive: (id) => api.patch(`/admin/ops/purchases/${id}/receive`),
+    pay: (id, data) => api.post(`/admin/ops/purchases/${id}/pay`, data),
   },
   payments: {
     list: () => api.get('/admin/ops/payments'),
@@ -211,6 +219,38 @@ export const adminOpsApi = {
     update: (id, data) => api.patch(`/admin/ops/tax-rates/${id}`, data),
     delete: (id) => api.delete(`/admin/ops/tax-rates/${id}`),
   },
+};
+
+export const financeApi = {
+  chartOfAccounts: () => api.get('/admin/finance/chart-of-accounts'),
+  trialBalance: (asOf) => api.get('/admin/finance/trial-balance', { params: asOf ? { asOf } : {} }),
+  ledger: (code, params) => api.get(`/admin/finance/ledger/${code}`, { params }),
+  journals: (params) => api.get('/admin/finance/journals', { params }),
+  incomeStatement: (params) => api.get('/admin/finance/income-statement', { params }),
+  balanceSheet: (asOf) => api.get('/admin/finance/balance-sheet', { params: asOf ? { asOf } : {} }),
+  cashFlow: (params) => api.get('/admin/finance/cash-flow', { params }),
+  agedReceivables: (asOf) => api.get('/admin/finance/aged-receivables', { params: asOf ? { asOf } : {} }),
+  agedPayables: (asOf) => api.get('/admin/finance/aged-payables', { params: asOf ? { asOf } : {} }),
+};
+
+export const expensesApi = {
+  list: () => api.get('/admin/expenses'),
+  create: (data) => api.post('/admin/expenses', data),
+};
+
+export const bankingApi = {
+  accounts: {
+    list: () => api.get('/admin/banking/accounts'),
+    create: (data) => api.post('/admin/banking/accounts', data),
+    update: (id, data) => api.patch(`/admin/banking/accounts/${id}`, data),
+  },
+  transactions: {
+    create: (accountId, data) => api.post(`/admin/banking/accounts/${accountId}/transactions`, data),
+    match: (id, journalLineId) => api.post(`/admin/banking/transactions/${id}/match`, { journalLineId }),
+    unmatch: (id) => api.post(`/admin/banking/transactions/${id}/unmatch`),
+    adjust: (id, data) => api.post(`/admin/banking/transactions/${id}/adjust`, data),
+  },
+  reconciliation: (accountId, params) => api.get(`/admin/banking/accounts/${accountId}/reconciliation`, { params }),
 };
 
 export const newsletterApi = {

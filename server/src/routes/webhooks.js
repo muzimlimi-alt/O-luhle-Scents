@@ -4,6 +4,7 @@ import https from 'https'
 import prisma from '../lib/prisma.js'
 import { generateInvoice, sendWhatsAppNotification } from '../lib/invoiceService.js'
 import { consumeReservation } from '../lib/inventoryService.js'
+import { postOrderPaidJournals } from '../lib/accountingService.js'
 
 import { buildSignature, isPayfastIP, validateItnWithPayfast } from '../utils/payfast.js'
 
@@ -85,7 +86,7 @@ router.post('/payfast', async (req, res) => {
         })
 
         // 3b. Create Payment record
-        await tx.payment.create({
+        const payment = await tx.payment.create({
           data: {
             orderId: orderId,
             paymentMethod: 'PayFast',
@@ -95,6 +96,11 @@ router.post('/payfast', async (req, res) => {
             paidAt: new Date()
           }
         })
+
+        // 3b-ii. Post the sale/cash (and COGS, if cost data is complete)
+        // journals — see accountingService.js. Runs in this same transaction
+        // so the order can never end up "paid" without its GL entries.
+        await postOrderPaidJournals(tx, order, payment)
 
         // 3c. Consume the stock held at checkout — moves reserved units into
         // an actual sale (decrements quantity + reserved together) and logs it.

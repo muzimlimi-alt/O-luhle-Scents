@@ -25,3 +25,17 @@ export function requireAdmin(req, res, next) {
     next()
   })
 }
+
+// Customer-facing auth (server/src/routes/customers.js). Customer tokens
+// carry an explicit `type: 'customer'` claim (admin tokens have no such
+// claim) so the two token types can never be mistaken for one another —
+// fully additive, existing admin tokens are unaffected.
+export function requireCustomer(req, res, next) {
+  requireAuth(req, res, () => {
+    if (req.user.type !== 'customer') {
+      return res.status(403).json({ error: 'Customer access required' })
+    }
+    req.customerId = req.user.id
+    next()
+  })
+}

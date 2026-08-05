@@ -6,11 +6,18 @@ import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { FormField } from '../components/FormField';
 import { useMessaging } from '../context/MessagingContext';
-import { ShoppingCart, Eye, Truck, Barcode, Plus, Trash2, PackageCheck, Sparkles } from 'lucide-react';
+import { ShoppingCart, Eye, Truck, Barcode, Plus, Trash2, PackageCheck, Sparkles, Wallet } from 'lucide-react';
 
 const STATUS_TONE = { PENDING: 'warning', RECEIVED: 'success', CANCELLED: 'error' };
+const PAYMENT_STATUS_TONE = { unpaid: 'neutral', partially_paid: 'warning', paid: 'success' };
 
 const EMPTY_ITEM = { variantId: '', quantity: '1', costPrice: '' };
+const EMPTY_PAY_FORM = { method: 'eft', amount: '', reference: '', notes: '' };
+
+const remainingBalance = (purchase) => {
+  const paid = (purchase.payments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+  return Math.max(Number(purchase.totalCost || 0) - paid, 0);
+};
 
 export function Purchases() {
   const { showMessage } = useMessaging();
@@ -23,6 +30,9 @@ export function Purchases() {
   const [receivingId, setReceivingId] = useState(null);
   const [form, setForm] = useState({ supplierId: '', expectedDelivery: '', items: [{ ...EMPTY_ITEM }] });
   const [lowStockBySupplier, setLowStockBySupplier] = useState([]);
+  const [payingPurchase, setPayingPurchase] = useState(null);
+  const [payForm, setPayForm] = useState(EMPTY_PAY_FORM);
+  const [paySubmitting, setPaySubmitting] = useState(false);
 
   const fetchPurchases = useCallback(async () => {
     setLoading(true);
@@ -134,6 +144,34 @@ export function Purchases() {
     }
   };
 
+  const openPayDrawer = (purchase) => {
+    setPayingPurchase(purchase);
+    setPayForm({ ...EMPTY_PAY_FORM, amount: remainingBalance(purchase).toFixed(2) });
+  };
+
+  const handlePaySubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(payForm.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return showMessage('warning', 'Invalid Amount', 'Enter a positive payment amount.');
+    }
+    setPaySubmitting(true);
+    try {
+      await adminOpsApi.purchases.pay(payingPurchase.id, {
+        method: payForm.method,
+        amount,
+        reference: payForm.reference || null,
+        notes: payForm.notes || null,
+      });
+      setPayingPurchase(null);
+      fetchPurchases();
+    } catch (err) {
+      showMessage('error', 'Payment Failed', err.message);
+    } finally {
+      setPaySubmitting(false);
+    }
+  };
+
   const columns = [
     { key: 'id', label: 'Purchase ID', render: (val) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontFamily: 'monospace' }}>
@@ -147,8 +185,12 @@ export function Purchases() {
     )},
     { key: 'items', label: 'Items', render: (val) => `${val?.length || 0} line item(s)` },
     { key: 'totalCost', label: 'Total Cost', render: (val) => `R${Number(val || 0).toLocaleString()}` },
+    { key: 'taxAmount', label: 'VAT', render: (val) => val > 0 ? `R${Number(val).toLocaleString()}` : '—' },
     { key: 'status', label: 'Status', render: (val) => (
       <StatusBadge tone={STATUS_TONE[val] || 'neutral'} label={val} />
+    )},
+    { key: 'paymentStatus', label: 'AP Status', render: (val, row) => (
+      <StatusBadge tone={PAYMENT_STATUS_TONE[val] || 'neutral'} label={row.status === 'RECEIVED' ? (val || 'unpaid').replace('_', ' ') : '—'} />
     )},
     { key: 'createdAt', label: 'Date', render: (val) => new Date(val).toLocaleDateString() },
   ];
@@ -206,6 +248,11 @@ export function Purchases() {
                   <PackageCheck size={16} />
                 </button>
               )}
+              {row.status === 'RECEIVED' && row.paymentStatus !== 'paid' && (
+                <button className="icon-btn" title="Pay Supplier" onClick={() => openPayDrawer(row)}>
+                  <Wallet size={16} />
+                </button>
+              )}
             </>
           )}
         />
@@ -253,7 +300,44 @@ export function Purchases() {
         </form>
       </Drawer>
 
+      <Drawer isOpen={!!payingPurchase} onClose={() => setPayingPurchase(null)} title="Pay Supplier" width={440}>
+        {payingPurchase && (
+          <form onSubmit={handlePaySubmit} className="admin-form">
+            <p className="pay-summary">
+              Purchase Order #{payingPurchase.id.split('-')[0].toUpperCase()} — {payingPurchase.supplier?.name || 'Unknown Supplier'}
+              <br />
+              Total: R{Number(payingPurchase.totalCost || 0).toLocaleString()} · Remaining: <strong>R{remainingBalance(payingPurchase).toLocaleString()}</strong>
+            </p>
+            <FormField label="Method" required>
+              <select value={payForm.method} onChange={e => setPayForm(f => ({ ...f, method: e.target.value }))}>
+                <option value="eft">EFT</option>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="other">Other</option>
+              </select>
+            </FormField>
+            <FormField label="Amount (R)" required>
+              <input type="number" step="0.01" min="0.01" value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} required />
+            </FormField>
+            <FormField label="Reference (optional)">
+              <input type="text" value={payForm.reference} onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))} placeholder="EFT reference / receipt number" />
+            </FormField>
+            <FormField label="Notes (optional)">
+              <textarea rows={3} value={payForm.notes} onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} />
+            </FormField>
+            <div className="attr-actions">
+              <button type="button" className="btn" onClick={() => setPayingPurchase(null)}>Cancel</button>
+              <button type="submit" className="btn btn--primary" disabled={paySubmitting}>
+                {paySubmitting ? 'Recording...' : 'Record Payment'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Drawer>
+
       <style dangerouslySetInnerHTML={{ __html: `
+        .pay-summary { font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; line-height: 1.6; }
+        .attr-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
         .suggested-reorders { margin-bottom: 24px; }
         .suggestion-list { display: flex; flex-direction: column; gap: 10px; }
         .suggestion-row {

@@ -40,6 +40,26 @@
     }
   }
 
+  // Collection card photos (collection_1_image_url, etc.) — each card has a
+  // real <img class="category-card__photo"> sitting above its gradient
+  // .category-card__bg (same layering idea as the hero's img/video over its
+  // gradient). Unset/empty => the <img> never gets a src, stays at
+  // opacity: 0 (its default CSS state), gradient shows through untouched.
+  // A bad/broken URL fails the same way via the 'error' listener, so a
+  // mistyped or deleted upload never leaves a blank hole or a broken-image
+  // icon on the storefront — it just quietly falls back to the gradient.
+  function hydrateCollectionImages(c) {
+    for (let i = 1; i <= 3; i++) {
+      const url = c['collection_' + i + '_image_url'];
+      if (!url) continue;
+      const img = document.querySelector('[data-collection-photo="' + i + '"]');
+      if (!img) continue;
+      img.addEventListener('load', function () { img.classList.add('is-loaded'); });
+      img.addEventListener('error', function () { img.removeAttribute('src'); });
+      img.src = url;
+    }
+  }
+
   async function loadContent() {
     try {
       const res = await fetch('/api/admin/settings/public');
@@ -63,6 +83,7 @@
       });
 
       hydrateHeroMedia(c.hero_media_url);
+      hydrateCollectionImages(c);
 
       const bar = document.querySelector('.js-announcement-bar');
       if (bar) {

@@ -6,6 +6,7 @@ import { generateQuotePDF } from '../lib/quoteService.js'
 import { DateTime } from 'luxon'
 import { adjustStock } from '../lib/inventoryService.js'
 import { MANUAL_PAYMENT_METHODS } from '../lib/orderAdminService.js'
+import { nextOrderNumber } from '../lib/orderNumberService.js'
 
 const router = Router()
 
@@ -123,6 +124,7 @@ router.post('/admin/:id/convert', requireAdmin, async (req, res, next) => {
        // 1. Create Order
        const order = await tx.order.create({
          data: {
+           orderNumber: await nextOrderNumber(tx),
            customerId: quote.customerId,
            quoteId: quote.id,
            totalAmount: quote.totalAmount,

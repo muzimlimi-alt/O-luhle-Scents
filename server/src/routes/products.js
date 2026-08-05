@@ -78,7 +78,16 @@ router.get('/', async (req, res, next) => {
       if (category.length > 20) {
         where.categoryId = category
       } else {
-        where.category = { name: { contains: category, mode: 'insensitive' } }
+        // Slug match first (the real identifier categories are linked by
+        // everywhere else — storefront filter buttons, ?cat= deep links);
+        // name-contains stays as a fallback for any older link that still
+        // passes a bare name instead of a slug.
+        where.category = {
+          OR: [
+            { slug: { equals: category, mode: 'insensitive' } },
+            { name: { contains: category, mode: 'insensitive' } },
+          ]
+        }
       }
     }
 
@@ -327,7 +336,9 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
       for (const v of parsedVariants) {
         const variantPrice = parseFloat(v.price) || 0;
         const variantCost = (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0;
-        
+        const variantPackagingCost = (v.packagingCost && v.packagingCost !== "") ? parseFloat(v.packagingCost) : 0;
+        const variantLabellingCost = (v.labellingCost && v.labellingCost !== "") ? parseFloat(v.labellingCost) : 0;
+
         let volume = parseInt(v.volume || 0);
         if (v.size === "Full Size") volume = 100;
         else if (v.size === "Travel Size") volume = 50;
@@ -338,6 +349,8 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
             size: v.size || 'Other',
             price: variantPrice,
             costPrice: variantCost,
+            packagingCost: variantPackagingCost,
+            labellingCost: variantLabellingCost,
             sku: v.sku || `SKU-${Date.now()}-${Math.floor(Math.random()*1000)}`,
             barcode: v.barcode || null,
             uom: v.uom || 'ml',
@@ -537,6 +550,8 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
                 size: v.size,
                 price: parseFloat(v.price) || 0,
                 costPrice: (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0,
+                packagingCost: (v.packagingCost && v.packagingCost !== "") ? parseFloat(v.packagingCost) : 0,
+                labellingCost: (v.labellingCost && v.labellingCost !== "") ? parseFloat(v.labellingCost) : 0,
                 barcode: v.barcode || undefined,
                 uom: v.uom,
                 volume,
@@ -573,6 +588,8 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
                 size: v.size,
                 price: parseFloat(v.price) || 0,
                 costPrice: (v.costPrice && v.costPrice !== "") ? parseFloat(v.costPrice) : 0,
+                packagingCost: (v.packagingCost && v.packagingCost !== "") ? parseFloat(v.packagingCost) : 0,
+                labellingCost: (v.labellingCost && v.labellingCost !== "") ? parseFloat(v.labellingCost) : 0,
                 sku: v.sku || `SKU-${Date.now()}`,
                 barcode: v.barcode || null,
                 uom: v.uom || 'ml',

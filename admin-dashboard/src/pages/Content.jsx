@@ -248,10 +248,25 @@ export function Content() {
               k="collection_1_price_hint"
               warning="Marketing copy only — not derived from actual product prices. Keep in sync manually."
             />
+            <MediaField
+              label="Collection 1 Image"
+              k="collection_1_image_url"
+              hint="Portrait photo — card is 3:4 on mobile, 2:3 on desktop; 1000×1500px or larger works well. Leave empty to keep the default gradient background."
+            />
             <Field label="Collection 2 Name" k="collection_2_name" />
             <Field label="Collection 2 Price Hint" k="collection_2_price_hint" />
+            <MediaField
+              label="Collection 2 Image"
+              k="collection_2_image_url"
+              hint="Portrait photo — card is 3:4 on mobile, 2:3 on desktop; 1000×1500px or larger works well. Leave empty to keep the default gradient background."
+            />
             <Field label="Collection 3 Name" k="collection_3_name" />
             <Field label="Collection 3 Price Hint" k="collection_3_price_hint" />
+            <MediaField
+              label="Collection 3 Image"
+              k="collection_3_image_url"
+              hint="Portrait photo — card is 3:4 on mobile, 2:3 on desktop; 1000×1500px or larger works well. Leave empty to keep the default gradient background."
+            />
           </div>
         </div>
 
@@ -338,8 +353,8 @@ export function Content() {
 
         .image-preview { position: relative; margin-bottom: 10px; border-radius: 4px; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface); }
         .image-preview img, .image-preview video { width: 100%; height: 160px; object-fit: cover; display: block; }
-        .image-preview__remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: #fff; border: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
-        .image-preview__remove:hover { background: rgba(0,0,0,0.85); }
+        .image-preview__remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.75); color: #fff; border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 2px 8px rgba(0,0,0,0.5); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.2s; z-index: 2; }
+        .image-preview__remove:hover { background: #c0392b; border-color: #fff; transform: scale(1.08); }
         .image-preview__remove:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
 
         .image-upload-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px dashed var(--color-border); border-radius: 4px; font-size: 0.8rem; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s; }

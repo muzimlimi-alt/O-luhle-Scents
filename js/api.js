@@ -155,6 +155,21 @@ export function getOrderPreview(payload) {
   return apiFetch('/api/orders/preview', { method: 'POST', body: JSON.stringify(payload) })
 }
 
+// ── Manual EFT ────────────────────────────────────────────────────────────────
+
+export function getEftBankDetails() {
+  return apiFetch('/api/orders/eft/bank-details')
+}
+
+// Public, order-UUID-scoped — works for a guest checkout with no login,
+// same trust model as getOrder() above. Logged-in customers should prefer
+// uploadMyOrderProof() instead (ownership-checked via their account).
+export function uploadEftProof(orderId, file) {
+  const form = new FormData()
+  form.append('proof', file)
+  return apiFetch(`/api/orders/${orderId}/proof`, { method: 'POST', body: form })
+}
+
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -170,6 +185,79 @@ export async function login(email, password) {
 
 export function logout() {
   clearToken()
+}
+
+// ── Customer account ──────────────────────────────────────────────────────────
+// Separate from login()/adminGetOrders() above (those hit /api/auth, the
+// admin login) — these hit the new /api/customers/* routes. Both sets of
+// functions share the same generic getToken/setToken/getUser/setUser
+// storage helpers, since a browser only ever holds one active session.
+
+export async function registerCustomer({ name, email, password, phone }) {
+  const data = await apiFetch('/api/customers/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password, phone }),
+  })
+  setToken(data.token)
+  setUser(data.customer)
+  return data
+}
+
+export async function loginCustomer(email, password) {
+  const data = await apiFetch('/api/customers/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+  setToken(data.token)
+  setUser(data.customer)
+  return data
+}
+
+export function forgotPassword(email) {
+  return apiFetch('/api/customers/forgot-password', { method: 'POST', body: JSON.stringify({ email }) })
+}
+
+export function resetPassword(token, newPassword) {
+  return apiFetch('/api/customers/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword }) })
+}
+
+export function getMyProfile() {
+  return apiFetch('/api/customers/me')
+}
+
+export function updateMyProfile(data) {
+  return apiFetch('/api/customers/me', { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function getMyAddresses() {
+  return apiFetch('/api/customers/me/addresses')
+}
+
+export function createMyAddress(data) {
+  return apiFetch('/api/customers/me/addresses', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateMyAddress(id, data) {
+  return apiFetch(`/api/customers/me/addresses/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteMyAddress(id) {
+  return apiFetch(`/api/customers/me/addresses/${id}`, { method: 'DELETE' })
+}
+
+export function getMyOrders() {
+  return apiFetch('/api/customers/me/orders')
+}
+
+export function getMyOrder(id) {
+  return apiFetch(`/api/customers/me/orders/${id}`)
+}
+
+// Ownership-checked equivalent of uploadEftProof() for a logged-in customer.
+export function uploadMyOrderProof(orderId, file) {
+  const form = new FormData()
+  form.append('proof', file)
+  return apiFetch(`/api/customers/me/orders/${orderId}/proof`, { method: 'POST', body: form })
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────────

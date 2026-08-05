@@ -1,7 +1,42 @@
 import prisma from './prisma.js'
 import nodemailer from 'nodemailer'
 import configStore from './configStore.js'
+import { postSupplierPaymentJournal } from './accountingService.js'
 
+// Records a manual payment against a received Purchase (AP settlement) —
+// mirrors orderAdminService.recordPayment on the payable side. Rejects
+// purchases that aren't RECEIVED yet: the AP liability only exists once
+// postPurchaseReceivedJournal has posted (at receive time), so paying before
+// that would credit Bank against an Accounts Payable balance that isn't
+// there yet.
+export async function payPurchase(purchaseId, { method, amount, reference, notes, adminUserId }) {
+  return prisma.$transaction(async (tx) => {
+    const purchase = await tx.purchase.findUnique({
+      where: { id: purchaseId },
+      include: { payments: true }
+    })
+    if (!purchase) throw Object.assign(new Error('Purchase order not found'), { status: 404 })
+    if (purchase.status !== 'RECEIVED') {
+      throw Object.assign(new Error('Purchase order must be received before it can be paid'), { status: 400 })
+    }
+
+    const payment = await tx.supplierPayment.create({
+      data: { purchaseId, method, amount, reference: reference || null, notes: notes || null, adminUserId }
+    })
+
+    await postSupplierPaymentJournal(tx, payment, purchase)
+
+    const totalPaid = purchase.payments.reduce((sum, p) => sum + Number(p.amount), 0) + Number(amount)
+    const paymentStatus = totalPaid >= Number(purchase.totalCost || 0) ? 'paid' : 'partially_paid'
+    const updated = await tx.purchase.update({ where: { id: purchaseId }, data: { paymentStatus } })
+
+    await tx.auditLog.create({
+      data: { adminUserId, action: 'PAY_SUPPLIER', entity: 'Purchase', entityId: purchaseId, details: { method, amount } }
+    })
+
+    return { payment, purchase: updated }
+  })
+}
 
 export async function sendRestockNotification(variantId) {
   try {

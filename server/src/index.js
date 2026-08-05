@@ -12,12 +12,20 @@ import webhookRoutes from './routes/webhooks.js'
 import categoryRoutes from './routes/categories.js'
 import adminRoutes from './routes/admin.js'
 import adminOpsRoutes from './routes/admin_ops.js'
+import adminPaymentsRoutes from './routes/admin_payments.js'
+import adminFinanceRoutes from './routes/admin_finance.js'
+import adminBankingRoutes from './routes/admin_banking.js'
+import adminExpensesRoutes from './routes/admin_expenses.js'
+import adminAssetsRoutes from './routes/admin_assets.js'
+import adminBudgetsRoutes from './routes/admin_budgets.js'
+import adminApprovalsRoutes from './routes/admin_approvals.js'
 import analyticsRoutes from './routes/analytics.js'
 import trackingRoutes from './routes/tracking.js'
 import quoteRoutes from './routes/quotes.js'
 import settingsRoutes from './routes/settings.js'
 import cartRoutes from './routes/cart.js'
 import newsletterRoutes from './routes/newsletter.js'
+import customerRoutes from './routes/customers.js'
 
 
 
@@ -29,6 +37,10 @@ const rootDir = path.join(__dirname, '../../')
 
 // Load .env relative to this file
 dotenv.config({ path: path.join(__dirname, '../.env') })
+
+// Ignore EPIPE errors on stdout/stderr when running as background service
+process.stdout?.on('error', (err) => { if (err.code === 'EPIPE') return })
+process.stderr?.on('error', (err) => { if (err.code === 'EPIPE') return })
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -64,6 +76,13 @@ app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/admin/ops', adminOpsRoutes)
+app.use('/api/admin/payments', adminPaymentsRoutes)
+app.use('/api/admin/finance', adminFinanceRoutes)
+app.use('/api/admin/banking', adminBankingRoutes)
+app.use('/api/admin/expenses', adminExpensesRoutes)
+app.use('/api/admin/assets', adminAssetsRoutes)
+app.use('/api/admin/budgets', adminBudgetsRoutes)
+app.use('/api/admin/approvals', adminApprovalsRoutes)
 app.use('/api/admin/analytics', analyticsRoutes)
 
 app.use('/api/categories', categoryRoutes)
@@ -73,6 +92,7 @@ app.use('/api/quotes', quoteRoutes)
 app.use('/api/admin/settings', settingsRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/newsletter', newsletterRoutes)
+app.use('/api/customers', customerRoutes)
 
 
 

@@ -9,6 +9,7 @@
 
 import nodemailer from 'nodemailer'
 import configStore from '../lib/configStore.js'
+import prisma from '../lib/prisma.js'
 
 let transporter = null
 let transporterKey = null
@@ -350,4 +351,207 @@ export async function sendCampaignBroadcast(email, unsubscribeToken, campaign) {
     html: emailShell(campaign.subject, body),
     attachments: formattedAttachments
   })
+}
+
+// ── Manual EFT email templates ────────────────────────────────────────────────
+// Unlike sendOrderConfirmation/sendShippingUpdate above (written for PayFast,
+// never actually wired up, and left untouched here), these ARE called live —
+// see server/src/lib/eftPaymentService.js and orders.js's manual_eft branch.
+
+async function loadOrderForEftEmail(orderId) {
+  return prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      customer: true,
+      shippingAddress: true,
+      items: { include: { variant: { include: { product: true } } } },
+      payments: { where: { paymentMethod: 'manual_eft' } }
+    }
+  })
+}
+
+function eftItemRows(items) {
+  return (items || []).map(item => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f2ede7;font-size:14px;">
+        ${item.productNameSnapshot || item.variant?.product?.name || 'Product'} — ${item.variantLabelSnapshot || item.variant?.size || ''}
+      </td>
+      <td style="padding:10px 0;border-bottom:1px solid #f2ede7;font-size:14px;text-align:center;">
+        × ${item.quantity}
+      </td>
+      <td style="padding:10px 0;border-bottom:1px solid #f2ede7;font-size:14px;text-align:right;font-weight:bold;">
+        R${(Number(item.priceAtPurchase) * item.quantity).toLocaleString()}
+      </td>
+    </tr>`).join('')
+}
+
+// ── EFT instructions ─────────────────────────────────────────────────────────
+// Sent immediately after a Manual EFT order is placed (orders.js).
+export async function sendEftInstructions(orderId, bankDetails) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+  const firstName = order.customer.name?.split(' ')[0] || 'Valued Customer'
+
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Thank you, ${firstName}!
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Your order has been received. Please complete payment using the EFT details below —
+      your order will be prepared as soon as your payment is verified.
+    </p>
+
+    <div style="background:#f7f3ee;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
+      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Order Reference (use as your EFT reference)</div>
+      <div style="font-family:monospace;font-size:16px;color:#1a1a1a;font-weight:bold;">${order.orderNumber}</div>
+    </div>
+
+    <div style="border:1px solid #e8e0d4;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
+      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">Bank Details</div>
+      <table style="width:100%;font-size:14px;color:#333;">
+        <tr><td style="padding:4px 0;color:#888;">Account Name</td><td style="padding:4px 0;text-align:right;">${bankDetails.bank_holder || '—'}</td></tr>
+        <tr><td style="padding:4px 0;color:#888;">Bank</td><td style="padding:4px 0;text-align:right;">${bankDetails.bank_name || '—'}</td></tr>
+        <tr><td style="padding:4px 0;color:#888;">Account Number</td><td style="padding:4px 0;text-align:right;">${bankDetails.bank_account || '—'}</td></tr>
+        <tr><td style="padding:4px 0;color:#888;">Branch Code</td><td style="padding:4px 0;text-align:right;">${bankDetails.bank_branch || '—'}</td></tr>
+        ${bankDetails.bank_account_type ? `<tr><td style="padding:4px 0;color:#888;">Account Type</td><td style="padding:4px 0;text-align:right;">${bankDetails.bank_account_type}</td></tr>` : ''}
+        ${bankDetails.bank_swift ? `<tr><td style="padding:4px 0;color:#888;">SWIFT</td><td style="padding:4px 0;text-align:right;">${bankDetails.bank_swift}</td></tr>` : ''}
+      </table>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left;font-size:11px;color:#999;letter-spacing:0.1em;text-transform:uppercase;padding-bottom:8px;">Item</th>
+          <th style="text-align:center;font-size:11px;color:#999;letter-spacing:0.1em;text-transform:uppercase;padding-bottom:8px;">Qty</th>
+          <th style="text-align:right;font-size:11px;color:#999;letter-spacing:0.1em;text-transform:uppercase;padding-bottom:8px;">Total</th>
+        </tr>
+      </thead>
+      <tbody>${eftItemRows(order.items)}</tbody>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+      <tr>
+        <td style="padding:8px 0;font-size:15px;font-weight:bold;border-top:2px solid #1a1a1a;">Amount Due</td>
+        <td style="padding:8px 0;font-size:15px;font-weight:bold;text-align:right;border-top:2px solid #1a1a1a;color:#b89b6a;">
+          R${Number(order.totalAmount).toLocaleString()}
+        </td>
+      </tr>
+    </table>
+
+    <ol style="font-size:13px;color:#666;line-height:1.9;margin-top:28px;padding-left:20px;">
+      <li>Make the EFT using the bank details above.</li>
+      <li>Use <strong>${order.orderNumber}</strong> as your payment reference.</li>
+      <li>Save your proof of payment.</li>
+      <li>Upload it from your order confirmation page or your account — we'll verify it and get your order moving.</li>
+    </ol>`
+
+  await send({
+    to: order.customer.email,
+    subject: `Complete your O'luhle Scents order — ${order.orderNumber}`,
+    html: emailShell('Complete Your Payment — O\'luhle Scents', body),
+  })
+}
+
+// ── Proof received ───────────────────────────────────────────────────────────
+export async function sendProofReceived(orderId) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Proof of payment received
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      We've received your proof of payment for order <strong>${order.orderNumber}</strong> and will verify it shortly.
+      You'll receive another email as soon as it's confirmed.
+    </p>`
+
+  await send({
+    to: order.customer.email,
+    subject: `Proof of payment received — ${order.orderNumber}`,
+    html: emailShell('Proof Received — O\'luhle Scents', body),
+  })
+}
+
+// ── Payment verified ─────────────────────────────────────────────────────────
+export async function sendPaymentVerified(orderId) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Payment verified!
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Your payment for order <strong>${order.orderNumber}</strong> has been verified. Your order is now being prepared.
+    </p>`
+
+  await send({
+    to: order.customer.email,
+    subject: `Payment verified — ${order.orderNumber}`,
+    html: emailShell('Payment Verified — O\'luhle Scents', body),
+  })
+}
+
+// ── Payment rejected ─────────────────────────────────────────────────────────
+export async function sendPaymentRejected(orderId, reason) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      We couldn't verify your payment
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      We were unable to verify your proof of payment for order <strong>${order.orderNumber}</strong>.
+      ${reason ? `<br><em>${reason}</em>` : ''}
+      Please upload a new proof of payment so we can try again.
+    </p>`
+
+  await send({
+    to: order.customer.email,
+    subject: `Action needed: payment not verified — ${order.orderNumber}`,
+    html: emailShell('Payment Not Verified — O\'luhle Scents', body),
+  })
+}
+
+// ── Password reset ───────────────────────────────────────────────────────────
+export async function sendPasswordResetEmail(customer, token) {
+  if (!customer.email) return
+  const BASE = process.env.SERVER_URL || 'http://localhost:3000'
+  const resetUrl = `${BASE}/account-reset-password.html?token=${token}`
+
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Reset your password
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      We received a request to reset the password on your O'luhle Scents account.
+      This link expires in 1 hour. If you didn't request this, you can safely ignore this email.
+    </p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${resetUrl}"
+         style="display:inline-block;background:#1a1a1a;color:#fff;text-decoration:none;
+                padding:14px 36px;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;
+                border-radius:2px;font-family:Georgia,serif;">
+        Reset Password
+      </a>
+    </div>`
+
+  await send({
+    to: customer.email,
+    subject: `Reset your O'luhle Scents password`,
+    html: emailShell('Reset Your Password — O\'luhle Scents', body),
+  })
+}
+
+// ── Admin EFT alert ──────────────────────────────────────────────────────────
+// Used for the eft_verification_notify_emails setting — a plain internal
+// notice, not a customer-branded template.
+export async function sendAdminEftAlert(emails, subject, message) {
+  const mailer = await getTransporter()
+  if (!mailer) return
+  for (const to of emails) {
+    await send({ to, subject, html: `<p style="font-family:sans-serif;font-size:14px;">${message}</p>` })
+  }
 }

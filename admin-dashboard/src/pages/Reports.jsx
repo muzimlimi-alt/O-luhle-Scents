@@ -100,6 +100,10 @@ export function Reports() {
                 <span className="inv-stat-label">Margin</span>
                 <span className="inv-stat-value">{finance.marginPercent.toFixed(1)}%</span>
               </div>
+              <div className="inv-stat">
+                <span className="inv-stat-label">Allocated Overhead / Unit</span>
+                <span className="inv-stat-value">R{(finance.allocatedOverheadPerUnit || 0).toFixed(2)}</span>
+              </div>
             </div>
 
             {finance.costCoveragePercent < 100 && (
@@ -108,6 +112,10 @@ export function Reports() {
                 Orders placed before cost snapshotting was introduced don't carry a cost record, so margin above is calculated only from items that have one — it understates true profit if coverage is well below 100%.
               </p>
             )}
+
+            <p className="finance-coverage-note finance-coverage-note--info">
+              "True Cost" adds packaging + labelling to purchase cost (COGS); it does not include Allocated Overhead / Unit above (courier + marketing spend), which is a period-wide estimate, not attributed to a specific product.
+            </p>
 
             {finance.topProducts?.length > 0 && (
               <DataTable
@@ -118,6 +126,8 @@ export function Reports() {
                   { key: 'cogs', label: 'COGS', render: (val) => val != null ? `R${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—' },
                   { key: 'grossProfit', label: 'Gross Profit', render: (val) => val != null ? `R${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—' },
                   { key: 'marginPercent', label: 'Margin', render: (val) => val != null ? `${val.toFixed(1)}%` : '—' },
+                  { key: 'trueCost', label: 'True Cost', render: (val) => val != null ? `R${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—' },
+                  { key: 'trueCostMarginPercent', label: 'True Margin', render: (val) => val != null ? `${val.toFixed(1)}%` : '—' },
                 ]}
                 data={finance.topProducts}
               />
@@ -255,6 +265,9 @@ export function Reports() {
         .finance-coverage-note {
           font-size: 0.78rem; color: var(--color-warning-text); background: rgba(251, 191, 36, 0.1);
           border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 4px; padding: 10px 14px; margin-bottom: 16px;
+        }
+        .finance-coverage-note--info {
+          color: var(--color-text-muted); background: var(--color-surface); border-color: var(--color-border);
         }
 
         .report-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }

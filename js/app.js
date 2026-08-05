@@ -33,6 +33,17 @@ async function fetchProducts(params = {}) {
   }
 }
 
+async function fetchCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    if (!res.ok) throw new Error('Failed to fetch categories');
+    return await res.json();
+  } catch (err) {
+    console.error('[fetchCategories] Error:', err);
+    return [];
+  }
+}
+
 // Placeholder image generator
 function getPlaceholderImage(name) {
   const initials = (name || 'OS').split(' ').map(w => w[0]).join('').substring(0, 2);
@@ -259,9 +270,44 @@ function renderProducts(containerId, products, limit) {
   initScrollReveal();
 }
 
-function initShopFilters() {
-  const filterBtns = document.querySelectorAll('.filter-btn');
+async function initShopFilters() {
+  const filterContainer = document.querySelector('.shop-filters');
   const sortSelect = document.getElementById('sort-select');
+  if (!filterContainer && !sortSelect) return;
+
+  // Category buttons are rendered from the live category list — any
+  // category an admin adds/removes shows up here without a code change.
+  // The "All" button is the one static entry; everything else is generated.
+  // Preserves whichever filter was active before the rebuild (this runs
+  // again on every currency change) — otherwise a rebuild would silently
+  // reset the visitor back to "All".
+  if (filterContainer) {
+    const previousActive = filterContainer.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+    const categories = await fetchCategories();
+    let allBtn = filterContainer.querySelector('.filter-btn[data-filter="all"]');
+    filterContainer.querySelectorAll('.filter-btn:not([data-filter="all"])').forEach(b => b.remove());
+    if (!allBtn) {
+      allBtn = document.createElement('button');
+      allBtn.className = 'filter-btn';
+      allBtn.dataset.filter = 'all';
+      allBtn.textContent = 'All';
+      filterContainer.prepend(allBtn);
+    }
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.dataset.filter = cat.slug;
+      btn.textContent = cat.name;
+      filterContainer.appendChild(btn);
+    });
+    filterContainer.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === previousActive);
+    });
+    // The category that was active got removed (e.g. deleted by an admin) — fall back to "All".
+    if (!filterContainer.querySelector('.filter-btn.active')) allBtn.classList.add('active');
+  }
+
+  const filterBtns = document.querySelectorAll('.filter-btn');
   if (!filterBtns.length && !sortSelect) return;
 
   const updateShop = async () => {

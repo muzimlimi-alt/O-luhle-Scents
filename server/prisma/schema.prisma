@@ -23,6 +23,12 @@ model AdminUser {
   newsletterCampaigns NewsletterCampaign[]
   returnItems         ReturnItem[]
   refunds             Refund[]
+  verifiedPayments    Payment[]
+  supplierPayments    SupplierPayment[]
+  expenses            Expense[]
+  assets              Asset[]
+  approvalRequestsMade    ApprovalRequest[] @relation("ApprovalRequested")
+  approvalRequestsDecided ApprovalRequest[] @relation("ApprovalDecided")
 
   @@map("admin_users")
 }
@@ -233,6 +239,12 @@ model ProductVariant {
   size      String   @db.VarChar(20)
   price     Decimal  @db.Decimal(10, 2)
   costPrice Decimal? @map("cost_price") @db.Decimal(10, 2)
+  // Finance Phase 8: known-at-setup per-unit costs beyond purchase price —
+  // packaging materials, label printing. Freight/courier/marketing are
+  // period-level spend, not per-unit, so they're not modeled here — see
+  // Expense + financeService.js allocatedOverheadPerUnit instead.
+  packagingCost Decimal? @map("packaging_cost") @db.Decimal(10, 2)
+  labellingCost Decimal? @map("labelling_cost") @db.Decimal(10, 2)
   sku       String   @unique @db.VarChar(100)
   barcode   String?  @db.VarChar(100)
 
@@ -309,15 +321,21 @@ model InventoryLog {
 
 // ── 7. CUSTOMERS ─────────────────────────────────────────────────────────────
 model Customer {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String?   @db.VarChar(100)
-  email     String?   @unique @db.VarChar(150)
-  phone     String?   @db.VarChar(20)
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  addresses Address[]
-  orders    Order[]
-  quotes    Quote[]
+  id                      String    @id @default(uuid()) @db.Uuid
+  name                    String?   @db.VarChar(100)
+  email                   String?   @unique @db.VarChar(150)
+  phone                   String?   @db.VarChar(20)
+  // Nullable — guest checkouts still create a Customer row with no password.
+  // Registering later with the same email attaches a password to this same
+  // row rather than creating a duplicate, so prior guest orders are inherited.
+  passwordHash            String?   @map("password_hash")
+  passwordResetToken      String?   @unique @map("password_reset_token")
+  passwordResetExpiresAt  DateTime? @map("password_reset_expires_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  addresses               Address[]
+  orders                  Order[]
+  quotes                  Quote[]
 
   @@map("customers")
 }
@@ -345,6 +363,10 @@ model Address {
 // ── 9. ORDERS ────────────────────────────────────────────────────────────────
 model Order {
   id                String    @id @default(uuid()) @db.Uuid
+  // Human-readable sequential reference (e.g. "OSC-100548"), assigned from
+  // the order_number_seq Postgres sequence at creation time — see
+  // server/src/lib/orderNumberService.js. Distinct from `id` (UUID, internal).
+  orderNumber       String    @unique @map("order_number") @db.VarChar(30)
   customerId        String?   @map("customer_id") @db.Uuid
   customer          Customer? @relation(fields: [customerId], references: [id])
   status            String    @default("pending") @db.VarChar(30)
@@ -414,6 +436,10 @@ model OrderItem {
   variantLabelSnapshot String?  @map("variant_label_snapshot")
   skuSnapshot          String?  @map("sku_snapshot")
   costAtPurchase       Decimal? @map("cost_at_purchase") @db.Decimal(10, 2)
+  // Finance Phase 8: same snapshot-at-sale-time reasoning as costAtPurchase,
+  // for ProductVariant.packagingCost/labellingCost.
+  packagingCostAtPurchase Decimal? @map("packaging_cost_at_purchase") @db.Decimal(10, 2)
+  labellingCostAtPurchase Decimal? @map("labelling_cost_at_purchase") @db.Decimal(10, 2)
 
   @@index([orderId])
   @@index([variantId])
@@ -455,8 +481,44 @@ model Payment {
   createdAt            DateTime          @default(now()) @map("created_at")
   milestone            PaymentMilestone?
 
+  // ── Manual EFT verification (only set when paymentMethod = 'manual_eft') ──
+  // One Payment row per EFT order, updated in place as proof is uploaded,
+  // replaced, verified, or rejected — see server/src/lib/eftPaymentService.js.
+  eftVerificationStatus String?              @map("eft_verification_status") @db.VarChar(20) // PENDING_PROOF, PROOF_UPLOADED, VERIFIED, REJECTED
+  proofOfPaymentUrl      String?             @map("proof_of_payment_url")
+  proofFileName          String?             @map("proof_file_name") @db.VarChar(255)
+  proofFileSize          Int?                @map("proof_file_size")
+  proofMimeType          String?             @map("proof_mime_type") @db.VarChar(100)
+  proofUploadedAt        DateTime?           @map("proof_uploaded_at")
+  verifiedByAdminId      String?             @map("verified_by_admin_id") @db.Uuid
+  verifiedByAdmin        AdminUser?          @relation(fields: [verifiedByAdminId], references: [id])
+  verifiedAt             DateTime?           @map("verified_at")
+  rejectionReason        String?             @map("rejection_reason")
+  statusHistory          PaymentStatusHistory[]
+
   @@index([orderId])
+  @@index([eftVerificationStatus])
   @@map("payments")
+}
+
+// ── 33. PAYMENT_STATUS_HISTORY ───────────────────────────────────────────────
+// Timeline of EFT verification events, written by the customer (upload) and
+// admin (verify/reject) actions — powers both the customer-facing order
+// timeline and the admin verification queue's history. Kept separate from
+// AuditLog, which stays the admin-wide operational log (still written
+// alongside this for every admin verify/reject action).
+model PaymentStatusHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  paymentId String   @map("payment_id") @db.Uuid
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  status    String   @db.VarChar(20)
+  note      String?
+  actorType String   @map("actor_type") @db.VarChar(20) // system, customer, admin
+  actorId   String?  @map("actor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([paymentId])
+  @@map("payment_status_history")
 }
 
 // ── 12. INVOICES ─────────────────────────────────────────────────────────────
@@ -526,18 +588,45 @@ model ProductSupplier {
 
 // ── 15. PURCHASES ────────────────────────────────────────────────────────────
 model Purchase {
-  id               String         @id @default(uuid()) @db.Uuid
-  supplierId       String?        @map("supplier_id") @db.Uuid
-  supplier         Supplier?      @relation(fields: [supplierId], references: [id])
-  totalCost        Decimal?       @map("total_cost") @db.Decimal(10, 2)
-  status           String         @default("PENDING") @db.VarChar(30)
-  expectedDelivery DateTime?      @map("expected_delivery")
-  receivedAt       DateTime?      @map("received_at")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  id               String            @id @default(uuid()) @db.Uuid
+  supplierId       String?           @map("supplier_id") @db.Uuid
+  supplier         Supplier?         @relation(fields: [supplierId], references: [id])
+  totalCost        Decimal?          @map("total_cost") @db.Decimal(10, 2)
+  status           String            @default("PENDING") @db.VarChar(30)
+  // Finance Phase 2: AP settlement status, mirrors Order.paymentStatus.
+  paymentStatus    String            @default("unpaid") @map("payment_status") @db.VarChar(30)
+  // Finance Phase 4: VAT portion of totalCost, extracted (not added) at
+  // receive time — see accountingService.js postPurchaseReceivedJournal.
+  taxAmount        Decimal           @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  expectedDelivery DateTime?         @map("expected_delivery")
+  receivedAt       DateTime?         @map("received_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
   items            PurchaseItem[]
+  payments         SupplierPayment[]
 
   @@map("purchases")
+}
+
+// ── 38. SUPPLIER_PAYMENTS ────────────────────────────────────────────────────
+// Finance Phase 2: AP settlement against a received Purchase — mirrors
+// Payment's shape on the payable side. See accountingService.js
+// postSupplierPaymentJournal / supplierService.js payPurchase.
+model SupplierPayment {
+  id          String     @id @default(uuid()) @db.Uuid
+  purchaseId  String     @map("purchase_id") @db.Uuid
+  purchase    Purchase   @relation(fields: [purchaseId], references: [id])
+  method      String     @db.VarChar(30)
+  amount      Decimal    @db.Decimal(10, 2)
+  reference   String?    @db.VarChar(150)
+  notes       String?
+  adminUserId String?    @map("admin_user_id") @db.Uuid
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+  paidAt      DateTime   @default(now()) @map("paid_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([purchaseId])
+  @@map("supplier_payments")
 }
 
 // ── 16. PURCHASE_ITEMS ───────────────────────────────────────────────────────
@@ -794,6 +883,165 @@ model ExchangeRequest {
   @@map("exchange_requests")
 }
 
+// ── 34. CHART_OF_ACCOUNTS ────────────────────────────────────────────────────
+// Finance Phase 1: double-entry accounting core. The General Ledger (Journal +
+// JournalLine) is the source of truth for money movement; Order/Payment/
+// Invoice/Refund stay as-is and post journals rather than being replaced.
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum NormalBalance {
+  DEBIT
+  CREDIT
+}
+
+model ChartOfAccount {
+  id            String          @id @default(uuid()) @db.Uuid
+  code          String          @unique @db.VarChar(20)
+  name          String          @db.VarChar(150)
+  type          AccountType
+  normalBalance NormalBalance   @map("normal_balance")
+  parentId      String?         @map("parent_id") @db.Uuid
+  parent        ChartOfAccount? @relation("AccountTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children      ChartOfAccount[] @relation("AccountTree")
+  isActive      Boolean         @default(true) @map("is_active")
+  isSystem      Boolean         @default(false) @map("is_system")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  journalLines  JournalLine[]
+
+  @@index([type])
+  @@map("chart_of_accounts")
+}
+
+// ── 35. JOURNALS ─────────────────────────────────────────────────────────────
+// A posted, immutable double-entry. Corrections happen via a new reversing
+// journal, never by editing/deleting an existing one — see accountingService.js.
+enum JournalSourceType {
+  ORDER_SALE
+  ORDER_PAYMENT
+  REFUND
+  MANUAL
+  PURCHASE_RECEIVE
+  SUPPLIER_PAYMENT
+  EXPENSE
+  ASSET_ACQUISITION
+  DEPRECIATION
+  ASSET_DISPOSAL
+}
+
+model Journal {
+  id              String            @id @default(uuid()) @db.Uuid
+  // Sequential human-readable reference (e.g. "JNL-100001"), assigned from the
+  // journal_number_seq Postgres sequence at posting time — see accountingService.js.
+  journalNumber   String            @unique @map("journal_number") @db.VarChar(30)
+  date            DateTime
+  description     String
+  sourceType      JournalSourceType @map("source_type")
+  // Polymorphic reference to the Order/Payment/Refund that generated this
+  // journal — no FK since it can point at different tables.
+  sourceId        String?           @map("source_id") @db.Uuid
+  postedByAdminId String?           @map("posted_by_admin_id") @db.Uuid
+  createdAt       DateTime          @default(now()) @map("created_at")
+  lines           JournalLine[]
+
+  @@index([sourceType, sourceId])
+  @@index([date])
+  @@map("journals")
+}
+
+// ── 36. JOURNAL_LINES ────────────────────────────────────────────────────────
+model JournalLine {
+  id        String         @id @default(uuid()) @db.Uuid
+  journalId String         @map("journal_id") @db.Uuid
+  journal   Journal        @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  accountId String         @map("account_id") @db.Uuid
+  account   ChartOfAccount @relation(fields: [accountId], references: [id])
+  debit     Decimal        @default(0) @db.Decimal(12, 2)
+  credit    Decimal        @default(0) @db.Decimal(12, 2)
+  memo      String?
+  // Finance Phase 6: reciprocal side of BankTransaction.matchedJournalLineId —
+  // lets "unmatched GL lines for this bank account" be a plain
+  // `where: { matchedByBankTransaction: null }` filter.
+  matchedByBankTransaction BankTransaction?
+
+  @@index([accountId])
+  @@index([journalId])
+  @@map("journal_lines")
+}
+
+// ── 37. FISCAL_PERIODS ───────────────────────────────────────────────────────
+// Auto-provisioned (OPEN) on first posting into a given month — no manual
+// setup required to start posting. Posting into a CLOSED period is rejected.
+enum FiscalPeriodStatus {
+  OPEN
+  CLOSED
+}
+
+model FiscalPeriod {
+  id        String             @id @default(uuid()) @db.Uuid
+  label     String             @unique @db.VarChar(20) // e.g. "2026-08"
+  startDate DateTime           @map("start_date")
+  endDate   DateTime           @map("end_date")
+  status    FiscalPeriodStatus @default(OPEN)
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  @@map("fiscal_periods")
+}
+
+// ── 39. BANK_ACCOUNTS ────────────────────────────────────────────────────────
+// Finance Phase 6: the GL-side representation of a real bank account, distinct
+// from the customer-facing bank_* GlobalSetting keys used for EFT instructions
+// (orders.js getPublicBankDetails) — this is for reconciliation, not display.
+model BankAccount {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String            @unique @db.VarChar(150)
+  bankName         String?           @map("bank_name") @db.VarChar(150)
+  accountHolder    String?           @map("account_holder") @db.VarChar(150)
+  accountNumber    String?           @map("account_number") @db.VarChar(100)
+  branchCode       String?           @map("branch_code") @db.VarChar(50)
+  accountType      String?           @map("account_type") @db.VarChar(50)
+  swift            String?           @db.VarChar(50)
+  // Links to ChartOfAccount.code (e.g. "1010") — no FK, mirrors the
+  // accountCode-by-string convention accountingService.js already uses.
+  chartAccountCode String            @map("chart_account_code") @db.VarChar(20)
+  isDefault        Boolean           @default(false) @map("is_default")
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  transactions     BankTransaction[]
+
+  @@map("bank_accounts")
+}
+
+// ── 40. BANK_TRANSACTIONS ────────────────────────────────────────────────────
+// One row per bank-statement line, entered manually. Reconciliation is
+// matching these against JournalLines already posted to the same account —
+// see bankingService.js.
+model BankTransaction {
+  id                   String       @id @default(uuid()) @db.Uuid
+  bankAccountId        String       @map("bank_account_id") @db.Uuid
+  bankAccount          BankAccount  @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  date                 DateTime
+  description          String
+  // Signed: positive = money in, negative = money out — matches how a
+  // statement line reads.
+  amount               Decimal      @db.Decimal(12, 2)
+  reference            String?      @db.VarChar(150)
+  status               String       @default("UNMATCHED") @db.VarChar(20)
+  matchedJournalLineId String?      @unique @map("matched_journal_line_id") @db.Uuid
+  matchedJournalLine   JournalLine? @relation(fields: [matchedJournalLineId], references: [id])
+  createdAt            DateTime     @default(now()) @map("created_at")
+
+  @@index([bankAccountId, status])
+  @@map("bank_transactions")
+}
+
 // ── 32. PAYMENT_MILESTONES ───────────────────────────────────────────────────
 // Installment/deposit schedules for admin-created and quote-converted (B2B)
 // orders only — not exposed on public retail checkout.
@@ -812,4 +1060,111 @@ model PaymentMilestone {
 
   @@index([orderId])
   @@map("payment_milestones")
+}
+
+// ── 41. EXPENSES ─────────────────────────────────────────────────────────────
+// Finance Phase 8: gives the Phase 1-seeded EXPENSE chart accounts (Courier,
+// Marketing, Packaging, etc.) an actual way to receive postings — see
+// accountingService.js postExpenseJournal.
+model Expense {
+  id            String     @id @default(uuid()) @db.Uuid
+  // Which EXPENSE-type ChartOfAccount this posts to — string code, no FK,
+  // same accountCode-by-string convention accountingService.js already uses.
+  accountCode   String     @map("account_code") @db.VarChar(20)
+  amount        Decimal    @db.Decimal(10, 2)
+  description   String
+  date          DateTime   @default(now())
+  paymentMethod String?    @map("payment_method") @db.VarChar(30)
+  adminUserId   String?    @map("admin_user_id") @db.Uuid
+  adminUser     AdminUser? @relation(fields: [adminUserId], references: [id])
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  @@index([accountCode, date])
+  @@map("expenses")
+}
+
+// ── 42. ASSETS ───────────────────────────────────────────────────────────────
+// Finance Phase 11: straight-line depreciation only — see
+// accountingService.js postAssetAcquisitionJournal/postDepreciationJournal/
+// postAssetDisposalJournal.
+model Asset {
+  id                  String              @id @default(uuid()) @db.Uuid
+  name                String              @db.VarChar(150)
+  category            String?             @db.VarChar(100)
+  purchaseDate        DateTime            @map("purchase_date")
+  purchaseCost        Decimal             @map("purchase_cost") @db.Decimal(12, 2)
+  salvageValue        Decimal             @default(0) @map("salvage_value") @db.Decimal(12, 2)
+  usefulLifeMonths    Int                 @map("useful_life_months")
+  status              String              @default("ACTIVE") @db.VarChar(20) // ACTIVE, DISPOSED
+  disposalDate        DateTime?           @map("disposal_date")
+  disposalProceeds    Decimal?            @map("disposal_proceeds") @db.Decimal(12, 2)
+  adminUserId         String?             @map("admin_user_id") @db.Uuid
+  adminUser           AdminUser?          @relation(fields: [adminUserId], references: [id])
+  createdAt           DateTime            @default(now()) @map("created_at")
+  depreciationEntries DepreciationEntry[]
+
+  @@map("assets")
+}
+
+// ── 43. DEPRECIATION_ENTRIES ─────────────────────────────────────────────────
+// One row per asset per period ("YYYY-MM") — the unique constraint is the
+// idempotency guard against double-posting a month's depreciation.
+model DepreciationEntry {
+  id        String   @id @default(uuid()) @db.Uuid
+  assetId   String   @map("asset_id") @db.Uuid
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  period    String   @db.VarChar(20) // e.g. "2026-08"
+  amount    Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([assetId, period])
+  @@map("depreciation_entries")
+}
+
+// ── 44. BUDGETS ──────────────────────────────────────────────────────────────
+// One figure per account for the whole budget period (not monthly-granular)
+// — see admin_budgets.js GET /:id/actual for the budget-vs-actual comparison.
+model Budget {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String       @db.VarChar(150)
+  startDate DateTime     @map("start_date")
+  endDate   DateTime     @map("end_date")
+  status    String       @default("DRAFT") @db.VarChar(20) // DRAFT, ACTIVE
+  createdAt DateTime     @default(now()) @map("created_at")
+  lines     BudgetLine[]
+
+  @@map("budgets")
+}
+
+// ── 45. BUDGET_LINES ─────────────────────────────────────────────────────────
+model BudgetLine {
+  id             String  @id @default(uuid()) @db.Uuid
+  budgetId       String  @map("budget_id") @db.Uuid
+  budget         Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  accountCode    String  @map("account_code") @db.VarChar(20)
+  budgetedAmount Decimal @map("budgeted_amount") @db.Decimal(12, 2)
+
+  @@unique([budgetId, accountCode])
+  @@map("budget_lines")
+}
+
+// ── 46. APPROVAL_REQUESTS ────────────────────────────────────────────────────
+// Finance Phase 11: gates high-value refunds behind a second admin's
+// sign-off — see approvalService.js. requireAdmin has no permission-level
+// hierarchy (every admin is equal), so "second admin" concretely means
+// approvedById must differ from requestedById.
+model ApprovalRequest {
+  id            String     @id @default(uuid()) @db.Uuid
+  entityType    String     @map("entity_type") @db.VarChar(30) // "REFUND"
+  requestedById String     @map("requested_by_id") @db.Uuid
+  requestedBy   AdminUser  @relation("ApprovalRequested", fields: [requestedById], references: [id])
+  approvedById  String?    @map("approved_by_id") @db.Uuid
+  approvedBy    AdminUser? @relation("ApprovalDecided", fields: [approvedById], references: [id])
+  status        String     @default("PENDING") @db.VarChar(20) // PENDING, APPROVED, REJECTED
+  payload       Json
+  createdAt     DateTime   @default(now()) @map("created_at")
+  decidedAt     DateTime?  @map("decided_at")
+
+  @@index([status])
+  @@map("approval_requests")
 }

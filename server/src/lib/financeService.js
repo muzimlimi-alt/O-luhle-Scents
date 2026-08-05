@@ -27,6 +27,8 @@ export async function getFinanceSummary(period = '30d') {
           quantity: true,
           priceAtPurchase: true,
           costAtPurchase: true,
+          packagingCostAtPurchase: true,
+          labellingCostAtPurchase: true,
           productNameSnapshot: true,
           variant: { select: { product: { select: { name: true } } } }
         }
@@ -36,19 +38,26 @@ export async function getFinanceSummary(period = '30d') {
 
   let revenue = 0
   let cogs = 0
+  let packagingCost = 0
+  let labellingCost = 0
   let itemsTotal = 0
   let itemsWithCostData = 0
+  let totalUnitsSold = 0
   const productMap = {}
 
   for (const order of orders) {
     for (const item of order.items) {
       itemsTotal++
+      totalUnitsSold += item.quantity
       const lineRevenue = Number(item.priceAtPurchase) * item.quantity
       revenue += lineRevenue
 
       const productName = item.productNameSnapshot || item.variant?.product?.name || 'Unknown Product'
       if (!productMap[productName]) {
-        productMap[productName] = { productName, revenue: 0, cogs: 0, unitsSold: 0, hasCostData: false }
+        productMap[productName] = {
+          productName, revenue: 0, cogs: 0, packagingCost: 0, labellingCost: 0, unitsSold: 0,
+          hasCostData: false, hasTrueCostData: false
+        }
       }
       productMap[productName].revenue += lineRevenue
       productMap[productName].unitsSold += item.quantity
@@ -60,6 +69,17 @@ export async function getFinanceSummary(period = '30d') {
         productMap[productName].cogs += lineCost
         productMap[productName].hasCostData = true
       }
+
+      // True-cost coverage mirrors costAtPurchase's coverage semantics above
+      // (set once any item contributes, sums only what's actually present) —
+      // just requires all three per-unit cost fields, not only purchase cost.
+      if (item.costAtPurchase != null && item.packagingCostAtPurchase != null && item.labellingCostAtPurchase != null) {
+        packagingCost += Number(item.packagingCostAtPurchase) * item.quantity
+        labellingCost += Number(item.labellingCostAtPurchase) * item.quantity
+        productMap[productName].packagingCost += Number(item.packagingCostAtPurchase) * item.quantity
+        productMap[productName].labellingCost += Number(item.labellingCostAtPurchase) * item.quantity
+        productMap[productName].hasTrueCostData = true
+      }
     }
   }
 
@@ -67,15 +87,42 @@ export async function getFinanceSummary(period = '30d') {
   const marginPercent = revenue > 0 ? (grossProfit / revenue) * 100 : 0
   const costCoveragePercent = itemsTotal > 0 ? (itemsWithCostData / itemsTotal) * 100 : 0
 
+  // Freight/courier/marketing are period-level spend, not a natural per-unit
+  // number — allocated evenly across units sold in the period rather than
+  // attributed to specific products. A disclosed estimate, not baked
+  // silently into any per-product figure above.
+  const overheadExpenses = await prisma.expense.aggregate({
+    where: {
+      accountCode: { in: ['5100', '5300'] }, // Courier Expense, Marketing
+      ...(since ? { date: { gte: since } } : {})
+    },
+    _sum: { amount: true }
+  })
+  const totalOverhead = Number(overheadExpenses._sum.amount || 0)
+  const allocatedOverheadPerUnit = totalUnitsSold > 0 ? totalOverhead / totalUnitsSold : 0
+
   const topProducts = Object.values(productMap)
-    .map(p => ({
-      productName: p.productName,
-      revenue: p.revenue,
-      unitsSold: p.unitsSold,
-      cogs: p.hasCostData ? p.cogs : null,
-      grossProfit: p.hasCostData ? p.revenue - p.cogs : null,
-      marginPercent: p.hasCostData && p.revenue > 0 ? ((p.revenue - p.cogs) / p.revenue) * 100 : null
-    }))
+    .map(p => {
+      const trueCostPerUnit = p.hasTrueCostData && p.unitsSold > 0
+        ? (p.cogs + p.packagingCost + p.labellingCost) / p.unitsSold
+        : null
+      const trueCost = p.hasTrueCostData ? p.cogs + p.packagingCost + p.labellingCost : null
+      return {
+        productName: p.productName,
+        revenue: p.revenue,
+        unitsSold: p.unitsSold,
+        cogs: p.hasCostData ? p.cogs : null,
+        grossProfit: p.hasCostData ? p.revenue - p.cogs : null,
+        marginPercent: p.hasCostData && p.revenue > 0 ? ((p.revenue - p.cogs) / p.revenue) * 100 : null,
+        // trueCost/trueCostMarginPercent are separate from cogs/marginPercent
+        // above (which stay purchase-cost-only, unchanged) — includes
+        // packaging + labelling, still excludes allocatedOverheadPerUnit
+        // (reported once at the top level, not per product).
+        trueCost,
+        trueCostMarginPercent: p.hasTrueCostData && p.revenue > 0 ? ((p.revenue - trueCost) / p.revenue) * 100 : null,
+        trueCostPerUnit
+      }
+    })
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10)
 
@@ -90,6 +137,8 @@ export async function getFinanceSummary(period = '30d') {
     itemsTotal,
     itemsWithCostData,
     costCoveragePercent,
+    totalUnitsSold,
+    allocatedOverheadPerUnit,
     topProducts
   }
 }

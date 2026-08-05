@@ -61,6 +61,8 @@ const EMPTY_VARIANT = {
   size: '50ml',
   price: '',
   costPrice: '',
+  packagingCost: '',
+  labellingCost: '',
   quantity: '0',
   sku: '',
   barcode: '',
@@ -144,6 +146,8 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         size: v.size || '',
         price: v.price?.toString() || '',
         costPrice: v.costPrice?.toString() || '',
+        packagingCost: v.packagingCost?.toString() || '',
+        labellingCost: v.labellingCost?.toString() || '',
         quantity: v.inventory?.quantity?.toString() ?? v.quantity?.toString() ?? '0',
         sku: v.sku || '',
         barcode: v.barcode || '',
@@ -350,6 +354,8 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         ...v,
         price: v.price === '' ? '0' : v.price,
         costPrice: v.costPrice === '' ? '0' : v.costPrice,
+        packagingCost: v.packagingCost === '' ? '0' : v.packagingCost,
+        labellingCost: v.labellingCost === '' ? '0' : v.labellingCost,
         quantity: v.quantity === '' ? '0' : v.quantity,
         lowStockThreshold: v.lowStockThreshold === '' ? '5' : v.lowStockThreshold
       }));
@@ -818,6 +824,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                           </FormField>
                           <FormField label="Cost Price (R)">
                             <input type="number" step="0.01" value={v.costPrice} onChange={e => updateVariant(i, 'costPrice', e.target.value)} placeholder="450" />
+                          </FormField>
+                          <FormField label="Packaging Cost (R)">
+                            <input type="number" step="0.01" value={v.packagingCost} onChange={e => updateVariant(i, 'packagingCost', e.target.value)} placeholder="15" />
+                          </FormField>
+                          <FormField label="Labelling Cost (R)">
+                            <input type="number" step="0.01" value={v.labellingCost} onChange={e => updateVariant(i, 'labellingCost', e.target.value)} placeholder="5" />
                           </FormField>
                           <FormField label="Current Stock">
                             <input type="number" value={v.quantity} onChange={e => updateVariant(i, 'quantity', e.target.value)} placeholder="10" />
