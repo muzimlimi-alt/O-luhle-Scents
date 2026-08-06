@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { settingsApi } from '../services/api';
 import {
   Settings as SettingsIcon,
@@ -11,7 +12,8 @@ import {
   ShieldCheck,
   AlertCircle,
   Truck,
-  RefreshCw
+  RefreshCw,
+  Bell
 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { FormField } from '../components/FormField';
@@ -155,37 +157,6 @@ export function Settings() {
         <div className="card settings-card">
           <div className="settings-card-header">
             <CreditCard size={20} color="var(--color-primary)" />
-            <h3>Banking & Settlement</h3>
-          </div>
-          <div className="settings-card-body">
-            <FormField label="Bank Name">
-              <input type="text" value={val('bank_name')} onChange={e => handleChange('bank_name', e.target.value)} />
-            </FormField>
-            <FormField label="Account Holder">
-              <input type="text" value={val('bank_holder')} onChange={e => handleChange('bank_holder', e.target.value)} />
-            </FormField>
-            <div className="settings-row">
-              <FormField label="Account Number">
-                <input type="text" value={val('bank_account')} onChange={e => handleChange('bank_account', e.target.value)} />
-              </FormField>
-              <FormField label="Branch Code">
-                <input type="text" value={val('bank_branch')} onChange={e => handleChange('bank_branch', e.target.value)} />
-              </FormField>
-            </div>
-            <div className="settings-row">
-              <FormField label="Account Type">
-                <input type="text" value={val('bank_account_type')} onChange={e => handleChange('bank_account_type', e.target.value)} placeholder="Cheque / Savings" />
-              </FormField>
-              <FormField label="SWIFT Code (optional)">
-                <input type="text" value={val('bank_swift')} onChange={e => handleChange('bank_swift', e.target.value)} />
-              </FormField>
-            </div>
-          </div>
-        </div>
-
-        <div className="card settings-card">
-          <div className="settings-card-header">
-            <CreditCard size={20} color="var(--color-primary)" />
             <h3>Manual EFT</h3>
           </div>
           <div className="settings-card-body">
@@ -203,6 +174,44 @@ export function Settings() {
             <FormField label="Verification Notification Emails" hint="Comma-separated — notified whenever a customer uploads proof of payment.">
               <input type="text" value={val('eft_verification_notify_emails')} onChange={e => handleChange('eft_verification_notify_emails', e.target.value)} placeholder="orders@oluhle.co.za, finance@oluhle.co.za" />
             </FormField>
+            <div className="settings-info-box">
+              Bank account details shown to EFT customers are managed on the <Link to="/finance/banking">Banking</Link> page — add an account there and mark it default.
+            </div>
+          </div>
+        </div>
+
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <Bell size={20} color="var(--color-primary)" />
+            <h3>Payment Reminders</h3>
+          </div>
+          <div className="settings-card-body">
+            <FormField label="Automatic Reminders" hint="Off by default — nudges customers whose orders are still unpaid, by email and/or WhatsApp.">
+              <select value={val('payment_reminder_enabled') || 'false'} onChange={e => handleChange('payment_reminder_enabled', e.target.value)}>
+                <option value="false">Disabled</option>
+                <option value="true">Enabled</option>
+              </select>
+            </FormField>
+            <div className="settings-row">
+              <FormField label="First Reminder After (hours)" hint="How long an order can sit unpaid before the first reminder.">
+                <input type="number" min="1" value={val('payment_reminder_threshold_hours')} onChange={e => handleChange('payment_reminder_threshold_hours', e.target.value)} placeholder="24" />
+              </FormField>
+              <FormField label="Repeat Every (hours)" hint="Gap between subsequent reminders.">
+                <input type="number" min="1" value={val('payment_reminder_interval_hours')} onChange={e => handleChange('payment_reminder_interval_hours', e.target.value)} placeholder="24" />
+              </FormField>
+            </div>
+            <div className="settings-row">
+              <FormField label="Maximum Reminders" hint="Stop after this many — the order is auto-cancelled anyway once its stock hold expires.">
+                <input type="number" min="1" value={val('payment_reminder_max_count')} onChange={e => handleChange('payment_reminder_max_count', e.target.value)} placeholder="3" />
+              </FormField>
+              <FormField label="Channel">
+                <select value={val('payment_reminder_channel') || 'email'} onChange={e => handleChange('payment_reminder_channel', e.target.value)}>
+                  <option value="email">Email only</option>
+                  <option value="whatsapp">WhatsApp only</option>
+                  <option value="both">Email + WhatsApp</option>
+                </select>
+              </FormField>
+            </div>
           </div>
         </div>
 

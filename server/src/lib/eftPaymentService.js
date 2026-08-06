@@ -2,7 +2,7 @@ import fs from 'fs'
 import prisma from './prisma.js'
 import configStore from './configStore.js'
 import { consumeReservation } from './inventoryService.js'
-import { postOrderPaidJournals } from './accountingService.js'
+import { confirmOrderPaid } from './paymentConfirmation.js'
 import { generateInvoice, sendWhatsAppNotification } from './invoiceService.js'
 import { sendProofReceived, sendPaymentVerified, sendPaymentRejected, sendAdminEftAlert } from '../utils/email.js'
 
@@ -105,11 +105,6 @@ export async function verifyPayment(paymentId, { adminUserId }) {
   const orderId = payment.orderId
 
   await prisma.$transaction(async (tx) => {
-    await tx.order.update({
-      where: { id: orderId },
-      data: { status: 'paid', paymentStatus: 'paid' }
-    })
-
     const updatedPayment = await tx.payment.update({
       where: { id: paymentId },
       data: {
@@ -121,10 +116,10 @@ export async function verifyPayment(paymentId, { adminUserId }) {
       }
     })
 
-    // Mirrors the PayFast webhook's posting step exactly (webhooks.js) —
-    // same accountingService.js function, so both payment methods produce
-    // identical journal shapes.
-    await postOrderPaidJournals(tx, payment.order, updatedPayment)
+    // Order status + GL posting — shared with the PayFast webhook
+    // (webhooks.js) and, later, every other gateway's confirmation path,
+    // so every payment method produces identical journal shapes.
+    await confirmOrderPaid(tx, payment.order, updatedPayment)
 
     for (const reservation of payment.order.reservations) {
       const item = payment.order.items.find(i => i.variantId === reservation.variantId)

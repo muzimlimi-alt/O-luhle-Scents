@@ -8,7 +8,7 @@ import { FormField } from '../components/FormField';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
 import { useMessaging } from '../context/MessagingContext';
-import { Landmark, Plus, ArrowLeftRight, Scale } from 'lucide-react';
+import { Landmark, Plus, ArrowLeftRight, Scale, Pencil, Star } from 'lucide-react';
 
 const EMPTY_ACCOUNT_FORM = {
   name: '', bankName: '', accountHolder: '', accountNumber: '', branchCode: '', accountType: '', swift: '', chartAccountCode: '', isDefault: false
@@ -25,6 +25,8 @@ export function Banking() {
   const [showAccountDrawer, setShowAccountDrawer] = useState(false);
   const [accountForm, setAccountForm] = useState(EMPTY_ACCOUNT_FORM);
   const [accountSubmitting, setAccountSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [busyAccountId, setBusyAccountId] = useState(null);
 
   const [txnAccount, setTxnAccount] = useState(null);
   const [txnForm, setTxnForm] = useState(EMPTY_TXN_FORM);
@@ -49,7 +51,18 @@ export function Banking() {
   }, [fetchAccounts]);
 
   const openAccountDrawer = () => {
+    setEditingId(null);
     setAccountForm(EMPTY_ACCOUNT_FORM);
+    setShowAccountDrawer(true);
+  };
+
+  const openEditDrawer = (account) => {
+    setEditingId(account.id);
+    setAccountForm({
+      name: account.name, bankName: account.bankName || '', accountHolder: account.accountHolder || '',
+      accountNumber: account.accountNumber || '', branchCode: account.branchCode || '', accountType: account.accountType || '',
+      swift: account.swift || '', chartAccountCode: account.chartAccountCode, isDefault: account.isDefault
+    });
     setShowAccountDrawer(true);
   };
 
@@ -60,13 +73,46 @@ export function Banking() {
     }
     setAccountSubmitting(true);
     try {
-      await bankingApi.accounts.create(accountForm);
+      if (editingId) {
+        // isDefault is intentionally not part of this payload — it's only
+        // ever changed via the dedicated "Set as Default" action, which
+        // enforces exclusivity across all accounts.
+        const { name, bankName, accountHolder, accountNumber, branchCode, accountType, swift } = accountForm;
+        await bankingApi.accounts.update(editingId, { name, bankName, accountHolder, accountNumber, branchCode, accountType, swift });
+      } else {
+        await bankingApi.accounts.create(accountForm);
+      }
       setShowAccountDrawer(false);
       fetchAccounts();
     } catch (err) {
-      showMessage('error', 'Create Failed', err.message);
+      showMessage('error', editingId ? 'Update Failed' : 'Create Failed', err.message);
     } finally {
       setAccountSubmitting(false);
+    }
+  };
+
+  const handleSetDefault = async (account) => {
+    setBusyAccountId(account.id);
+    try {
+      await bankingApi.accounts.setDefault(account.id);
+      showMessage('success', 'Default Updated', `${account.name} is now the default account shown to EFT customers.`);
+      fetchAccounts();
+    } catch (err) {
+      showMessage('error', 'Failed', err.message);
+    } finally {
+      setBusyAccountId(null);
+    }
+  };
+
+  const handleToggleActive = async (account) => {
+    setBusyAccountId(account.id);
+    try {
+      await bankingApi.accounts.update(account.id, { isActive: !account.isActive });
+      fetchAccounts();
+    } catch (err) {
+      showMessage('error', 'Failed', err.message);
+    } finally {
+      setBusyAccountId(null);
     }
   };
 
@@ -105,7 +151,16 @@ export function Banking() {
     { key: 'bankName', label: 'Bank', render: (val) => val || '—' },
     { key: 'accountNumber', label: 'Account #', render: (val) => val || '—' },
     { key: 'chartAccountCode', label: 'GL Account' },
-    { key: 'isActive', label: 'Status', render: (val) => <StatusBadge tone={val ? 'success' : 'neutral'} label={val ? 'Active' : 'Inactive'} /> },
+    { key: 'isActive', label: 'Status', render: (val, row) => (
+      <button
+        className="icon-btn banking-status-toggle"
+        title={val ? 'Click to deactivate' : 'Click to activate'}
+        disabled={busyAccountId === row.id}
+        onClick={() => handleToggleActive(row)}
+      >
+        <StatusBadge tone={val ? 'success' : 'neutral'} label={val ? 'Active' : 'Inactive'} />
+      </button>
+    )},
   ];
 
   return (
@@ -129,6 +184,14 @@ export function Banking() {
           emptyState={<EmptyState icon={<Landmark size={40} />} title="No bank accounts yet" description="Add one to start recording statement lines and reconciling against the ledger." />}
           actions={(row) => (
             <>
+              <button className="icon-btn" title="Edit" onClick={() => openEditDrawer(row)}>
+                <Pencil size={14} />
+              </button>
+              {!row.isDefault && (
+                <button className="icon-btn" title="Set as Default" disabled={busyAccountId === row.id} onClick={() => handleSetDefault(row)}>
+                  <Star size={14} />
+                </button>
+              )}
               <button className="icon-btn" title="Add Transaction" onClick={() => openTxnDrawer(row)}>
                 <ArrowLeftRight size={14} />
               </button>
@@ -140,7 +203,7 @@ export function Banking() {
         />
       </div>
 
-      <Drawer isOpen={showAccountDrawer} onClose={() => setShowAccountDrawer(false)} title="Add Bank Account" width={480}>
+      <Drawer isOpen={showAccountDrawer} onClose={() => setShowAccountDrawer(false)} title={editingId ? 'Edit Bank Account' : 'Add Bank Account'} width={480}>
         <form onSubmit={handleAccountSubmit} className="admin-form">
           <FormField label="Name" required>
             <input type="text" value={accountForm.name} onChange={e => setAccountForm(f => ({ ...f, name: e.target.value }))} required placeholder="Primary Business Account" />
@@ -169,14 +232,16 @@ export function Banking() {
           <FormField label="SWIFT">
             <input type="text" value={accountForm.swift} onChange={e => setAccountForm(f => ({ ...f, swift: e.target.value }))} />
           </FormField>
-          <label className="banking-default-check">
-            <input type="checkbox" checked={accountForm.isDefault} onChange={e => setAccountForm(f => ({ ...f, isDefault: e.target.checked }))} />
-            Use as the default bank account
-          </label>
+          {!editingId && (
+            <label className="banking-default-check">
+              <input type="checkbox" checked={accountForm.isDefault} onChange={e => setAccountForm(f => ({ ...f, isDefault: e.target.checked }))} />
+              Use as the default bank account
+            </label>
+          )}
           <div className="banking-actions">
             <button type="button" className="btn" onClick={() => setShowAccountDrawer(false)}>Cancel</button>
             <button type="submit" className="btn btn--primary" disabled={accountSubmitting}>
-              {accountSubmitting ? 'Saving...' : 'Add Bank Account'}
+              {accountSubmitting ? 'Saving...' : editingId ? 'Save Changes' : 'Add Bank Account'}
             </button>
           </div>
         </form>
@@ -210,6 +275,8 @@ export function Banking() {
       <style dangerouslySetInnerHTML={{ __html: `
         .banking-default-check { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; }
         .banking-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .banking-status-toggle { background: none; border: none; padding: 0; cursor: pointer; }
+        .banking-status-toggle:disabled { cursor: default; opacity: 0.6; }
       `}} />
     </div>
   );

@@ -4,7 +4,7 @@ import https from 'https'
 import prisma from '../lib/prisma.js'
 import { generateInvoice, sendWhatsAppNotification } from '../lib/invoiceService.js'
 import { consumeReservation } from '../lib/inventoryService.js'
-import { postOrderPaidJournals } from '../lib/accountingService.js'
+import { confirmOrderPaid } from '../lib/paymentConfirmation.js'
 
 import { buildSignature, isPayfastIP, validateItnWithPayfast } from '../utils/payfast.js'
 
@@ -76,16 +76,7 @@ router.post('/payfast', async (req, res) => {
 
         if (!order || order.paymentStatus === 'paid') return
 
-        // 3a. Update Order
-        await tx.order.update({
-          where: { id: orderId },
-          data: {
-            status: 'paid',
-            paymentStatus: 'paid'
-          }
-        })
-
-        // 3b. Create Payment record
+        // 3a. Create Payment record
         const payment = await tx.payment.create({
           data: {
             orderId: orderId,
@@ -97,10 +88,11 @@ router.post('/payfast', async (req, res) => {
           }
         })
 
-        // 3b-ii. Post the sale/cash (and COGS, if cost data is complete)
-        // journals — see accountingService.js. Runs in this same transaction
-        // so the order can never end up "paid" without its GL entries.
-        await postOrderPaidJournals(tx, order, payment)
+        // 3b. Order status + GL posting — shared with manual EFT's verify
+        // (eftPaymentService.js) and, later, every other gateway's webhook.
+        // Runs in this same transaction so the order can never end up
+        // "paid" without its GL entries.
+        await confirmOrderPaid(tx, order, payment)
 
         // 3c. Consume the stock held at checkout — moves reserved units into
         // an actual sale (decrements quantity + reserved together) and logs it.

@@ -115,6 +115,38 @@ export async function generateInvoice(orderId) {
 
 import twilio from 'twilio'
 
+// Shared Twilio send + audit logging — used by both the existing
+// status-template notification below and sendWhatsAppMessage (arbitrary
+// text, used by paymentReminderService.js), so the client-construction and
+// phone-formatting logic only lives in one place.
+async function sendWhatsApp(orderId, phone, message, auditDetails) {
+  const SID = await configStore.get('TWILIO_ACCOUNT_SID')
+  const TOKEN = await configStore.get('TWILIO_AUTH_TOKEN')
+  const FROM = await configStore.get('TWILIO_WHATSAPP_FROM') // e.g. whatsapp:+14155238886
+
+  if (SID && TOKEN && FROM) {
+    const client = twilio(SID, TOKEN)
+    await client.messages.create({
+      body: message,
+      from: FROM,
+      to: `whatsapp:${phone.startsWith('+') ? phone : '+27' + phone.substring(1)}`
+    })
+    console.log(`[Twilio WhatsApp] Delivered to ${phone}`)
+  } else {
+    // Mock WhatsApp Send Logic
+    console.log(`[WhatsApp Simulation] To ${phone}: ${message}`)
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      action: 'WHATSAPP_NOTIFICATION',
+      entity: 'Order',
+      entityId: orderId,
+      details: { ...auditDetails, phone, provider: SID ? 'twilio' : 'sim' }
+    }
+  })
+}
+
 export async function sendWhatsAppNotification(orderId, status) {
   try {
     const order = await prisma.order.findUnique({
@@ -124,36 +156,28 @@ export async function sendWhatsAppNotification(orderId, status) {
 
     if (!order || !order.customer?.phone) return
 
-    const SID = await configStore.get('TWILIO_ACCOUNT_SID')
-    const TOKEN = await configStore.get('TWILIO_AUTH_TOKEN')
-    const FROM = await configStore.get('TWILIO_WHATSAPP_FROM') // e.g. whatsapp:+14155238886
-
     const message = `*O'LUHLE SCENTS*\n\nYour order is now *${status.toUpperCase()}*. Your luxury fragrance journey is in motion.\n\n_Ref: ${order.id.split('-')[0].toUpperCase()}_`
-
-    if (SID && TOKEN && FROM) {
-      const client = twilio(SID, TOKEN)
-      await client.messages.create({
-        body: message,
-        from: FROM,
-        to: `whatsapp:${order.customer.phone.startsWith('+') ? order.customer.phone : '+27' + order.customer.phone.substring(1)}`
-      })
-      console.log(`[Twilio WhatsApp] Delivered to ${order.customer.phone}`)
-    } else {
-      // Mock WhatsApp Send Logic
-      console.log(`[WhatsApp Simulation] To ${order.customer.phone}: ${message}`)
-    }
-    
-    // Log in Audit
-    await prisma.auditLog.create({
-      data: {
-        action: 'WHATSAPP_NOTIFICATION',
-        entity: 'Order',
-        entityId: orderId,
-        details: { status, phone: order.customer.phone, provider: SID ? 'twilio' : 'sim' }
-      }
-    })
+    await sendWhatsApp(orderId, order.customer.phone, message, { status })
   } catch (err) {
     console.error('[sendWhatsAppNotification] Failed:', err.message)
+  }
+}
+
+// Arbitrary-text WhatsApp send — used by paymentReminderService.js, which
+// needs reminder-specific copy rather than the fixed "now *STATUS*" template
+// above.
+export async function sendWhatsAppMessage(orderId, message) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customer: true }
+    })
+
+    if (!order || !order.customer?.phone) return
+
+    await sendWhatsApp(orderId, order.customer.phone, message, { message })
+  } catch (err) {
+    console.error('[sendWhatsAppMessage] Failed:', err.message)
   }
 }
 

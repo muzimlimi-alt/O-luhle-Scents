@@ -243,9 +243,13 @@ export const bankingApi = {
     list: () => api.get('/admin/banking/accounts'),
     create: (data) => api.post('/admin/banking/accounts', data),
     update: (id, data) => api.patch(`/admin/banking/accounts/${id}`, data),
+    setDefault: (id) => api.post(`/admin/banking/accounts/${id}/set-default`),
   },
   transactions: {
     create: (accountId, data) => api.post(`/admin/banking/accounts/${accountId}/transactions`, data),
+    import: (accountId, formData) => api.post(`/admin/banking/accounts/${accountId}/transactions/import`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
     match: (id, journalLineId) => api.post(`/admin/banking/transactions/${id}/match`, { journalLineId }),
     unmatch: (id) => api.post(`/admin/banking/transactions/${id}/unmatch`),
     adjust: (id, data) => api.post(`/admin/banking/transactions/${id}/adjust`, data),

@@ -515,6 +515,71 @@ export async function sendPaymentRejected(orderId, reason) {
   })
 }
 
+// ── Payment reminder ─────────────────────────────────────────────────────────
+// Sent by paymentReminderService.js's scheduled sweep for orders still
+// unpaid past the admin-configured threshold. Two branches: Manual EFT
+// (re-shows the bank details this order was actually pinned to at checkout —
+// bankDetails is the order's own Payment.bankAccount, not today's default)
+// vs. PayFast/abandoned (reuses the same checkout-recovery link pattern
+// already established by admin_ops.js's manual recovery email, so a customer
+// gets consistent CTAs regardless of which flow nudged them).
+export async function sendPaymentReminderEmail(orderId, { isEft, bankDetails } = {}) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+  const firstName = order.customer.name?.split(' ')[0] || 'Valued Customer'
+
+  const body = isEft ? `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Still waiting on your payment, ${firstName}
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Order <strong>${order.orderNumber}</strong> is still awaiting payment. Your items are reserved for a limited time —
+      complete your EFT using the details below so we don't have to release them.
+    </p>
+
+    <div style="background:#f7f3ee;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
+      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Order Reference (use as your EFT reference)</div>
+      <div style="font-family:monospace;font-size:16px;color:#1a1a1a;font-weight:bold;">${order.orderNumber}</div>
+    </div>
+
+    <div style="border:1px solid #e8e0d4;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
+      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">Bank Details</div>
+      <table style="width:100%;font-size:14px;color:#333;">
+        <tr><td style="padding:4px 0;color:#888;">Account Name</td><td style="padding:4px 0;text-align:right;">${bankDetails?.bank_holder || '—'}</td></tr>
+        <tr><td style="padding:4px 0;color:#888;">Bank</td><td style="padding:4px 0;text-align:right;">${bankDetails?.bank_name || '—'}</td></tr>
+        <tr><td style="padding:4px 0;color:#888;">Account Number</td><td style="padding:4px 0;text-align:right;">${bankDetails?.bank_account || '—'}</td></tr>
+        <tr><td style="padding:4px 0;color:#888;">Branch Code</td><td style="padding:4px 0;text-align:right;">${bankDetails?.bank_branch || '—'}</td></tr>
+      </table>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;">
+      <tr>
+        <td style="padding:8px 0;font-size:15px;font-weight:bold;border-top:2px solid #1a1a1a;">Amount Due</td>
+        <td style="padding:8px 0;font-size:15px;font-weight:bold;text-align:right;border-top:2px solid #1a1a1a;color:#b89b6a;">
+          R${Number(order.totalAmount).toLocaleString()}
+        </td>
+      </tr>
+    </table>` : `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Still there, ${firstName}?
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Your order <strong>${order.orderNumber}</strong> is still waiting for payment — your items are reserved, but not indefinitely.
+    </p>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Total: <strong>R${Number(order.totalAmount).toLocaleString()}</strong>
+    </p>
+    <div style="margin-top:8px;">
+      <a href="${process.env.FRONTEND_URL}/checkout.html?recover=${order.id}" style="background:#d4af37;color:#000;padding:12px 24px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;">Complete Your Purchase</a>
+    </div>`
+
+  await send({
+    to: order.customer.email,
+    subject: `Reminder: complete your O'luhle Scents order — ${order.orderNumber}`,
+    html: emailShell('Payment Reminder — O\'luhle Scents', body),
+  })
+}
+
 // ── Password reset ───────────────────────────────────────────────────────────
 export async function sendPasswordResetEmail(customer, token) {
   if (!customer.email) return

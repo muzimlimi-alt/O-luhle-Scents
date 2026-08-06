@@ -410,6 +410,13 @@ model Order {
   paymentMilestones  PaymentMilestone[]
   abandonedEmailSent Boolean                @default(false) @map("abandoned_email_sent")
 
+  // Automatic scheduled reminders (paymentReminderService.js) — distinct
+  // from abandonedEmailSent above, which tracks the separate manual
+  // one-off recovery button and shouldn't be conflated with this repeatable
+  // cadence.
+  lastReminderSentAt DateTime?              @map("last_reminder_sent_at")
+  reminderCount      Int                    @default(0) @map("reminder_count")
+
   @@index([status, createdAt])
   @@index([paymentStatus, createdAt])
   @@index([customerId, createdAt])
@@ -495,6 +502,13 @@ model Payment {
   verifiedAt             DateTime?           @map("verified_at")
   rejectionReason        String?             @map("rejection_reason")
   statusHistory          PaymentStatusHistory[]
+
+  // Which BankAccount this order's EFT instructions were shown against —
+  // pinned at checkout time (manualEftProvider.onOrderCreated) so it stays
+  // accurate even if the admin changes the default account afterward. Never
+  // set for non-EFT payment methods.
+  bankAccountId          String?             @map("bank_account_id") @db.Uuid
+  bankAccount            BankAccount?        @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([eftVerificationStatus])
@@ -1015,6 +1029,7 @@ model BankAccount {
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
   transactions     BankTransaction[]
+  payments         Payment[]
 
   @@map("bank_accounts")
 }

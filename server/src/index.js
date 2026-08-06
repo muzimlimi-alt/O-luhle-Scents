@@ -5,6 +5,7 @@ import express from 'express'
 import cors from 'cors'
 import cron from 'node-cron'
 import { sweepExpiredReservations } from './lib/inventoryService.js'
+import { sendPaymentReminders } from './lib/paymentReminderService.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import orderRoutes from './routes/orders.js'
@@ -159,5 +160,22 @@ cron.schedule('*/5 * * * *', async () => {
     }
   } catch (err) {
     console.error('[ReservationSweep] Failed:', err)
+  }
+})
+
+// Nudges customers whose orders are still unpaid past an admin-configured
+// threshold (Manual EFT awaiting proof, or PayFast abandoned mid-checkout).
+// Off by default — see the "Payment Reminders" Settings card. Hourly is
+// coarse enough for an hours-based threshold; independent of the 5-minute
+// reservation sweep above (this nudges before expiry, that sweep cancels
+// at expiry).
+cron.schedule('0 * * * *', async () => {
+  try {
+    const { sent, skipped } = await sendPaymentReminders()
+    if (sent > 0 || skipped > 0) {
+      console.log(`[PaymentReminders] Sent ${sent}, skipped ${skipped}.`)
+    }
+  } catch (err) {
+    console.error('[PaymentReminders] Failed:', err)
   }
 })

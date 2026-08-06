@@ -7,10 +7,37 @@ import { Drawer } from '../components/Drawer';
 import { FormField } from '../components/FormField';
 import { LoadingState } from '../components/LoadingState';
 import { EmptyState } from '../components/EmptyState';
+import { StatusBadge } from '../components/StatusBadge';
 import { useMessaging } from '../context/MessagingContext';
-import { Scale, ArrowLeft, Link2, Wand2 } from 'lucide-react';
+import { Scale, ArrowLeft, Link2, Wand2, Upload } from 'lucide-react';
 
 const fmt = (n) => `R${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const EMPTY_MAPPING = {
+  dateColumn: '', descriptionColumn: '', referenceColumn: '',
+  amountMode: 'single', amountColumn: '', debitColumn: '', creditColumn: '',
+  dateFormat: 'dd/MM/yyyy',
+};
+
+// Header-row-only preview split — handles simple quoted fields well enough
+// to populate the column-mapping dropdowns. The real import re-parses the
+// full file server-side with csv-parse, which is what actually matters for
+// correctness; this is just so the admin sees real header names to map from.
+function splitCsvLine(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuotes = !inQuotes; continue; }
+    if (ch === ',' && !inQuotes) { cells.push(current); current = ''; continue; }
+    current += ch;
+  }
+  cells.push(current);
+  return cells.map(c => c.trim());
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function Reconciliation() {
   const { accountId } = useParams();
@@ -27,6 +54,12 @@ export function Reconciliation() {
   const [adjustingTxn, setAdjustingTxn] = useState(null);
   const [adjustForm, setAdjustForm] = useState({ offsetAccountCode: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
+
+  const [showImportDrawer, setShowImportDrawer] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importHeaders, setImportHeaders] = useState([]);
+  const [importMapping, setImportMapping] = useState(EMPTY_MAPPING);
+  const [importSubmitting, setImportSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -81,6 +114,70 @@ export function Reconciliation() {
     }
   };
 
+  const openImportDrawer = () => {
+    setImportFile(null);
+    setImportHeaders([]);
+    setImportMapping(EMPTY_MAPPING);
+    setShowImportDrawer(true);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const firstLine = String(reader.result).split(/\r?\n/)[0] || '';
+      setImportHeaders(splitCsvLine(firstLine));
+    };
+    reader.readAsText(file.slice(0, 4096)); // header row only — plenty of room even for wide statements
+  };
+
+  const handleImportSubmit = async (e) => {
+    e.preventDefault();
+    if (!importFile) return showMessage('warning', 'No File', 'Choose a CSV file to import.');
+    if (importMapping.dateColumn === '' || importMapping.descriptionColumn === '') {
+      return showMessage('warning', 'Missing Mapping', 'Date and Description columns are required.');
+    }
+    if (importMapping.amountMode === 'single' && importMapping.amountColumn === '') {
+      return showMessage('warning', 'Missing Mapping', 'Select the Amount column.');
+    }
+    if (importMapping.amountMode === 'separate' && (importMapping.debitColumn === '' || importMapping.creditColumn === '')) {
+      return showMessage('warning', 'Missing Mapping', 'Select both the Debit and Credit columns.');
+    }
+
+    setImportSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('statement', importFile);
+      formData.append('mapping', JSON.stringify(importMapping));
+      const result = await bankingApi.transactions.import(accountId, formData);
+      setShowImportDrawer(false);
+      showMessage('success', 'Statement Imported',
+        `${result.imported} line${result.imported === 1 ? '' : 's'} imported, ${result.skippedDuplicates} duplicate${result.skippedDuplicates === 1 ? '' : 's'} skipped` +
+        (result.skippedInvalidRows ? `, ${result.skippedInvalidRows} row(s) could not be read.` : '.'));
+      fetchData();
+    } catch (err) {
+      showMessage('error', 'Import Failed', err.message);
+    } finally {
+      setImportSubmitting(false);
+    }
+  };
+
+  // Sort/badge only — the admin still explicitly clicks "Select" to confirm
+  // a match. Amount within 1 cent and journal date within 7 days of the
+  // statement line's date.
+  const sortedLinesForMatch = matchingTxn
+    ? [...(data?.unmatchedJournalLines || [])]
+        .map(line => {
+          const lineAmount = Number(line.debit) || Number(line.credit) || 0;
+          const amountMatches = Math.abs(lineAmount - Math.abs(matchingTxn.amount)) < 0.01;
+          const daysApart = Math.abs(new Date(line.journal.date) - new Date(matchingTxn.date)) / DAY_MS;
+          return { ...line, __likelyMatch: amountMatches && daysApart <= 7 };
+        })
+        .sort((a, b) => (b.__likelyMatch === a.__likelyMatch ? 0 : b.__likelyMatch ? 1 : -1))
+    : [];
+
   const txnColumns = [
     { key: 'date', label: 'Date', render: (v) => new Date(v).toLocaleDateString() },
     { key: 'description', label: 'Description' },
@@ -96,6 +193,11 @@ export function Reconciliation() {
     { key: 'credit', label: 'Credit', render: fmt },
   ];
 
+  const matchLineColumns = [
+    { key: '__likelyMatch', label: '', render: (v) => v ? <StatusBadge tone="success" label="Likely match" /> : null },
+    ...lineColumns,
+  ];
+
   return (
     <div className="reconciliation-page">
       <PageHeader
@@ -106,6 +208,9 @@ export function Reconciliation() {
           <>
             <button className="btn btn--outline" onClick={() => navigate('/finance/banking')}>
               <ArrowLeft size={16} /> Back to Banking
+            </button>
+            <button className="btn btn--primary" onClick={openImportDrawer}>
+              <Upload size={16} /> Import Statement
             </button>
             <input type="date" className="admin-input" value={from} onChange={e => setFrom(e.target.value)} aria-label="From date" />
             <input type="date" className="admin-input" value={to} onChange={e => setTo(e.target.value)} aria-label="To date" />
@@ -152,8 +257,8 @@ export function Reconciliation() {
       <Drawer isOpen={!!matchingTxn} onClose={() => setMatchingTxn(null)} title={matchingTxn ? `Match "${matchingTxn.description}" (${fmt(matchingTxn.amount)})` : ''} width={560}>
         {matchingTxn && (
           <DataTable
-            columns={lineColumns}
-            data={data?.unmatchedJournalLines || []}
+            columns={matchLineColumns}
+            data={sortedLinesForMatch}
             emptyState={<EmptyState title="No unmatched ledger postings" description="Nothing to match this against yet." />}
             actions={(row) => (
               <button className="btn btn--sm btn--primary" disabled={submitting} onClick={() => handleMatch(row.id)}>
@@ -162,6 +267,80 @@ export function Reconciliation() {
             )}
           />
         )}
+      </Drawer>
+
+      <Drawer isOpen={showImportDrawer} onClose={() => setShowImportDrawer(false)} title="Import Bank Statement" width={480}>
+        <form onSubmit={handleImportSubmit} className="admin-form">
+          <FormField label="Statement File (CSV)" required hint="Export a CSV statement from your bank's online portal.">
+            <input type="file" accept=".csv,text/csv" onChange={handleFileSelect} required />
+          </FormField>
+
+          {importHeaders.length > 0 && (
+            <>
+              <FormField label="Date Column" required>
+                <select value={importMapping.dateColumn} onChange={e => setImportMapping(m => ({ ...m, dateColumn: e.target.value }))} required>
+                  <option value="">Select column...</option>
+                  {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                </select>
+              </FormField>
+              <FormField label="Date Format">
+                <select value={importMapping.dateFormat} onChange={e => setImportMapping(m => ({ ...m, dateFormat: e.target.value }))}>
+                  <option value="dd/MM/yyyy">DD/MM/YYYY (South Africa)</option>
+                  <option value="yyyy-MM-dd">YYYY-MM-DD</option>
+                  <option value="MM/dd/yyyy">MM/DD/YYYY</option>
+                </select>
+              </FormField>
+              <FormField label="Description Column" required>
+                <select value={importMapping.descriptionColumn} onChange={e => setImportMapping(m => ({ ...m, descriptionColumn: e.target.value }))} required>
+                  <option value="">Select column...</option>
+                  {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                </select>
+              </FormField>
+              <FormField label="Amount Layout">
+                <select value={importMapping.amountMode} onChange={e => setImportMapping(m => ({ ...m, amountMode: e.target.value }))}>
+                  <option value="single">Single signed amount column</option>
+                  <option value="separate">Separate Debit / Credit columns</option>
+                </select>
+              </FormField>
+              {importMapping.amountMode === 'single' ? (
+                <FormField label="Amount Column" required hint="Positive = money in, negative = money out.">
+                  <select value={importMapping.amountColumn} onChange={e => setImportMapping(m => ({ ...m, amountColumn: e.target.value }))} required>
+                    <option value="">Select column...</option>
+                    {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                  </select>
+                </FormField>
+              ) : (
+                <div className="reconciliation-import-row">
+                  <FormField label="Debit Column (money out)" required>
+                    <select value={importMapping.debitColumn} onChange={e => setImportMapping(m => ({ ...m, debitColumn: e.target.value }))} required>
+                      <option value="">Select column...</option>
+                      {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                    </select>
+                  </FormField>
+                  <FormField label="Credit Column (money in)" required>
+                    <select value={importMapping.creditColumn} onChange={e => setImportMapping(m => ({ ...m, creditColumn: e.target.value }))} required>
+                      <option value="">Select column...</option>
+                      {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                    </select>
+                  </FormField>
+                </div>
+              )}
+              <FormField label="Reference Column (optional)">
+                <select value={importMapping.referenceColumn} onChange={e => setImportMapping(m => ({ ...m, referenceColumn: e.target.value }))}>
+                  <option value="">None</option>
+                  {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                </select>
+              </FormField>
+            </>
+          )}
+
+          <div className="banking-actions">
+            <button type="button" className="btn" onClick={() => setShowImportDrawer(false)}>Cancel</button>
+            <button type="submit" className="btn btn--primary" disabled={importSubmitting || !importFile}>
+              {importSubmitting ? 'Importing...' : 'Import'}
+            </button>
+          </div>
+        </form>
       </Drawer>
 
       <Drawer isOpen={!!adjustingTxn} onClose={() => setAdjustingTxn(null)} title="Record Adjustment" width={440}>
@@ -197,6 +376,8 @@ export function Reconciliation() {
         .reconciliation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; align-items: start; }
         .reconciliation-grid h3 { margin: 0 0 12px; font-size: 1rem; }
         .reconciliation-adjust-summary { font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; line-height: 1.6; }
+        .reconciliation-import-row { display: flex; gap: 16px; }
+        .reconciliation-import-row .form-field { flex: 1; }
         .banking-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
         .page-header__actions .admin-input { width: auto; }
       `}} />
