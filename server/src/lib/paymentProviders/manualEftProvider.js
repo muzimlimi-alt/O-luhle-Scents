@@ -2,6 +2,7 @@ import prisma from '../prisma.js'
 import configStore from '../configStore.js'
 import { resolveDefaultBankAccount } from '../bankingService.js'
 import { sendEftInstructions } from '../../utils/email.js'
+import { round2 } from '../accountingService.js'
 
 export const key = 'manual_eft'
 export const displayName = 'Manual EFT'
@@ -38,6 +39,15 @@ export async function reservationHoldMinutes() {
   return Number(await configStore.get('eft_reservation_hours', '72')) * 60
 }
 
+// Also used by routes/orders.js's GET /eft/deposit-config (checkout.html
+// reads this to decide whether to offer a deposit option at all).
+export async function getDepositConfig() {
+  return {
+    enabled: (await configStore.get('eft_deposit_enabled', 'false')) === 'true',
+    percentage: Number(await configStore.get('eft_deposit_percentage', '50'))
+  }
+}
+
 // Manual EFT gets its Payment row created immediately (unlike PayFast,
 // whose Payment row is only created once the webhook confirms success) so
 // there's somewhere to attach proof-of-payment and track verification
@@ -45,10 +55,22 @@ export async function reservationHoldMinutes() {
 // whichever account is currently default — so the instructions this order
 // shows stay correct even if the default changes later (see
 // buildCheckoutResponse below, which reads this pinned value back).
-export async function onOrderCreated(tx, order, _context) {
+//
+// context.payDeposit (Partial Payments phase): if the customer chose to pay
+// only a deposit and deposits are currently enabled, this Payment's amount
+// is the deposit portion, not the full order total. The balance becomes a
+// second Payment row, created once the deposit is verified — see
+// eftPaymentService.js's verifyPayment/recordEftPaymentReceived.
+export async function onOrderCreated(tx, order, context = {}) {
   const bankAccount = await resolveDefaultBankAccount(tx)
   if (!bankAccount) {
     throw Object.assign(new Error('Manual EFT is temporarily unavailable — no active bank account is configured.'), { status: 503 })
+  }
+
+  let amount = order.totalAmount
+  if (context.payDeposit) {
+    const { enabled, percentage } = await getDepositConfig()
+    if (enabled) amount = round2(Number(order.totalAmount) * percentage / 100)
   }
 
   const eftPayment = await tx.payment.create({
@@ -56,7 +78,7 @@ export async function onOrderCreated(tx, order, _context) {
       orderId: order.id,
       paymentMethod: 'manual_eft',
       paymentStatus: 'PENDING',
-      amount: order.totalAmount,
+      amount,
       eftVerificationStatus: 'PENDING_PROOF',
       bankAccountId: bankAccount.id,
     }
@@ -70,13 +92,15 @@ export async function onOrderCreated(tx, order, _context) {
 // reference, and fire the instructions email (fire-and-forget, exactly as
 // before this refactor). Reads the account pinned at checkout time (not
 // today's default) so instructions never drift from what was promised.
+// amountDue reflects this specific payment (deposit or full) — distinct
+// from `amount`, which stays the order's full total.
 export async function buildCheckoutResponse(order, _context) {
   const payment = await prisma.payment.findFirst({
     where: { orderId: order.id, paymentMethod: 'manual_eft' },
     include: { bankAccount: true }
   })
   const bankDetails = bankAccountToPublicShape(payment?.bankAccount)
-  sendEftInstructions(order.id, bankDetails).catch(e => console.error('[EFT] sendEftInstructions failed:', e.message))
+  sendEftInstructions(order.id, bankDetails, payment?.amount).catch(e => console.error('[EFT] sendEftInstructions failed:', e.message))
 
   return {
     orderId: order.id,
@@ -85,5 +109,6 @@ export async function buildCheckoutResponse(order, _context) {
     bankDetails,
     reference: order.orderNumber,
     amount: order.totalAmount,
+    amountDue: payment?.amount ?? order.totalAmount,
   }
 }

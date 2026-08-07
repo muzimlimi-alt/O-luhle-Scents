@@ -1,3 +1,4 @@
+import prisma from '../prisma.js'
 import { buildPaymentPayload } from '../../utils/payfast.js'
 import { RESERVATION_HOLD_MINUTES } from '../inventoryService.js'
 
@@ -29,6 +30,22 @@ export function buildCheckoutResponse(order, context) {
       lastName: context.shipping.lastName
     }
   })
+
+  // Fire-and-forget: a trace that the redirect was actually built, so an
+  // order that never gets a Payment row (ITN never arrives) still has SOME
+  // record it reached this point — otherwise there's no way to tell "the
+  // customer never got a PayFast redirect" apart from "they did, but the
+  // ITN never landed" after the fact. Runs post-commit (this function has
+  // no transaction — the order already exists), so it uses prisma directly.
+  prisma.auditLog.create({
+    data: {
+      adminUserId: null,
+      action: 'PAYFAST_CHECKOUT_INITIATED',
+      entity: 'Order',
+      entityId: order.id,
+      details: { amount: payfastData.amount, m_payment_id: payfastData.m_payment_id }
+    }
+  }).catch(e => console.error('[PayFast] audit log write failed:', e.message))
 
   return { orderId: order.id, payfastUrl, payfastData }
 }

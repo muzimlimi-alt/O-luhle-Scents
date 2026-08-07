@@ -160,7 +160,9 @@
           return;
         }
         listEl.innerHTML = orders.map(order => {
-          const eftPayment = order.payments?.find(p => p.paymentMethod === 'manual_eft');
+          // Active EFT payment — for a deposit order this is the deposit
+          // until it's verified, then the balance (Partial Payments phase).
+          const eftPayment = order.payments?.find(p => p.paymentMethod === 'manual_eft' && ['PENDING_PROOF', 'PROOF_UPLOADED', 'REJECTED'].includes(p.eftVerificationStatus));
           return `
             <div class="order-card" data-order-id="${order.id}">
               <div class="order-card__header">
@@ -202,10 +204,17 @@
           <span>R${(Number(item.priceAtPurchase) * item.quantity).toLocaleString()}</span>
         </div>`).join('');
 
-      detailEl.innerHTML = `<div class="order-items-detail">${itemsHtml}</div><div class="eft-widget-slot"></div>`;
+      detailEl.innerHTML = `<div class="order-items-detail">${itemsHtml}</div><p class="eft-amount-due-note" style="display:none;font-size:0.82rem;margin:10px 0 0;"></p><div class="eft-widget-slot"></div>`;
 
-      const eftPayment = order.payments?.find(p => p.paymentMethod === 'manual_eft');
+      // Active EFT payment — see loadOrders() above for why this can't just
+      // take payments[0] once a deposit order has a second (balance) row.
+      const eftPayment = order.payments?.find(p => p.paymentMethod === 'manual_eft' && ['PENDING_PROOF', 'PROOF_UPLOADED', 'REJECTED'].includes(p.eftVerificationStatus));
       if (eftPayment) {
+        const noteEl = detailEl.querySelector('.eft-amount-due-note');
+        if (noteEl) {
+          noteEl.style.display = 'block';
+          noteEl.textContent = `Amount due now: R${Number(eftPayment.amount).toLocaleString()}`;
+        }
         renderEftProofWidget(detailEl.querySelector('.eft-widget-slot'), {
           orderId: order.id,
           eftVerificationStatus: eftPayment.eftVerificationStatus,

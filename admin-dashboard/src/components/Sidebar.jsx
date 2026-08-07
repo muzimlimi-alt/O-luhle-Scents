@@ -18,6 +18,7 @@ import {
   Ticket,
   Users,
   Mail,
+  Quote,
   FileBarChart,
   Landmark,
   BookOpen,
@@ -78,6 +79,7 @@ const NAV = [
     children: [
       { path: '/customers', label: 'Customers', icon: <Users size={16} /> },
       { path: '/newsletters', label: 'Newsletters', icon: <Mail size={16} /> },
+      { path: '/testimonials', label: 'Testimonials', icon: <Quote size={16} /> },
     ]
   },
   {

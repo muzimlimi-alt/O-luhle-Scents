@@ -161,6 +161,12 @@ export function getEftBankDetails() {
   return apiFetch('/api/orders/eft/bank-details')
 }
 
+// { enabled, percentage } — whether checkout should offer a "pay a deposit
+// now" option for Manual EFT, and what portion of the total is due upfront.
+export function getEftDepositConfig() {
+  return apiFetch('/api/orders/eft/deposit-config')
+}
+
 // Public, order-UUID-scoped — works for a guest checkout with no login,
 // same trust model as getOrder() above. Logged-in customers should prefer
 // uploadMyOrderProof() instead (ownership-checked via their account).

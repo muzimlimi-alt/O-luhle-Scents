@@ -27,6 +27,22 @@ export async function reserveStock(tx, { variantId, quantity, orderId, expiresAt
   })
 }
 
+// Pushes an order's active reservations further into the future — used when
+// a deposit is verified, so sweepExpiredReservations (which only acts on
+// reservations whose expiresAt has already passed) leaves the order alone
+// until the new deadline instead of cancelling it while a balance payment
+// is still outstanding. Only ever extends: the `expiresAt: { lt }` guard
+// means a reservation whose original hold already runs later than the
+// proposed balance-payment window (e.g. a deposit verified minutes after
+// checkout, while most of the original 72h EFT hold is still unused) is
+// left untouched rather than having its expiry pulled forward.
+export async function extendReservationExpiry(tx, orderId, expiresAt) {
+  return tx.inventoryReservation.updateMany({
+    where: { orderId, consumedAt: null, releasedAt: null, expiresAt: { lt: expiresAt } },
+    data: { expiresAt }
+  })
+}
+
 // Called on successful payment: moves a held reservation into a real sale —
 // physical stock actually leaves the building, so `quantity` drops alongside
 // `reserved`, and the sale is ledgered.
@@ -153,6 +169,23 @@ export async function sweepExpiredReservations() {
 
       if (order.paymentStatus !== 'paid' && order.status !== 'cancelled') {
         await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled' } })
+        // Without this, an auto-cancelled order's admin-dashboard Audit Trail
+        // is silently empty — there's otherwise no record anywhere of why
+        // the order disappeared, which is especially confusing for a
+        // PayFast order where no Payment row was ever created either (that
+        // only happens once the webhook confirms success).
+        await tx.auditLog.create({
+          data: {
+            adminUserId: null,
+            action: 'AUTO_CANCEL_UNPAID_ORDER',
+            entity: 'Order',
+            entityId: orderId,
+            details: {
+              reason: 'Stock reservation hold expired before payment was confirmed',
+              paymentStatus: order.paymentStatus
+            }
+          }
+        })
         cancelledCount++
       }
     })

@@ -5,7 +5,7 @@
 // never succeed while its accounting entry silently fails to post.
 import { resolveTaxRate, extractTaxFromInclusive } from './taxService.js'
 
-const round2 = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100
+export const round2 = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 
 async function resolveAccountIds(tx, codes) {
   const uniqueCodes = [...new Set(codes)]

@@ -214,6 +214,93 @@
     </div>
   </section>
 
+  <!-- Testimonials -->
+  <section class="testimonials section" id="testimonials">
+    <div class="container">
+      <div class="text-center reveal" style="margin-bottom:48px;">
+        <p class="section-label">Testimonials</p>
+        <h2>What Our Customers Say</h2>
+      </div>
+
+      <div class="testimonials-spotlight" id="testimonialsSpotlight" style="display:none;">
+        <div class="testimonials-spotlight__frame" id="testimonialsFrame">
+          <div class="testimonials-spotlight__image" id="testimonialsImage"></div>
+          <div class="testimonials-spotlight__card">
+            <div class="testimonials-spotlight__meta">
+              <p class="testimonials-spotlight__name" id="testimonialsName"></p>
+              <p class="testimonials-spotlight__role" id="testimonialsRole"></p>
+            </div>
+            <p class="testimonials-spotlight__quote">
+              <span class="testimonials-spotlight__mark" aria-hidden="true">&ldquo;</span><span id="testimonialsQuote"></span>
+            </p>
+          </div>
+        </div>
+        <div class="testimonials-spotlight__controls">
+          <button type="button" class="testimonials-spotlight__arrow" id="testimonialsPrev" aria-label="Previous testimonial">&larr;</button>
+          <div class="testimonials-spotlight__dots" id="testimonialsDots" role="tablist" aria-label="Testimonial navigation"></div>
+          <button type="button" class="testimonials-spotlight__arrow" id="testimonialsNext" aria-label="Next testimonial">&rarr;</button>
+        </div>
+      </div>
+
+      <div class="testimonials-cta">
+        <p>Tried an O'luhle Scents fragrance? We'd love to hear about it.</p>
+        <button type="button" class="btn btn--outline-dark js-testimonial-open" id="testimonialsToggleForm">Share Your Experience</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonial Submission Modal -->
+  <div class="testimonial-overlay js-testimonial-overlay" role="dialog" aria-modal="true" aria-labelledby="testimonialModalTitle" hidden>
+    <div class="testimonial-modal">
+      <button type="button" class="testimonial-modal__close js-testimonial-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="testimonial-modal__body">
+        <h3 class="testimonial-modal__title" id="testimonialModalTitle">Share Your Experience</h3>
+        <p class="testimonial-modal__subtitle">Tell us what you thought — your story might be featured on our site.</p>
+
+        <form id="testimonialForm" class="testimonial-form" novalidate>
+          <div class="testimonial-form__row">
+            <div class="testimonial-form__field">
+              <label for="testimonialName">Your Name</label>
+              <input type="text" id="testimonialName" required maxlength="120">
+              <span class="testimonial-form__error" id="errTestimonialName" role="alert"></span>
+            </div>
+            <div class="testimonial-form__field">
+              <label for="testimonialDesignation">You Are A… <span class="testimonial-form__optional">(optional)</span></label>
+              <select id="testimonialDesignation">
+                <option value="">Prefer not to say</option>
+                <option value="Verified Customer">Verified Customer</option>
+                <option value="Gift Recipient / Event Attendee">Gift Recipient / Event Attendee</option>
+                <option value="VIP / Corporate Client">VIP / Corporate Client</option>
+                <option value="Fragrance Critic / Press">Fragrance Critic / Press</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="testimonial-form__field">
+            <label for="testimonialQuote">Your Experience</label>
+            <textarea id="testimonialQuote" required maxlength="600" rows="4" placeholder="Tell us what you thought…"></textarea>
+            <span class="testimonial-form__error" id="errTestimonialQuote" role="alert"></span>
+          </div>
+          <div class="testimonial-form__field">
+            <label for="testimonialPhoto">Photo <span class="testimonial-form__optional">(optional)</span></label>
+            <input type="file" id="testimonialPhoto" accept="image/jpeg,image/png,image/webp">
+          </div>
+          <label class="testimonial-form__consent">
+            <input type="checkbox" id="testimonialConsent" required>
+            <span>I agree this may be displayed publicly on this website.</span>
+            <span class="testimonial-form__error" id="errTestimonialConsent" role="alert"></span>
+          </label>
+          <button type="submit" class="btn btn--primary" id="testimonialSubmitBtn">Submit</button>
+          <p id="testimonialFeedback" class="newsletter__feedback" role="status" aria-live="polite" hidden></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Newsletter -->
   <section class="newsletter section">
     <div class="container container--narrow">
@@ -236,6 +323,94 @@
           </button>
         </div>
         <div id="newsletter-feedback" class="newsletter__feedback" role="alert" aria-live="polite" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="contact-section section" id="contact">
+    <div class="container">
+      <div class="text-center reveal" style="margin-bottom:48px;">
+        <p class="section-label" data-content="contact_label">Get in Touch</p>
+        <h2 data-content="contact_heading">We'd Love to Hear From You</h2>
+        <p class="contact-section__intro" data-content="contact_text">Questions about an order, a fragrance, or a bulk enquiry — leave us a message and our team will get back to you.</p>
+      </div>
+
+      <div class="contact-layout">
+        <!-- Contact Form -->
+        <form class="contact-form reveal" id="contact-form" novalidate>
+          <div class="contact-form__row">
+            <div class="contact-form__field">
+              <label for="contact-name">Full Name <span aria-hidden="true">*</span></label>
+              <input type="text" id="contact-name" name="name" placeholder="Your name" autocomplete="name" required>
+            </div>
+            <div class="contact-form__field">
+              <label for="contact-email">Email Address <span aria-hidden="true">*</span></label>
+              <input type="email" id="contact-email" name="email" placeholder="you@example.com" autocomplete="email" required>
+            </div>
+          </div>
+          <div class="contact-form__row">
+            <div class="contact-form__field">
+              <label for="contact-phone">Phone Number <span class="contact-form__optional">(optional)</span></label>
+              <input type="tel" id="contact-phone" name="phone" placeholder="076 111 2096" autocomplete="tel">
+            </div>
+            <div class="contact-form__field">
+              <label for="contact-subject">Subject <span class="contact-form__optional">(optional)</span></label>
+              <input type="text" id="contact-subject" name="subject" placeholder="What's it about?">
+            </div>
+          </div>
+          <div class="contact-form__field">
+            <label for="contact-message">Your Message <span aria-hidden="true">*</span></label>
+            <textarea id="contact-message" name="message" rows="5" placeholder="Tell us everything… minimum 10 characters." required></textarea>
+          </div>
+          <label class="contact-form__consent">
+            <input type="checkbox" id="contact-consent" required>
+            <span>I agree that O'luhle Scents may use my details to respond to this enquiry, in accordance with our <a href="index.html#" class="js-open-legal">Privacy Policy</a>.</span>
+          </label>
+          <div id="contact-feedback" class="newsletter__feedback" role="alert" aria-live="polite" hidden></div>
+          <button type="submit" class="btn btn--primary btn--lg contact-form__submit" id="contact-submit">
+            <span class="contact-form__submit-text">Send Message</span>
+            <span class="newsletter__btn-spinner contact-form__spinner" aria-hidden="true" hidden></span>
+          </button>
+        </form>
+
+        <!-- Side Panel -->
+        <div class="contact-side reveal reveal-delay-1">
+          <div class="contact-quote">
+            <p>Thank you for stopping by. We'd love to know what your thoughts are — get in touch with us.</p>
+            <span>— O'luhle Scents</span>
+          </div>
+          <div class="contact-reach">
+            <h4>Or reach us directly</h4>
+            <div class="contact-reach__row">
+              <span class="contact-reach__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.89 9.1a19.79 19.79 0 01-3.07-8.67A2 2 0 012.81 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>
+              </span>
+              <div>
+                <span class="contact-reach__label">WhatsApp / Phone</span>
+                <a href="tel:0761112096" data-content="business_whatsapp">076 111 2096</a>
+              </div>
+            </div>
+            <div class="contact-reach__row">
+              <span class="contact-reach__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </span>
+              <div>
+                <span class="contact-reach__label">Email</span>
+                <a href="mailto:info@oluhlescents.co.za" data-content="business_email">info@oluhlescents.co.za</a>
+              </div>
+            </div>
+            <div class="contact-reach__row">
+              <span class="contact-reach__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </span>
+              <div>
+                <span class="contact-reach__label">Location</span>
+                <span data-content="business_address">South Africa — Nationwide Shipping</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -269,7 +444,7 @@
             <a href="guide.html" aria-label="View Fragrance Guide">Fragrance Guide</a><br>
             <a href="track.html" aria-label="Track Order">Track Order</a><br>
             <a href="quotes.html" aria-label="Request A Quote">Request A Quote</a><br>
-            <a href="contact.html" aria-label="Contact us">Contact Us</a><br>
+            <a href="#contact" aria-label="Contact us">Contact Us</a><br>
           </div>
         </div>
         <div class="reveal reveal-delay-3">
@@ -324,6 +499,8 @@
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
   <script src="js/newsletter.js"></script>
+  <script src="js/contact.js"></script>
+  <script src="js/testimonials.js" type="module"></script>
   <script src="js/content.js"></script>
 </body>
 </html>

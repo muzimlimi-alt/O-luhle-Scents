@@ -288,4 +288,12 @@ export const newsletterApi = {
   }
 };
 
+export const testimonialsApi = {
+  list: (status) => api.get('/testimonials/admin', { params: status ? { status } : {} }),
+  create: (formData) => api.post('/testimonials/admin', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id, data) => api.put(`/testimonials/admin/${id}`, data,
+    data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+  remove: (id) => api.delete(`/testimonials/admin/${id}`),
+};
+
 export default api;

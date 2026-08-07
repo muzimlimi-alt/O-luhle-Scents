@@ -177,6 +177,20 @@ export function Settings() {
             <div className="settings-info-box">
               Bank account details shown to EFT customers are managed on the <Link to="/finance/banking">Banking</Link> page — add an account there and mark it default.
             </div>
+            <FormField label="Deposit Payments" hint="Let customers pay a deposit now and the balance later via a second proof-of-payment upload.">
+              <select value={val('eft_deposit_enabled') || 'false'} onChange={e => handleChange('eft_deposit_enabled', e.target.value)}>
+                <option value="false">Disabled — full payment only</option>
+                <option value="true">Enabled</option>
+              </select>
+            </FormField>
+            <div className="settings-row">
+              <FormField label="Deposit Percentage" hint="Portion of the order total due upfront.">
+                <input type="number" min="1" max="99" value={val('eft_deposit_percentage')} onChange={e => handleChange('eft_deposit_percentage', e.target.value)} placeholder="50" />
+              </FormField>
+              <FormField label="Balance Payment Window (hours)" hint="How long stock stays held after the deposit is verified, for the balance to be paid.">
+                <input type="number" min="1" value={val('eft_balance_payment_hours')} onChange={e => handleChange('eft_balance_payment_hours', e.target.value)} placeholder="48" />
+              </FormField>
+            </div>
           </div>
         </div>
 
@@ -186,7 +200,7 @@ export function Settings() {
             <h3>Payment Reminders</h3>
           </div>
           <div className="settings-card-body">
-            <FormField label="Automatic Reminders" hint="Off by default — nudges customers whose orders are still unpaid, by email and/or WhatsApp.">
+            <FormField label="Automatic Reminders" hint="Off by default — nudges customers whose orders are still unpaid or awaiting a deposit balance, by email and/or WhatsApp.">
               <select value={val('payment_reminder_enabled') || 'false'} onChange={e => handleChange('payment_reminder_enabled', e.target.value)}>
                 <option value="false">Disabled</option>
                 <option value="true">Enabled</option>

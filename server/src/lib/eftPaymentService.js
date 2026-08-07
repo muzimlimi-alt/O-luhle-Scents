@@ -1,10 +1,12 @@
 import fs from 'fs'
 import prisma from './prisma.js'
 import configStore from './configStore.js'
-import { consumeReservation } from './inventoryService.js'
-import { confirmOrderPaid } from './paymentConfirmation.js'
+import { consumeReservation, extendReservationExpiry } from './inventoryService.js'
+import { recordEftPaymentReceived } from './paymentConfirmation.js'
+import { round2 } from './accountingService.js'
 import { generateInvoice, sendWhatsAppNotification } from './invoiceService.js'
-import { sendProofReceived, sendPaymentVerified, sendPaymentRejected, sendAdminEftAlert } from '../utils/email.js'
+import { bankAccountToPublicShape } from './paymentProviders/manualEftProvider.js'
+import { sendProofReceived, sendPaymentVerified, sendPaymentRejected, sendAdminEftAlert, sendEftInstructions } from '../utils/email.js'
 
 async function notifyAdminsOfNewProof(order) {
   await prisma.notification.create({
@@ -33,14 +35,12 @@ export async function uploadProof(orderId, { filePath, fileName, fileSize, mimeT
     })
     if (!order) throw Object.assign(new Error('Order not found'), { status: 404 })
 
-    const payment = order.payments[0]
-    if (!payment) throw Object.assign(new Error('This order has no Manual EFT payment to attach proof to'), { status: 400 })
-    // Replacing proof is allowed any time before an admin has verified it —
-    // including while a first upload is still sitting in the queue, so a
-    // customer who spots a mistake can correct it before anyone reviews it.
-    if (!['PENDING_PROOF', 'PROOF_UPLOADED', 'REJECTED'].includes(payment.eftVerificationStatus)) {
-      throw Object.assign(new Error('Proof cannot be uploaded for this payment in its current state'), { status: 400 })
-    }
+    // The *active* EFT payment — for a single-payment order there's only
+    // ever one, so this is unchanged. For a deposit order (Partial Payments
+    // phase) it naturally resolves to the deposit first, then (once that's
+    // verified and the balance Payment row is created) the balance.
+    const payment = order.payments.find(p => ['PENDING_PROOF', 'PROOF_UPLOADED', 'REJECTED'].includes(p.eftVerificationStatus))
+    if (!payment) throw Object.assign(new Error('This order has no Manual EFT payment awaiting proof'), { status: 400 })
 
     const previousFilePath = payment.proofOfPaymentUrl
 
@@ -82,10 +82,15 @@ export async function uploadProof(orderId, { filePath, fileName, fileSize, mimeT
   }
 }
 
-// Admin approval — mirrors the PayFast webhook's success path exactly
-// (server/src/routes/webhooks.js) so downstream behavior (finance revenue
-// counting via Order.status, invoice generation, WhatsApp) is identical
-// regardless of which gateway confirmed the sale.
+// Admin approval — mirrors the PayFast webhook's success path when this
+// payment completes the order (server/src/routes/webhooks.js), so downstream
+// behavior (finance revenue counting via Order.status, invoice generation,
+// WhatsApp) is identical regardless of which gateway confirmed the sale.
+//
+// Partial Payments phase: this payment might be a deposit rather than full
+// settlement. recordEftPaymentReceived (paymentConfirmation.js) decides
+// which — if it's still partial, the reservation hold is extended and a
+// balance Payment row is spawned instead of finalizing the order.
 export async function verifyPayment(paymentId, { adminUserId }) {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
@@ -93,9 +98,11 @@ export async function verifyPayment(paymentId, { adminUserId }) {
       order: {
         include: {
           items: { include: { variant: { include: { product: true } } } },
-          reservations: { where: { consumedAt: null, releasedAt: null } }
+          reservations: { where: { consumedAt: null, releasedAt: null } },
+          payments: true
         }
-      }
+      },
+      bankAccount: true
     }
   })
   if (!payment) throw Object.assign(new Error('Payment not found'), { status: 404 })
@@ -103,6 +110,7 @@ export async function verifyPayment(paymentId, { adminUserId }) {
   if (payment.eftVerificationStatus === 'VERIFIED') throw Object.assign(new Error('Already verified'), { status: 400 })
 
   const orderId = payment.orderId
+  let outcome
 
   await prisma.$transaction(async (tx) => {
     const updatedPayment = await tx.payment.update({
@@ -116,16 +124,46 @@ export async function verifyPayment(paymentId, { adminUserId }) {
       }
     })
 
-    // Order status + GL posting — shared with the PayFast webhook
-    // (webhooks.js) and, later, every other gateway's confirmation path,
-    // so every payment method produces identical journal shapes.
-    await confirmOrderPaid(tx, payment.order, updatedPayment)
+    const totalPaid = round2(
+      payment.order.payments
+        .filter(p => p.id !== paymentId && p.paymentStatus === 'COMPLETE')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0) + Number(updatedPayment.amount)
+    )
 
-    for (const reservation of payment.order.reservations) {
-      const item = payment.order.items.find(i => i.variantId === reservation.variantId)
-      await consumeReservation(tx, reservation, {
-        productName: item?.variant?.product?.name,
-        variantSize: item?.variant?.size
+    // Order status + GL posting — shared with the PayFast webhook when this
+    // payment completes the order; still-partial handled below.
+    outcome = await recordEftPaymentReceived(tx, payment.order, updatedPayment, totalPaid)
+
+    if (outcome.fullyPaid) {
+      for (const reservation of payment.order.reservations) {
+        const item = payment.order.items.find(i => i.variantId === reservation.variantId)
+        await consumeReservation(tx, reservation, {
+          productName: item?.variant?.product?.name,
+          variantSize: item?.variant?.size
+        })
+      }
+    } else {
+      // Deposit verified, balance still outstanding: keep the stock held
+      // for eft_balance_payment_hours rather than letting the original
+      // (already-expired-or-expiring) hold cancel the order out from under
+      // a customer who just paid part of it.
+      const balanceHours = Number(await configStore.get('eft_balance_payment_hours', '48'))
+      await extendReservationExpiry(tx, orderId, new Date(Date.now() + balanceHours * 60 * 60 * 1000))
+
+      // Same shape as the deposit's own Payment row, pinned to the same
+      // bank account so the customer never sees a different one mid-flow.
+      const balancePayment = await tx.payment.create({
+        data: {
+          orderId,
+          paymentMethod: 'manual_eft',
+          paymentStatus: 'PENDING',
+          amount: outcome.remainingBalance,
+          eftVerificationStatus: 'PENDING_PROOF',
+          bankAccountId: payment.bankAccountId,
+        }
+      })
+      await tx.paymentStatusHistory.create({
+        data: { paymentId: balancePayment.id, status: 'PENDING_PROOF', actorType: 'system', note: 'Deposit verified — awaiting balance payment' }
       })
     }
 
@@ -134,18 +172,22 @@ export async function verifyPayment(paymentId, { adminUserId }) {
     })
 
     await tx.auditLog.create({
-      data: { adminUserId, action: 'VERIFY_EFT_PAYMENT', entity: 'Payment', entityId: paymentId, details: { orderId } }
+      data: { adminUserId, action: 'VERIFY_EFT_PAYMENT', entity: 'Payment', entityId: paymentId, details: { orderId, fullyPaid: outcome.fullyPaid } }
     })
   })
 
-  try {
-    await generateInvoice(orderId)
-    await sendWhatsAppNotification(orderId, 'paid')
-  } catch (autoErr) {
-    console.error('[EFT] Post-verification automation failed:', autoErr.message)
+  if (outcome.fullyPaid) {
+    try {
+      await generateInvoice(orderId)
+      await sendWhatsAppNotification(orderId, 'paid')
+    } catch (autoErr) {
+      console.error('[EFT] Post-verification automation failed:', autoErr.message)
+    }
+    sendPaymentVerified(orderId).catch(e => console.error('[EFT] sendPaymentVerified failed:', e.message))
+  } else {
+    const bankDetails = bankAccountToPublicShape(payment.bankAccount)
+    sendEftInstructions(orderId, bankDetails, outcome.remainingBalance).catch(e => console.error('[EFT] sendEftInstructions (balance) failed:', e.message))
   }
-
-  sendPaymentVerified(orderId).catch(e => console.error('[EFT] sendPaymentVerified failed:', e.message))
 
   return prisma.payment.findUnique({ where: { id: paymentId } })
 }

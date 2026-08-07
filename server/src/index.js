@@ -27,6 +27,8 @@ import settingsRoutes from './routes/settings.js'
 import cartRoutes from './routes/cart.js'
 import newsletterRoutes from './routes/newsletter.js'
 import customerRoutes from './routes/customers.js'
+import contactRoutes from './routes/contact.js'
+import testimonialsRoutes from './routes/testimonials.js'
 
 
 
@@ -94,6 +96,8 @@ app.use('/api/admin/settings', settingsRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/newsletter', newsletterRoutes)
 app.use('/api/customers', customerRoutes)
+app.use('/api/contact', contactRoutes)
+app.use('/api/testimonials', testimonialsRoutes)
 
 
 

@@ -12,7 +12,7 @@ import { nextOrderNumber } from '../lib/orderNumberService.js'
 import { uploadProofMiddleware } from '../lib/eftUpload.js'
 import { uploadProof } from '../lib/eftPaymentService.js'
 import { getPaymentProvider } from '../lib/paymentProviders/index.js'
-import { getPublicBankDetails } from '../lib/paymentProviders/manualEftProvider.js'
+import { getPublicBankDetails, getDepositConfig, bankAccountToPublicShape } from '../lib/paymentProviders/manualEftProvider.js'
 
 const router = Router()
 
@@ -48,6 +48,14 @@ async function handleCheckoutNewsletterOptIn(email) {
 router.get('/eft/bank-details', async (req, res, next) => {
   try {
     res.json(await getPublicBankDetails())
+  } catch (err) { next(err) }
+})
+
+// GET /api/orders/eft/deposit-config — public: whether checkout should offer
+// a deposit option for Manual EFT, and at what percentage.
+router.get('/eft/deposit-config', async (req, res, next) => {
+  try {
+    res.json(await getDepositConfig())
   } catch (err) { next(err) }
 })
 
@@ -114,7 +122,7 @@ router.post('/preview', async (req, res, next) => {
 // POST /api/orders  — create order + return the chosen gateway's payment data
 router.post('/', async (req, res, next) => {
   try {
-    const { items, contact, shipping, shippingMethod, newsletterOptIn, paymentMethod = 'payfast' } = req.body
+    const { items, contact, shipping, shippingMethod, newsletterOptIn, paymentMethod = 'payfast', payDeposit } = req.body
 
     // 1. Basic validation
     if (!items?.length) return res.status(400).json({ error: 'Cart is empty' })
@@ -237,7 +245,7 @@ router.post('/', async (req, res, next) => {
       // row is only created once the webhook confirms success) so there's
       // somewhere to attach proof-of-payment from the moment the order is
       // placed. A no-op for providers (like PayFast) that don't need one.
-      await provider.onOrderCreated(tx, newOrder, { contact, shipping })
+      await provider.onOrderCreated(tx, newOrder, { contact, shipping, payDeposit: !!payDeposit })
 
       // Hold stock for every line item. This is the real guard against the
       // oversell race (the check above is just a fast, friendly rejection) —
@@ -293,11 +301,22 @@ router.get('/:id', async (req, res, next) => {
         logisticsEvents: { orderBy: { createdAt: 'desc' } },
         coupon: true,
         taxRate: true,
-        payments: { include: { statusHistory: { orderBy: { createdAt: 'asc' } } } }
+        payments: { include: { statusHistory: { orderBy: { createdAt: 'asc' } }, bankAccount: true } }
       },
     })
     if (!order) return res.status(404).json({ error: 'Order not found' })
-    res.json(order)
+
+    // Each payment's own pinned bank account, mapped to the same safe public
+    // shape as GET /eft/bank-details — so checkout-success.html/account.html
+    // can show the account THIS payment (deposit or balance) was actually
+    // shown against, not whatever's default right now. Raw BankAccount
+    // fields (chartAccountCode, isDefault, timestamps) are never exposed.
+    const payments = order.payments.map(({ bankAccount, ...payment }) => ({
+      ...payment,
+      bankDetails: bankAccount ? bankAccountToPublicShape(bankAccount) : null
+    }))
+
+    res.json({ ...order, payments })
   } catch (err) {
     next(err)
   }

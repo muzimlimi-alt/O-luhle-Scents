@@ -17,3 +17,21 @@ export const newsletterLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many requests. Please try again later.' },
 })
+
+// Contact form is an open, unauthenticated form — a spam/abuse target.
+export const contactLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { type: 'error', message: 'Too many requests. Please try again later.' },
+})
+
+// Testimonial submission is an open, unauthenticated form — a spam/abuse target.
+export const testimonialLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many submissions. Please try again later.' },
+})

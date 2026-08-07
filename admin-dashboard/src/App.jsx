@@ -24,6 +24,7 @@ import { Preferences } from './pages/Preferences';
 import { Content } from './pages/Content';
 import { Login } from './pages/Login';
 import { Newsletters } from './pages/Newsletters';
+import Testimonials from './pages/Testimonials';
 import { ShippingMethods } from './pages/ShippingMethods';
 import { TaxRates } from './pages/TaxRates';
 import { GeneralLedger } from './pages/GeneralLedger';
@@ -98,6 +99,7 @@ function App() {
               <Route path="purchases" element={<Purchases />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="newsletters" element={<Newsletters />} />
+              <Route path="testimonials" element={<Testimonials />} />
               <Route path="admin-users" element={<AdminUsers />} />
               <Route path="audit-logs" element={<AuditLogs />} />
               <Route path="preferences" element={<Preferences />} />

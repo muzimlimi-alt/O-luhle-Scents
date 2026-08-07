@@ -48,7 +48,7 @@ async function getTransporter() {
 const FROM = process.env.EMAIL_FROM || "O'luhle Scents <orders@oluhle.co.za>"
 
 // ── Safe send wrapper ─────────────────────────────────────────────────────────
-async function send({ to, subject, html }) {
+async function send({ to, subject, html, replyTo }) {
   const mailer = await getTransporter()
   if (!mailer) {
     console.warn('[Email] No mailer configured — email not sent:', subject)
@@ -59,7 +59,8 @@ async function send({ to, subject, html }) {
       from: FROM,
       to,
       subject,
-      html
+      html,
+      ...(replyTo ? { replyTo } : {}),
     })
     console.log(`[Email] Sent "${subject}" to ${to} (MessageId: ${info.messageId})`)
   } catch (err) {
@@ -113,21 +114,31 @@ function itemRows(items) {
   return (items || []).map(item => `
     <tr>
       <td style="padding:10px 0;border-bottom:1px solid #f2ede7;font-size:14px;">
-        ${item.product?.name || 'Product'} — ${item.size}
+        ${item.productNameSnapshot || item.variant?.product?.name || 'Product'} — ${item.variantLabelSnapshot || item.variant?.size || ''}
       </td>
       <td style="padding:10px 0;border-bottom:1px solid #f2ede7;font-size:14px;text-align:center;">
         × ${item.quantity}
       </td>
       <td style="padding:10px 0;border-bottom:1px solid #f2ede7;font-size:14px;text-align:right;font-weight:bold;">
-        R${(item.price * item.quantity).toLocaleString()}
+        R${(Number(item.priceAtPurchase) * item.quantity).toLocaleString()}
       </td>
     </tr>`).join('')
 }
 
 // ── 1. Order confirmation ─────────────────────────────────────────────────────
-// Triggered after PayFast ITN confirms payment (payment_status = COMPLETE).
-export async function sendOrderConfirmation(order) {
-  const firstName = order.shippingAddress?.firstName || 'Valued Customer'
+// Triggered after PayFast ITN confirms payment (payment_status = COMPLETE) —
+// see routes/webhooks.js. Takes orderId like every other function in this
+// file (loadOrderForEftEmail, despite its EFT-flavored name, is the shared
+// order+customer+shippingAddress+items loader every one of them already
+// uses). Previously took a bare `order` object shaped like neither the real
+// `Order` model nor `OrderItem` (e.g. `order.shippingAddress.firstName`,
+// `item.product.name` — neither exists on the real schema) and was never
+// actually called anywhere; rewritten against the real shapes here.
+export async function sendOrderConfirmation(orderId) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+  const firstName = order.customer.name?.split(' ')[0] || 'Valued Customer'
+
   const body = `
     <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
       Thank you, ${firstName}!
@@ -139,7 +150,7 @@ export async function sendOrderConfirmation(order) {
 
     <div style="background:#f7f3ee;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
       <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Order Reference</div>
-      <div style="font-family:monospace;font-size:14px;color:#1a1a1a;">${order.id}</div>
+      <div style="font-family:monospace;font-size:14px;color:#1a1a1a;">${order.orderNumber}</div>
     </div>
 
     <table style="width:100%;border-collapse:collapse;">
@@ -157,13 +168,13 @@ export async function sendOrderConfirmation(order) {
 
     <table style="width:100%;border-collapse:collapse;margin-top:16px;">
       <tr>
-        <td style="padding:6px 0;color:#666;font-size:13px;">Shipping (${order.shippingMethod})</td>
-        <td style="padding:6px 0;font-size:13px;text-align:right;">R${(order.shippingCost || 0).toLocaleString()}</td>
+        <td style="padding:6px 0;color:#666;font-size:13px;">Shipping</td>
+        <td style="padding:6px 0;font-size:13px;text-align:right;">R${Number(order.shippingCost || 0).toLocaleString()}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;font-size:15px;font-weight:bold;border-top:2px solid #1a1a1a;">Total Paid</td>
         <td style="padding:8px 0;font-size:15px;font-weight:bold;text-align:right;border-top:2px solid #1a1a1a;color:#b89b6a;">
-          R${(order.totalAmount || 0).toLocaleString()}
+          R${Number(order.totalAmount || 0).toLocaleString()}
         </td>
       </tr>
     </table>
@@ -171,20 +182,18 @@ export async function sendOrderConfirmation(order) {
     <div style="margin-top:32px;padding:20px 24px;border:1px solid #e8e0d4;border-radius:6px;">
       <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">Shipping To</div>
       <div style="font-size:14px;line-height:1.7;color:#444;">
-        ${order.shippingAddress?.firstName || ''} ${order.shippingAddress?.lastName || ''}<br>
-        ${order.shippingAddress?.street || ''}${order.shippingAddress?.apartment ? ', ' + order.shippingAddress.apartment : ''}<br>
+        ${order.customer.name || ''}<br>
+        ${order.shippingAddress?.street || ''}<br>
         ${order.shippingAddress?.city || ''}, ${order.shippingAddress?.province || ''} ${order.shippingAddress?.postalCode || ''}
       </div>
     </div>
 
     <p style="font-size:13px;color:#888;margin-top:28px;line-height:1.7;">
-      Estimated delivery:
-      ${order.shippingMethod === 'express' ? '1–2 business days' : '3–5 business days'}.
-      You'll receive a shipping confirmation email once your order is dispatched.
+      Estimated delivery: 3–5 business days. You'll receive a shipping confirmation email once your order is dispatched.
     </p>`
 
   await send({
-    to:      order.email,
+    to:      order.customer.email,
     subject: `Your O'luhle Scents order is confirmed ✦`,
     html:    emailShell(`Order Confirmed — O'luhle Scents`, body),
   })
@@ -305,6 +314,53 @@ export async function sendNewsletterConfirmation(email, unsubscribeToken) {
   })
 }
 
+// ── Contact form submission ───────────────────────────────────────────────────
+// Sent to the business inbox whenever a visitor submits the homepage contact
+// form. replyTo is set to the customer's own address so staff can just hit
+// reply in their mail client.
+const CONTACT_INBOX = process.env.CONTACT_EMAIL || 'info@oluhlescents.co.za'
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]))
+}
+
+export async function sendContactMessage({ name, email, phone, subject, message }) {
+  name = escapeHtml(name)
+  email = escapeHtml(email)
+  phone = escapeHtml(phone)
+  subject = escapeHtml(subject)
+  message = escapeHtml(message)
+
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      New enquiry from ${name}
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Sent via the O'luhle Scents website contact form.
+    </p>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <tr><td style="padding:6px 0;color:#888;font-size:13px;width:110px;">Name</td><td style="padding:6px 0;font-size:14px;">${name}</td></tr>
+      <tr><td style="padding:6px 0;color:#888;font-size:13px;">Email</td><td style="padding:6px 0;font-size:14px;"><a href="mailto:${email}" style="color:#b89b6a;">${email}</a></td></tr>
+      ${phone ? `<tr><td style="padding:6px 0;color:#888;font-size:13px;">Phone</td><td style="padding:6px 0;font-size:14px;">${phone}</td></tr>` : ''}
+      ${subject ? `<tr><td style="padding:6px 0;color:#888;font-size:13px;">Subject</td><td style="padding:6px 0;font-size:14px;">${subject}</td></tr>` : ''}
+    </table>
+
+    <div style="background:#f7f3ee;border-radius:6px;padding:20px 24px;">
+      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Message</div>
+      <div style="font-size:14px;color:#333;line-height:1.7;white-space:pre-wrap;">${message}</div>
+    </div>`
+
+  await send({
+    to: CONTACT_INBOX,
+    subject: `New contact form enquiry — ${name}`,
+    html: emailShell('New Contact Enquiry — O\'luhle Scents', body),
+    replyTo: email,
+  })
+}
+
 // ── 4. Newsletter Campaign Broadcast ────────────────────────────────────────────
 // Sent during campaign broadcast. Contains custom HTML and attachments.
 export async function sendCampaignBroadcast(email, unsubscribeToken, campaign) {
@@ -386,11 +442,17 @@ function eftItemRows(items) {
 }
 
 // ── EFT instructions ─────────────────────────────────────────────────────────
-// Sent immediately after a Manual EFT order is placed (orders.js).
-export async function sendEftInstructions(orderId, bankDetails) {
+// Sent immediately after a Manual EFT order is placed (orders.js), and again
+// for the balance once a deposit is verified (eftPaymentService.js). amountDue
+// defaults to the full order total (unchanged behavior for every pre-Partial-
+// Payments caller) but is overridden with the specific payment's own amount
+// when it's a deposit or balance rather than full settlement.
+export async function sendEftInstructions(orderId, bankDetails, amountDue = null) {
   const order = await loadOrderForEftEmail(orderId)
   if (!order?.customer?.email) return
   const firstName = order.customer.name?.split(' ')[0] || 'Valued Customer'
+  const due = amountDue ?? Number(order.totalAmount)
+  const isPartial = due < Number(order.totalAmount) - 0.005
 
   const body = `
     <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
@@ -431,12 +493,18 @@ export async function sendEftInstructions(orderId, bankDetails) {
 
     <table style="width:100%;border-collapse:collapse;margin-top:16px;">
       <tr>
-        <td style="padding:8px 0;font-size:15px;font-weight:bold;border-top:2px solid #1a1a1a;">Amount Due</td>
+        <td style="padding:8px 0;font-size:15px;font-weight:bold;border-top:2px solid #1a1a1a;">${isPartial ? 'Amount Due Now' : 'Amount Due'}</td>
         <td style="padding:8px 0;font-size:15px;font-weight:bold;text-align:right;border-top:2px solid #1a1a1a;color:#b89b6a;">
-          R${Number(order.totalAmount).toLocaleString()}
+          R${due.toLocaleString()}
         </td>
       </tr>
     </table>
+
+    ${isPartial ? `
+    <p style="color:#666;font-size:13px;line-height:1.7;margin:16px 0 0;">
+      A remaining balance of <strong>R${(Number(order.totalAmount) - due).toLocaleString()}</strong> will be due once this payment is verified —
+      we'll email you separately with instructions for it.
+    </p>` : ''}
 
     <ol style="font-size:13px;color:#666;line-height:1.9;margin-top:28px;padding-left:20px;">
       <li>Make the EFT using the bank details above.</li>
@@ -523,10 +591,15 @@ export async function sendPaymentRejected(orderId, reason) {
 // vs. PayFast/abandoned (reuses the same checkout-recovery link pattern
 // already established by admin_ops.js's manual recovery email, so a customer
 // gets consistent CTAs regardless of which flow nudged them).
-export async function sendPaymentReminderEmail(orderId, { isEft, bankDetails } = {}) {
+export async function sendPaymentReminderEmail(orderId, { isEft, bankDetails, amountDue } = {}) {
   const order = await loadOrderForEftEmail(orderId)
   if (!order?.customer?.email) return
   const firstName = order.customer.name?.split(' ')[0] || 'Valued Customer'
+  const due = amountDue ?? Number(order.totalAmount)
+  // A deposit already verified means this reminder is chasing the balance,
+  // not the original total — say so explicitly rather than just showing a
+  // smaller number with no explanation.
+  const isPartial = isEft && due < Number(order.totalAmount) - 0.005
 
   const body = isEft ? `
     <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
@@ -535,6 +608,7 @@ export async function sendPaymentReminderEmail(orderId, { isEft, bankDetails } =
     <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
       Order <strong>${order.orderNumber}</strong> is still awaiting payment. Your items are reserved for a limited time —
       complete your EFT using the details below so we don't have to release them.
+      ${isPartial ? ' Your deposit has already been received — this is just the remaining balance.' : ''}
     </p>
 
     <div style="background:#f7f3ee;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
@@ -554,9 +628,9 @@ export async function sendPaymentReminderEmail(orderId, { isEft, bankDetails } =
 
     <table style="width:100%;border-collapse:collapse;">
       <tr>
-        <td style="padding:8px 0;font-size:15px;font-weight:bold;border-top:2px solid #1a1a1a;">Amount Due</td>
+        <td style="padding:8px 0;font-size:15px;font-weight:bold;border-top:2px solid #1a1a1a;">${isPartial ? 'Balance Due' : 'Amount Due'}</td>
         <td style="padding:8px 0;font-size:15px;font-weight:bold;text-align:right;border-top:2px solid #1a1a1a;color:#b89b6a;">
-          R${Number(order.totalAmount).toLocaleString()}
+          R${due.toLocaleString()}
         </td>
       </tr>
     </table>` : `
@@ -567,7 +641,7 @@ export async function sendPaymentReminderEmail(orderId, { isEft, bankDetails } =
       Your order <strong>${order.orderNumber}</strong> is still waiting for payment — your items are reserved, but not indefinitely.
     </p>
     <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
-      Total: <strong>R${Number(order.totalAmount).toLocaleString()}</strong>
+      Total: <strong>R${due.toLocaleString()}</strong>
     </p>
     <div style="margin-top:8px;">
       <a href="${process.env.FRONTEND_URL}/checkout.html?recover=${order.id}" style="background:#d4af37;color:#000;padding:12px 24px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;">Complete Your Purchase</a>

@@ -684,6 +684,30 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+// ── 18b. WEBHOOK_LOGS ────────────────────────────────────────────────────────
+// One row per inbound payment-gateway webhook attempt, regardless of outcome
+// (accepted, rejected at any check, or errored). Written durably to our own
+// database precisely because gateway ITN delivery is asynchronous and can
+// fail or be delayed for reasons entirely outside the app (misconfigured
+// URL, network hiccup, tunnel down) — without this, diagnosing "a webhook
+// never arrived" depends on external, ephemeral infrastructure (e.g. an
+// ngrok request inspector) instead of something we can query ourselves.
+model WebhookLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  provider     String   @db.VarChar(50) // 'payfast', later 'ozow'/'peach'
+  outcome      String   @db.VarChar(50) // ACCEPTED, REJECTED_IP, REJECTED_SIGNATURE, REJECTED_PAYFAST_VALIDATION, REJECTED_AMOUNT_MISMATCH, ERROR
+  sourceIp     String?  @map("source_ip") @db.VarChar(64)
+  orderId      String?  @map("order_id") @db.Uuid
+  payload      Json?
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([provider, createdAt])
+  @@index([orderId])
+  @@index([outcome, createdAt])
+  @@map("webhook_logs")
+}
+
 // ── 19. GLOBAL_SETTINGS ──────────────────────────────────────────────────────
 model GlobalSetting {
   id    String @id @default(uuid()) @db.Uuid
@@ -1182,4 +1206,21 @@ model ApprovalRequest {
 
   @@index([status])
   @@map("approval_requests")
+}
+
+// ── 47. TESTIMONIALS — visitor-submitted, admin-moderated ───────────────────
+model Testimonial {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String    @db.VarChar(120)
+  designation  String?   @db.VarChar(120)
+  quote        String    @db.Text
+  imagePath    String?   @map("image_path")
+  status       String    @default("pending") @db.VarChar(20) // pending | approved | rejected
+  submittedBy  String    @default("visitor") @map("submitted_by") @db.VarChar(20) // visitor | admin
+  displayOrder Int       @default(0) @map("display_order")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("testimonials")
 }

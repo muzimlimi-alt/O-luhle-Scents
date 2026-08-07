@@ -149,6 +149,16 @@
                 </span>
               </label>
               <div class="payment-method-option__panel" data-method="manual_eft" style="display:none;">
+                <div id="eft-deposit-choice" style="display:none;margin-bottom:16px;">
+                  <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;margin-bottom:8px;">
+                    <input type="radio" name="eft-deposit" value="full" checked>
+                    <span>Pay in full — <strong id="eft-full-amount">R0</strong></span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;">
+                    <input type="radio" name="eft-deposit" value="deposit">
+                    <span>Pay a deposit now — <strong id="eft-deposit-amount">R0</strong> <span style="color:var(--color-text-light);">(balance <span id="eft-balance-amount">R0</span> due after)</span></span>
+                  </label>
+                </div>
                 <div id="eft-bank-details">Loading bank details…</div>
                 <ol style="margin:16px 0 0;padding-left:20px;">
                   <li>Make the EFT using the bank details above.</li>
@@ -226,7 +236,7 @@
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
   <script type="module">
-    import { createOrder, getOrderPreview, getShippingEstimate, getEftBankDetails } from './js/api.js';
+    import { createOrder, getOrderPreview, getShippingEstimate, getEftBankDetails, getEftDepositConfig } from './js/api.js';
     import { trackBeginCheckout } from './js/analytics.js';
 
     function getPlaceholderImage(name) {
@@ -248,9 +258,39 @@
       // Radio list where the selected option expands its own panel directly
       // below it — no page navigation, matching the reference interaction.
       let bankDetailsLoaded = false;
+      let currentTotal = 0;
+      let depositConfig = { enabled: false, percentage: 50 };
 
       function getSelectedPaymentMethod() {
         return document.querySelector('input[name="payment-method"]:checked')?.value || 'payfast';
+      }
+
+      function isPayingDeposit() {
+        return document.querySelector('input[name="eft-deposit"]:checked')?.value === 'deposit';
+      }
+
+      // Fetched once — a deposit toggle an admin flips mid-visit is an edge
+      // case not worth a live-refresh; the config is re-read on next load.
+      async function loadDepositConfig() {
+        try {
+          depositConfig = await getEftDepositConfig();
+        } catch (err) {
+          depositConfig = { enabled: false, percentage: 50 };
+        }
+        document.getElementById('eft-deposit-choice').style.display = depositConfig.enabled ? 'block' : 'none';
+        updateDepositPreview();
+      }
+
+      function updateDepositPreview() {
+        if (!depositConfig.enabled) return;
+        const depositAmount = Math.round((currentTotal * depositConfig.percentage / 100) * 100) / 100;
+        const balanceAmount = Math.round((currentTotal - depositAmount) * 100) / 100;
+        const fullEl = document.getElementById('eft-full-amount');
+        const depositEl = document.getElementById('eft-deposit-amount');
+        const balanceEl = document.getElementById('eft-balance-amount');
+        if (fullEl) fullEl.textContent = `R${currentTotal.toLocaleString()}`;
+        if (depositEl) depositEl.textContent = `R${depositAmount.toLocaleString()}`;
+        if (balanceEl) balanceEl.textContent = `R${balanceAmount.toLocaleString()}`;
       }
 
       async function ensureBankDetailsLoaded() {
@@ -468,6 +508,9 @@
 
         const total = subtotal - previewDiscount + previewTax + shippingCost;
         if (totalEl) totalEl.textContent = `R${total.toLocaleString()}`;
+
+        currentTotal = total;
+        updateDepositPreview();
       }
 
       async function refreshAndRenderTotals() {
@@ -490,6 +533,7 @@
 
       renderCheckoutItems();
       refreshAndRenderTotals();
+      loadDepositConfig();
       document.getElementById('postal')?.addEventListener('blur', () => { updateShippingEstimate(); refreshAndRenderTotals(); });
       document.getElementById('province')?.addEventListener('change', () => { updateShippingEstimate(); refreshAndRenderTotals(); });
 
@@ -539,6 +583,7 @@
             couponCode: appliedCouponCode || undefined,
             newsletterOptIn,
             paymentMethod,
+            payDeposit: paymentMethod === 'manual_eft' && isPayingDeposit(),
           });
 
           // Clearing the cart here: the order now exists server-side either

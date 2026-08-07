@@ -36,11 +36,16 @@
         <p id="confirmation-subtext" style="color:var(--color-text-light);margin-bottom:8px;">
           Thank you for your purchase! Your order has been received and payment confirmed.
         </p>
+        <p id="payment-pending-note" style="display:none;color:var(--color-text-light);font-size:0.82rem;margin:0 0 8px;">
+          This can take a few moments — this page will update automatically once it's confirmed.
+        </p>
         <p id="order-ref" style="font-size:0.78rem;color:var(--color-text-light);letter-spacing:0.05em;margin-bottom:36px;"></p>
 
         <!-- Manual EFT instructions + proof upload -->
         <div id="eft-section" style="display:none;background:var(--color-bg-alt);border-radius:var(--radius-lg);padding:24px;margin-bottom:36px;text-align:left;">
           <h4 style="margin-bottom:16px;font-size:1rem;">Complete Your Payment</h4>
+          <p id="eft-progress-note" style="display:none;font-size:0.82rem;color:var(--color-text-light);margin:0 0 12px;"></p>
+          <p style="font-size:0.85rem;margin:0 0 16px;">Amount due now: <strong id="eft-amount-due-now"></strong></p>
           <div id="eft-bank-details-success"></div>
           <ol style="font-size:0.85rem;color:var(--color-text-light);line-height:1.8;margin:16px 0 0;padding-left:20px;">
             <li>Make the EFT using the bank details above.</li>
@@ -98,8 +103,18 @@
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
   <script type="module">
-    import { getOrder, getEftBankDetails, uploadEftProof } from './js/api.js';
+    import { getOrder, uploadEftProof } from './js/api.js';
     import { renderEftProofWidget } from './js/eft-proof-upload.js';
+
+    // Gateway checkouts (PayFast) redirect the browser back here the moment
+    // the customer finishes on PayFast's site — but order confirmation
+    // itself happens via a separate, asynchronous server-to-server ITN call
+    // that can lag behind that redirect by a few seconds. Claiming "payment
+    // confirmed" before order.paymentStatus actually says so is misleading;
+    // this polls briefly and updates once the webhook has actually landed.
+    let pollTimer = null;
+    let pollAttempts = 0;
+    const MAX_POLL_ATTEMPTS = 15; // ~60s at 4s intervals
 
     document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(window.location.search);
@@ -113,10 +128,58 @@
       const refEl = document.getElementById('order-ref');
 
       try {
+        await loadAndRender(orderId, refEl);
+      } catch (err) {
+        console.error('[Success Page] Error loading order:', err);
+        if (refEl && !refEl.textContent) refEl.textContent = `Order reference: ${orderId}`;
+      } finally {
+        document.querySelector('.page-loader')?.classList.add('hidden');
+      }
+    });
+
+    async function loadAndRender(orderId, refEl) {
+      {
         const order = await getOrder(orderId);
         if (refEl) refEl.textContent = `Order reference: ${order.orderNumber || orderId}`;
 
-        const eftPayment = order.payments?.find(p => p.paymentMethod === 'manual_eft');
+        // The *active* EFT payment — for a single-payment order there's only
+        // ever one; for a deposit order (Partial Payments) this naturally
+        // resolves to the deposit first, then the balance once the deposit
+        // is verified and the balance Payment row exists.
+        const eftPayment = order.payments?.find(p => p.paymentMethod === 'manual_eft' && ['PENDING_PROOF', 'PROOF_UPLOADED', 'REJECTED'].includes(p.eftVerificationStatus));
+
+        // Not Manual EFT, and not yet confirmed paid — this is the gateway
+        // (PayFast) race window described above. Show an honest "processing"
+        // state and poll instead of claiming success prematurely.
+        const pendingNoteEl = document.getElementById('payment-pending-note');
+        if (!eftPayment && order.paymentStatus !== 'paid') {
+          const headingEl = document.getElementById('confirmation-heading');
+          const subtextEl = document.getElementById('confirmation-subtext');
+          if (headingEl) headingEl.textContent = 'Confirming Your Payment…';
+          if (subtextEl) subtextEl.textContent = 'Your order has been placed — we\'re just waiting on confirmation from the payment gateway.';
+          if (pendingNoteEl) pendingNoteEl.style.display = 'block';
+
+          if (!pollTimer && pollAttempts < MAX_POLL_ATTEMPTS) {
+            pollTimer = setInterval(async () => {
+              pollAttempts++;
+              if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+                clearInterval(pollTimer);
+                pollTimer = null;
+                if (subtextEl) subtextEl.textContent = 'Still waiting on confirmation from the payment gateway — refresh this page in a moment, or check your account for the latest status.';
+                return;
+              }
+              try {
+                await loadAndRender(orderId, refEl);
+              } catch (e) {
+                console.error('[Success Page] Poll failed:', e);
+              }
+            }, 4000);
+          }
+        } else {
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          if (pendingNoteEl) pendingNoteEl.style.display = 'none';
+        }
+
         if (eftPayment) {
           const headingEl = document.getElementById('confirmation-heading');
           const subtextEl = document.getElementById('confirmation-subtext');
@@ -128,9 +191,27 @@
           if (refInlineEl) refInlineEl.textContent = order.orderNumber;
           if (eftSection) eftSection.style.display = 'block';
 
-          getEftBankDetails().then(details => {
-            const el = document.getElementById('eft-bank-details-success');
-            if (!el) return;
+          const amountDueEl = document.getElementById('eft-amount-due-now');
+          if (amountDueEl) amountDueEl.textContent = `R${parseFloat(eftPayment.amount).toLocaleString()}`;
+
+          const completedPayments = (order.payments || []).filter(p => p.paymentStatus === 'COMPLETE');
+          if (completedPayments.length > 0) {
+            const paidSoFar = completedPayments.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+            const progressEl = document.getElementById('eft-progress-note');
+            if (progressEl) {
+              progressEl.style.display = 'block';
+              progressEl.textContent = `R${paidSoFar.toLocaleString()} of R${parseFloat(order.totalAmount).toLocaleString()} paid so far.`;
+            }
+          }
+
+          // Each payment carries its own pinned bank account (Multiple Bank
+          // Accounts phase) — using it directly here instead of the separate
+          // "today's default" endpoint keeps a balance payment shown against
+          // the same account the deposit was, even if the admin has since
+          // changed the default.
+          const el = document.getElementById('eft-bank-details-success');
+          if (el) {
+            const details = eftPayment.bankDetails || {};
             el.innerHTML = `
               <table style="width:100%;font-size:0.85rem;">
                 <tr><td style="padding:3px 0;color:var(--color-text-light);">Account Name</td><td style="padding:3px 0;text-align:right;">${details.bank_holder || '—'}</td></tr>
@@ -140,10 +221,7 @@
                 ${details.bank_account_type ? `<tr><td style="padding:3px 0;color:var(--color-text-light);">Account Type</td><td style="padding:3px 0;text-align:right;">${details.bank_account_type}</td></tr>` : ''}
                 ${details.bank_swift ? `<tr><td style="padding:3px 0;color:var(--color-text-light);">SWIFT</td><td style="padding:3px 0;text-align:right;">${details.bank_swift}</td></tr>` : ''}
               </table>`;
-          }).catch(() => {
-            const el = document.getElementById('eft-bank-details-success');
-            if (el) el.textContent = 'Bank details are temporarily unavailable — please contact us to complete your EFT.';
-          });
+          }
 
           renderEftProofWidget(document.getElementById('eft-proof-widget-container'), {
             orderId: order.id,
@@ -201,13 +279,8 @@
         }
 
         if (summaryEl) summaryEl.style.display = 'block';
-      } catch (err) {
-        console.error('[Success Page] Error loading order:', err);
-        if (refEl && !refEl.textContent) refEl.textContent = `Order reference: ${orderId}`;
-      } finally {
-        document.querySelector('.page-loader')?.classList.add('hidden');
       }
-    });
+    }
   </script>
 </body>
 </html>
