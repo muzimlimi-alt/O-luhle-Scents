@@ -1,14 +1,14 @@
 import { execSync } from 'child_process';
 
 /**
- * Modern PostgreSQL initialization script for O'luhle Scents.
+ * Modern PostgreSQL initialization script for TOCA.
  * uses the absolute path to the local PostgreSQL 18 installation to create the database.
  * ensuring absolute operational transparency during the fragrance boutique's fulfillment migration.
  * ESM version.
  */
 function initDb() {
   const psqlPath = 'C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe';
-  const dbName = 'oluhle_scents';
+  const dbName = 'toca';
   const user = 'postgres';
 
   console.log(`[PG Init] Attempting to create database "${dbName}" using local PG 18...`);

@@ -40,6 +40,9 @@ router.post('/', requireAdmin, async (req, res, next) => {
         }
       })
       await postExpenseJournal(tx, created)
+      await tx.auditLog.create({
+        data: { adminUserId: req.adminId, action: 'RECORD_EXPENSE', entity: 'Expense', entityId: created.id, details: { accountCode, amount: amt, description } }
+      })
       return created
     })
 

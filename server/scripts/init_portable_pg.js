@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Portable PostgreSQL orchestration script for O'luhle Scents.
+ * Portable PostgreSQL orchestration script for TOCA.
  * delivered a project-local PostgreSQL 18 cluster in the 'pgdata' directory.
  * bypasses system authentication and shell quoting issues by using direct process spawning.
  * ensuring absolute operational transparency and persistent storage for the boutique's fulfillment engine.

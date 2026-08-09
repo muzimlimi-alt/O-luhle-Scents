@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { adminOpsApi } from '../services/api';
 import { Drawer } from '../components/Drawer';
 import { DataTable } from '../components/DataTable';
@@ -149,17 +149,23 @@ export function Suppliers() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .elite-suppliers-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+        .elite-suppliers-container { padding: var(--sp-7); max-width: 1400px; margin: 0 auto; min-height: 100vh; }
 
-        .atelier-discovery { margin-bottom: 24px; }
-        .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; max-width: 500px; }
-        .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
+        .atelier-discovery { margin-bottom: var(--sp-6); }
+        .search-glass-wrapper { position: relative; background: var(--bg-elevated); border: 1.5px solid var(--border-default); border-radius: var(--r); padding: var(--sp-3) var(--sp-4); display: flex; align-items: center; max-width: 500px; }
+        .search-glass-input { background: none; border: none; color: var(--text-primary); width: 100%; outline: none; margin-left: var(--sp-3); font-size: 0.9rem; font-family: var(--f-body); font-weight: 300; }
 
         .elite-form { display: flex; flex-direction: column; }
-        .modal-actions-elite { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+        .modal-actions-elite { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
 
         @media (max-width: 768px) {
           .atelier-discovery { flex-direction: column; align-items: stretch; }
+          .elite-suppliers-container { padding: var(--sp-5); }
+          .search-glass-wrapper { max-width: 100%; }
+        }
+
+        @media (max-width: 480px) {
+          .elite-suppliers-container { padding: var(--sp-4); }
         }
       `}} />
     </div>

@@ -1,5 +1,5 @@
 /**
- * O'luhle Scents — Cookie Consent Manager
+ * TOCA — Cookie Consent Manager
  *
  * Architecture
  * ────────────
@@ -9,7 +9,7 @@
  *                       individual iOS-style toggles per category.
  *
  * Consent is stored in localStorage and respected by analytics.js.
- * window.OluhleConsent exposes .allows(category) for other modules.
+ * window.TocaConsent exposes .allows(category) for other modules.
  */
 
 (function () {
@@ -17,7 +17,7 @@
 
   // ─── Config ─────────────────────────────────────────────────────────────────
 
-  const STORAGE_KEY     = 'oluhle_cookie_consent';
+  const STORAGE_KEY     = 'toca_cookie_consent';
   const CONSENT_VERSION = 1;       // bump to re-prompt all users after a policy change
   const SHOW_DELAY_MS   = 1000;    // brief pause before the banner slides up
 
@@ -34,21 +34,21 @@
       label:       'Analytics Cookies',
       description: 'Help us understand how visitors interact with our site (Google Analytics 4). No personal data is sold.',
       locked:      false,
-      default:     true,
+      default:     false,
     },
     {
       id:          'marketing',
       label:       'Marketing Cookies',
       description: 'Personalise ads and measure campaign effectiveness via Meta Pixel and similar tools.',
       locked:      false,
-      default:     true,
+      default:     false,
     },
     {
       id:          'preferences',
       label:       'Preference Cookies',
       description: 'Remember your size selections and other preferences for a personalised return visit.',
       locked:      false,
-      default:     true,
+      default:     false,
     },
   ];
 
@@ -73,13 +73,13 @@
       timestamp:   Date.now(),
     };
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); } catch (_) {}
-    window.dispatchEvent(new CustomEvent('oluhle:consent', { detail: record }));
+    window.dispatchEvent(new CustomEvent('toca:consent', { detail: record }));
     return record;
   }
 
   // ─── Public API ──────────────────────────────────────────────────────────────
 
-  window.OluhleConsent = {
+  window.TocaConsent = {
     get:          readConsent,
     hasConsented: function ()         { return readConsent() !== null; },
     allows:       function (category) {

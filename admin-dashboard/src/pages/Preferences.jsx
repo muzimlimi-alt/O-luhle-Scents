@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
-import { useTheme } from '../context/ThemeContext';
+import { AppearancePanel } from '../components/AppearancePanel';
 import {
-  Palette, 
-  Monitor, 
-  Smartphone, 
-  EyeOff, 
-  Zap, 
-  CheckCircle, 
+  Palette,
+  Monitor,
+  Zap,
+  CheckCircle,
   RotateCcw,
   Layout,
   Table
@@ -15,7 +13,6 @@ import {
 
 export function Preferences() {
   const { prefs, updatePrefs, resetPrefs } = usePreferences();
-  const { theme, toggleTheme } = useTheme();
   const [savedStatus, setSavedStatus] = useState(null);
 
   const handleUpdate = (updates) => {
@@ -36,7 +33,7 @@ export function Preferences() {
     <div className="preferences-page">
       <div className="content-header" style={{ marginBottom: '32px' }}>
         <h2 className="page-title">Administrative Preferences</h2>
-        <p className="page-subtitle">Configure your personal O'luhle Scents management experience</p>
+        <p className="page-subtitle">Configure your personal TOCA management experience</p>
       </div>
 
       <div className="settings-container" style={{ maxWidth: '800px' }}>
@@ -44,23 +41,8 @@ export function Preferences() {
         {/* Appearance */}
         <section className="card" style={{ marginBottom: '24px' }}>
           <h4 className="pref-title"><Palette size={18} /> Appearance</h4>
-          <p className="pref-desc">Select your preferred visual aesthetic for the dashboard.</p>
-          <div className="form-grid-2" style={{ marginTop: '20px' }}>
-             <button
-               className={`theme-card ${theme === 'dark' ? 'active' : ''}`}
-               onClick={() => { if (theme !== 'dark') toggleTheme(); }}
-             >
-               <div className="theme-preview dark"></div>
-               <span>Midnight (Dark)</span>
-             </button>
-             <button
-               className={`theme-card ${theme === 'light' ? 'active' : ''}`}
-               onClick={() => { if (theme !== 'light') toggleTheme(); }}
-             >
-               <div className="theme-preview light"></div>
-               <span>Signature (Light)</span>
-             </button>
-          </div>
+          <p className="pref-desc">Finish, house accent, and layout density — applies instantly and is remembered per administrator.</p>
+          <AppearancePanel />
         </section>
 
         {/* Dashboard Behaviors */}
@@ -122,6 +104,16 @@ export function Preferences() {
                 <span className="slider round"></span>
               </label>
            </div>
+           <div className="pref-row" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
+              <div>
+                <span className="pref-label">Reduce Motion</span>
+                <p className="pref-hint">Disable chart and panel animations, independent of your OS setting</p>
+              </div>
+              <label className="switch">
+                <input type="checkbox" checked={prefs.reduceMotion} onChange={e => updatePrefs({ reduceMotion: e.target.checked })} />
+                <span className="slider round"></span>
+              </label>
+           </div>
         </section>
 
         {/* Global Inventory Sync */}
@@ -129,12 +121,22 @@ export function Preferences() {
            <h4 className="pref-title"><Monitor size={18} /> Inventory Thresholds</h4>
            <div className="pref-row">
               <div>
+                <span className="pref-label">Low-Stock Alerts</span>
+                <p className="pref-hint">Show low-stock notifications on the Notifications page</p>
+              </div>
+              <label className="switch">
+                <input type="checkbox" checked={prefs.lowStockAlertsEnabled} onChange={e => updatePrefs({ lowStockAlertsEnabled: e.target.checked })} />
+                <span className="slider round"></span>
+              </label>
+           </div>
+           <div className="pref-row" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
+              <div>
                 <span className="pref-label">Low Stock Alert Trigger</span>
                 <p className="pref-hint">Trigger replenishment signals when inventory falls below this quantity</p>
               </div>
-              <input 
-                type="number" 
-                className="status-select" 
+              <input
+                type="number"
+                className="status-select"
                 style={{ width: '80px', textAlign: 'center' }}
                 value={prefs.lowStockThreshold}
                 onChange={e => updatePrefs({ lowStockThreshold: parseInt(e.target.value) || 5 })}
@@ -158,26 +160,23 @@ export function Preferences() {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .pref-title { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-primary); }
-        .pref-desc { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 24px; }
-        .pref-row { display: flex; justify-content: space-between; align-items: center; }
+        .pref-title { display: flex; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-2); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--y-base); font-weight: 400; }
+        .pref-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: var(--sp-5); }
+        .pref-row { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
         .pref-label { font-size: 0.95rem; font-weight: 500; display: block; margin-bottom: 2px; }
-        .pref-hint { font-size: 0.75rem; color: var(--color-text-muted); margin: 0; }
-        
-        .theme-card { background: var(--color-bg-alt); border: 2px solid var(--color-border); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.2s; text-align: center; }
-        .theme-card:hover { border-color: var(--color-primary-light); }
-        .theme-card.active { border-color: var(--color-primary); background: rgba(212,175,55,0.05); }
-        .theme-preview { height: 60px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--color-border-light); }
-        .theme-preview.dark { background: #0f0e0c; }
-        .theme-preview.light { background: #faf8f5; }
-        
+        .pref-hint { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
+
         /* Switch logic */
-        .switch { position: relative; display: inline-block; width: 48px; height: 24px; }
+        .switch { position: relative; display: inline-block; width: 48px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--color-border); transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--color-primary); }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-default); transition: all var(--t, .35s) var(--ease, ease); border-radius: var(--r-pill); }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: all var(--t, .35s) var(--ease, ease); border-radius: 50%; }
+        input:checked + .slider { background-color: var(--y-base); }
         input:checked + .slider:before { transform: translateX(24px); }
+
+        @media (max-width: 480px) {
+          .pref-row { align-items: flex-start; }
+        }
       `}} />
     </div>
   );

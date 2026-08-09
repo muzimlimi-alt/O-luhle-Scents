@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion as Motion } from 'framer-motion';
 import { CheckCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
 
@@ -25,7 +24,7 @@ const EliteToast = ({ type = 'success', title, message, onClose }) => {
         maxWidth: '420px',
         background: 'rgba(15, 14, 13, 0.9)',
         backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(184, 155, 106, 0.2)',
+        border: '1px solid rgba(var(--y-rgb), 0.2)',
         borderRadius: '4px',
         boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
         pointerEvents: 'auto',

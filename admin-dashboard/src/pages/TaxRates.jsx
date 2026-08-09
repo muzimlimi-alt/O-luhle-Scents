@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
 import { Drawer } from '../components/Drawer';
 import { PageHeader } from '../components/PageHeader';
@@ -165,9 +165,14 @@ export function TaxRates() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .attr-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
-        .icon-btn.danger { color: var(--color-error-text); }
-        .tax-default-check { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; }
+        .attr-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
+        .icon-btn.danger { color: var(--error); }
+        .tax-default-check { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.82rem; color: var(--text-muted); margin-bottom: var(--sp-5); }
+
+        @media (max-width: 480px) {
+          .attr-actions { flex-wrap: wrap; }
+          .attr-actions button { flex: 1; }
+        }
       `}} />
     </div>
   );

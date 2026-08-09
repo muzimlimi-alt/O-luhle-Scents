@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { newsletterApi } from '../services/api';
 import { Modal } from '../components/Modal';
 import { Drawer } from '../components/Drawer';
@@ -650,71 +650,79 @@ export function Newsletters() {
       </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .newsletters-page { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+        .newsletters-page { padding: var(--sp-7); max-width: 1400px; margin: 0 auto; min-height: 100vh; }
 
-        .tab-glass-panel { background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 4px; display: inline-flex; gap: 4px; margin-bottom: 24px; }
-        .tab-glass-btn { background: none; border: none; color: var(--color-text-muted); padding: 8px 16px; border-radius: 2px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition); }
-        .tab-glass-btn.active { background: var(--color-primary); color: #1a1611; }
-        .tab-glass-btn:hover:not(.active) { color: var(--color-text); background: var(--color-border-light); }
+        .tab-glass-panel { background: var(--bg-section); border: 1.5px solid var(--border-default); border-radius: var(--r); padding: var(--sp-1); display: inline-flex; gap: var(--sp-1); margin-bottom: var(--sp-5); }
+        .tab-glass-btn { background: none; border: none; color: var(--text-muted); padding: var(--sp-2) var(--sp-4); border-radius: var(--r); font-weight: 500; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: var(--sp-2); transition: all var(--t-fast, .18s) var(--ease, ease); }
+        .tab-glass-btn.active { background: var(--y-base); color: var(--text-inverse); }
+        .tab-glass-btn:hover:not(.active) { color: var(--text-secondary); background: var(--border-low); }
 
-        .atelier-discovery { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; gap: 24px; flex-wrap: wrap; }
-        .search-glass-wrapper { position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; flex: 1; max-width: 400px; height: 42px; }
-        .search-glass-input { background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem; }
-        .filter-glass-matrix { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .atelier-discovery { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--sp-5); gap: var(--sp-5); flex-wrap: wrap; }
+        .search-glass-wrapper { position: relative; background: var(--bg-elevated); border: 1.5px solid var(--border-default); border-radius: var(--r); padding: 10px var(--sp-4); display: flex; align-items: center; flex: 1; max-width: 400px; height: var(--tap); }
+        .search-glass-input { background: none; border: none; color: var(--text-primary); width: 100%; outline: none; margin-left: var(--sp-3); font-size: 0.9rem; font-family: var(--f-body); font-weight: 300; }
+        .filter-glass-matrix { display: flex; gap: var(--sp-3); align-items: flex-end; flex-wrap: wrap; }
         .filter-glass-matrix .form-field { margin-bottom: 0; }
-        .filter-glass-matrix input[type="date"] { height: 42px; width: 150px; }
-        .select-glass-wrapper { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; height: 42px; }
-        .select-glass-wrapper select { background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem; }
+        .filter-glass-matrix input[type="date"] { height: var(--tap); width: 150px; }
+        .select-glass-wrapper { background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--r); padding: var(--sp-2) var(--sp-4); display: flex; align-items: center; gap: var(--sp-3); height: var(--tap); }
+        .select-glass-wrapper select { background: none; border: none; color: var(--text-primary); outline: none; cursor: pointer; font-size: 0.85rem; font-family: var(--f-body); font-weight: 300; }
 
-        .bulk-action-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; margin-bottom: 20px; background: var(--color-border-light); border: 1px solid var(--color-primary); border-radius: 4px; font-size: 0.85rem; font-weight: 600; color: var(--color-primary-text); flex-wrap: wrap; gap: 12px; }
-        .bulk-action-buttons { display: flex; gap: 10px; }
-        .btn--danger-outline { color: var(--color-error-text); border-color: var(--color-error-text); }
+        .bulk-action-bar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-5); margin-bottom: var(--sp-5); background: var(--border-low); border: 1px solid var(--y-base); border-radius: var(--r); font-size: 0.85rem; font-weight: 400; color: var(--y-base); flex-wrap: wrap; gap: var(--sp-3); }
+        .bulk-action-buttons { display: flex; gap: var(--sp-2); }
+        .btn--danger-outline { color: var(--error); border-color: var(--error); }
 
-        .campaign-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px; }
-        .campaign-card { display: flex; flex-direction: column; gap: 16px; }
-        .campaign-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-        .campaign-subject { font-size: 1.1rem; font-weight: 600; color: var(--color-text-header); margin: 8px 0 0 0; }
-        .campaign-card-actions { display: flex; gap: 8px; flex-shrink: 0; }
-        .campaign-meta { display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--color-text-muted); }
-        .campaign-meta-item span { font-weight: 600; margin-right: 6px; }
+        .campaign-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-5); margin-bottom: var(--sp-5); }
+        .campaign-card { display: flex; flex-direction: column; gap: var(--sp-4); }
+        .campaign-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-3); }
+        .campaign-subject { font-size: 1.1rem; font-weight: 400; color: var(--text-primary); margin: var(--sp-2) 0 0 0; }
+        .campaign-card-actions { display: flex; gap: var(--sp-2); flex-shrink: 0; }
+        .campaign-meta { display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted); }
+        .campaign-meta-item span { font-weight: 500; margin-right: 6px; }
         .campaign-send-btn { justify-content: center; }
 
         .table-footer.campaign-pagination { border: none; padding: 0; justify-content: flex-start; }
-        .pagination { display: flex; align-items: center; gap: 12px; }
-        .page-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
-        .page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+        .pagination { display: flex; align-items: center; gap: var(--sp-3); }
+        .page-btn { background: none; border: 1px solid var(--border-default); color: var(--text-secondary); padding: 6px 14px; border-radius: var(--r); cursor: pointer; font-size: 0.8rem; transition: all var(--t-fast, .18s) var(--ease, ease); }
+        .page-btn:hover:not(:disabled) { border-color: var(--y-base); color: var(--y-base); }
         .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .page-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
-        .page-info { font-size: 0.8rem; color: var(--color-text-muted); }
+        .page-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow, var(--color-border-focus)); }
+        .page-info { font-size: 0.8rem; color: var(--text-muted); }
 
-        .newsletter-form { display: flex; flex-direction: column; gap: 20px; }
-        .drawer-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
+        .newsletter-form { display: flex; flex-direction: column; gap: var(--sp-5); }
+        .drawer-actions { display: flex; gap: var(--sp-3); justify-content: flex-end; flex-wrap: wrap; margin-top: var(--sp-2); }
 
-        .campaign-drawer-panel { padding: 40px; width: 800px; max-width: 90vw; height: 100%; overflow-y: auto; background: var(--color-bg-card); display: flex; flex-direction: column; gap: 24px; }
-        .campaign-drawer-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 500; color: var(--color-text-header); margin: 0; }
-        .campaign-drawer-actions { border-top: 1px solid var(--color-border); padding-top: 24px; }
+        .campaign-drawer-panel { padding: var(--sp-7); width: 800px; max-width: 90vw; height: 100%; overflow-y: auto; background: var(--bg-surface); display: flex; flex-direction: column; gap: var(--sp-5); }
+        .campaign-drawer-title { font-family: var(--f-display); font-size: 1.8rem; font-weight: 400; color: var(--text-primary); margin: 0; }
+        .campaign-drawer-actions { border-top: 1px solid var(--border-default); padding-top: var(--sp-5); }
 
-        .quill-container-override { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; min-height: 340px; }
-        .quill-loading { height: 300px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--color-text-muted); }
+        .quill-container-override { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r); overflow: hidden; min-height: 340px; }
+        .quill-loading { height: 300px; display: flex; align-items: center; justify-content: center; gap: var(--sp-2); color: var(--text-muted); }
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
 
-        .campaign-hint { font-size: 0.75rem; color: var(--color-text-muted); margin: -8px 0 0 0; }
+        .campaign-hint { font-size: 0.75rem; color: var(--text-muted); margin: -8px 0 0 0; }
 
-        .attachment-list { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-        .attachment-chip { display: flex; align-items: center; gap: 6px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; padding: 6px 10px; font-size: 0.75rem; }
+        .attachment-list { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+        .attachment-chip { display: flex; align-items: center; gap: 6px; background: var(--bg-section); border: 1px solid var(--border-default); border-radius: var(--r); padding: 6px 10px; font-size: 0.75rem; }
         .attachment-chip span { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .attachment-chip button { background: none; border: none; padding: 0; display: inline-flex; cursor: pointer; color: var(--color-error-text); }
+        .attachment-chip button { background: none; border: none; padding: 0; display: inline-flex; cursor: pointer; color: var(--error); }
         .attachment-upload-label { display: inline-flex; cursor: pointer; }
 
         @media (max-width: 768px) {
-          .newsletters-page { padding: 20px; }
+          .newsletters-page { padding: var(--sp-4); }
           .atelier-discovery { flex-direction: column; align-items: stretch; }
           .search-glass-wrapper { max-width: none; }
           .filter-glass-matrix { flex-direction: column; align-items: stretch; }
           .filter-glass-matrix input[type="date"] { width: 100%; }
           .campaign-grid { grid-template-columns: 1fr; }
-          .campaign-drawer-panel { padding: 24px; width: 100vw; max-width: 100vw; }
+          .campaign-drawer-panel { padding: var(--sp-5); width: 100vw; max-width: 100vw; }
+        }
+
+        @media (max-width: 480px) {
+          .tab-glass-panel { width: 100%; }
+          .tab-glass-btn { flex: 1; justify-content: center; }
+          .bulk-action-bar { flex-direction: column; align-items: stretch; text-align: center; }
+          .bulk-action-buttons { justify-content: center; }
+          .pagination { flex-wrap: wrap; justify-content: center; }
         }
       `}} />
     </div>

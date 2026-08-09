@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { expensesApi, financeApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
@@ -131,7 +131,12 @@ export function Expenses() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .expenses-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .expenses-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
+
+        @media (max-width: 480px) {
+          .expenses-actions { flex-direction: column-reverse; gap: var(--sp-2); }
+          .expenses-actions .btn { width: 100%; justify-content: center; }
+        }
       `}} />
     </div>
   );

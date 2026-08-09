@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unsubscribe | O'luhle Scents</title>
-  <meta name="description" content="Manage your O'luhle Scents newsletter subscription.">
+  <title>Unsubscribe | TOCA</title>
+  <meta name="description" content="Manage your TOCA newsletter subscription.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/modern-extensions.css">
@@ -16,7 +16,7 @@
   <header class="header">
     <nav class="navbar">
       <div class="navbar__left"></div>
-      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <a href="index.html" class="navbar__logo">TOCA</a>
       <div class="navbar__right"></div>
     </nav>
   </header>
@@ -44,7 +44,7 @@
         <p style="color:var(--color-text-light);font-size:0.9rem;line-height:1.7;margin-bottom:28px;" id="error-body">
           This unsubscribe link is invalid or has already been used.
         </p>
-        <a href="mailto:info@oluhlescents.co.za?subject=Unsubscribe Request"
+        <a href="mailto:info@toca.co.za?subject=Unsubscribe Request"
            class="btn btn--outline-dark btn--sm">
           Contact Us to Unsubscribe
         </a>
@@ -75,7 +75,7 @@
         </div>
 
         <p class="section-label" style="color:var(--color-gold);">Mailing List</p>
-        <h1 style="font-size:1.8rem;margin-bottom:12px;">Unsubscribe from the O'luhle Circle</h1>
+        <h1 style="font-size:1.8rem;margin-bottom:12px;">Unsubscribe from the TOCA Circle</h1>
         <p style="color:var(--color-text-light);font-size:0.9rem;line-height:1.7;margin-bottom:8px;">
           We'll be sad to see you go, but we respect your choice.
         </p>
@@ -84,7 +84,7 @@
         <div style="border:1px solid var(--color-border-light);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:32px;text-align:left;background:var(--color-bg-alt);">
           <p style="font-size:0.83rem;color:var(--color-text-light);line-height:1.7;margin:0;">
             <strong style="color:var(--color-text);">Before you go</strong> — clicking unsubscribe will remove you from
-            all O'luhle Scents promotional emails. You'll still receive order confirmations and shipping updates
+            all TOCA promotional emails. You'll still receive order confirmations and shipping updates
             for any existing orders.
           </p>
         </div>
@@ -110,7 +110,7 @@
         <p class="section-label" style="color:var(--color-gold);">Confirmed</p>
         <h2 style="font-size:1.6rem;margin-bottom:12px;">You've been unsubscribed</h2>
         <p style="color:var(--color-text-light);font-size:0.9rem;line-height:1.7;margin-bottom:28px;" id="success-email">
-          You'll no longer receive promotional emails from O'luhle Scents.
+          You'll no longer receive promotional emails from TOCA.
         </p>
         <p style="font-size:0.82rem;color:var(--color-text-light);margin-bottom:28px;line-height:1.6;">
           Changed your mind? You can always
@@ -125,7 +125,7 @@
   <!-- Minimal Footer -->
   <footer style="padding:24px 0;text-align:center;color:var(--color-text-light);font-size:0.75rem;border-top:1px solid var(--color-border-light);">
     <div class="container">
-      <p>&copy; 2026 O'luhle Scents &nbsp;·&nbsp;
+      <p>&copy; 2026 TOCA (Pty) Ltd &nbsp;·&nbsp;
         <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a>
       </p>
     </div>
@@ -163,7 +163,7 @@
           var reasons = {
             missing_token: ['Missing Link', 'No token was provided in this link.'],
             invalid_token: ['Invalid Link', 'This unsubscribe link is invalid or has already expired.'],
-            expired_token: ['Link Expired', 'This unsubscribe link has expired (links are valid for 90 days). Please contact us directly at info@oluhlescents.co.za to be removed from our mailing list.'],
+            expired_token: ['Link Expired', 'This unsubscribe link has expired (links are valid for 90 days). Please contact us directly at info@toca.co.za to be removed from our mailing list.'],
             server_error:  ['Something Went Wrong', 'We encountered an error. Please try again or contact us directly.'],
           };
           var r = reasons[data.reason] || ['Invalid Link', 'This link could not be processed.'];
@@ -205,15 +205,15 @@
               if (result.success) {
                 hide('unsub-confirm');
                 var msg = result.email
-                  ? 'The address ' + result.email + ' has been removed from the O\'luhle Circle.'
-                  : 'You\'ll no longer receive promotional emails from O\'luhle Scents.';
+                  ? 'The address ' + result.email + ' has been removed from the TOCA Circle.'
+                  : 'You\'ll no longer receive promotional emails from TOCA.';
                 setText('success-email', msg);
                 show('unsub-success');
               } else {
                 var msgs = {
                   missing_token: 'Missing token.',
                   invalid_token: 'This link has expired or is invalid.',
-                  expired_token: 'This link has expired. Please contact info@oluhlescents.co.za.',
+                  expired_token: 'This link has expired. Please contact info@toca.co.za.',
                   server_error:  'A server error occurred. Please try again.',
                 };
                 errEl.textContent = msgs[result.reason] || result.message || 'Something went wrong.';

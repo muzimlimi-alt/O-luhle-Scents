@@ -168,6 +168,27 @@ export async function sweepExpiredReservations() {
       }
 
       if (order.paymentStatus !== 'paid' && order.status !== 'cancelled') {
+        // A PayFast checkout that reached the gateway (PAYFAST_CHECKOUT_INITIATED
+        // audit entry — see payfastProvider.js) but never got a Payment row is
+        // exactly the failure mode that silently lost a real payment in this
+        // system before (a rejected/undelivered ITN): the reservation just
+        // expires and the order vanishes with no trace. Still cancel (the
+        // reservation genuinely can't hold forever), but raise a loud
+        // notification instead of doing this silently, so an admin can check
+        // PayFast's own dashboard for that reference before it's written off.
+        const [existingPayment, checkoutInitiated] = await Promise.all([
+          tx.payment.findFirst({ where: { orderId } }),
+          tx.auditLog.findFirst({ where: { entity: 'Order', entityId: orderId, action: 'PAYFAST_CHECKOUT_INITIATED' } }),
+        ])
+        if (!existingPayment && checkoutInitiated) {
+          await tx.notification.create({
+            data: {
+              type: 'PAYFAST_ITN_NOT_RECEIVED',
+              message: `Order ${order.orderNumber}: customer was redirected to PayFast but no payment confirmation ever arrived. Cancelling and releasing stock — verify with PayFast before assuming this sale genuinely failed.`
+            }
+          })
+        }
+
         await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled' } })
         // Without this, an auto-cancelled order's admin-dashboard Audit Trail
         // is silently empty — there's otherwise no record anywhere of why

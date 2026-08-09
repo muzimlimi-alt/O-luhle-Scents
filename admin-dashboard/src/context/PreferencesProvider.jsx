@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PreferencesContext, PREF_KEY } from './PreferencesContext';
 
 const DEFAULT_PREFS = {
@@ -6,11 +6,13 @@ const DEFAULT_PREFS = {
   privacyMode: false,
   autoRefresh: 'off',
   defaultSection: 'overview',
-  lowStockThreshold: 5
+  lowStockThreshold: 5,
+  lowStockAlertsEnabled: true,
+  reduceMotion: false
 };
 
 /**
- * Global preference orchestration for the O'luhle Scents administrative suite.
+ * Global preference orchestration for the TOCA administrative suite.
  * ensures absolute synchronization between localized UI settings and the PostgreSQL fulfillment engine.
  */
 export function PreferencesProvider({ children }) {
@@ -26,10 +28,11 @@ export function PreferencesProvider({ children }) {
   useEffect(() => {
     localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
     // Apply globally accessible CSS classes to document root.
-    // Theme itself is owned by ThemeContext/ThemeProvider (the .theme-dark/.theme-light
-    // classes that every stylesheet actually reads) — not duplicated here.
+    // Appearance (finish/accent/presence) is owned by AppearanceProvider,
+    // which applies its own classes to <html> — not duplicated here.
     document.documentElement.classList.toggle('compact-mode', prefs.compactMode);
     document.documentElement.classList.toggle('privacy-mode', prefs.privacyMode);
+    document.documentElement.classList.toggle('reduce-motion', prefs.reduceMotion);
   }, [prefs]);
 
   const updatePrefs = (updates) => {

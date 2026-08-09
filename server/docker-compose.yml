@@ -3,11 +3,11 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: oluhle-postgres-new
+    container_name: toca-postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
-      POSTGRES_DB: oluhle_scents
+      POSTGRES_DB: toca
     ports:
       - "5435:5432"
     volumes:

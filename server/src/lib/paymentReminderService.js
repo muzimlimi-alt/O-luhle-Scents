@@ -6,9 +6,9 @@ import { bankAccountToPublicShape } from './paymentProviders/manualEftProvider.j
 
 function reminderWhatsAppText(order, isEft, amountDue) {
   if (isEft) {
-    return `*O'LUHLE SCENTS*\n\nYour order ${order.orderNumber} is still awaiting payment (R${amountDue.toLocaleString()} due). Please complete your EFT so we can prepare it.\n\n_Ref: ${order.orderNumber}_`
+    return `*TOCA*\n\nYour order ${order.orderNumber} is still awaiting payment (R${amountDue.toLocaleString()} due). Please complete your EFT so we can prepare it.\n\n_Ref: ${order.orderNumber}_`
   }
-  return `*O'LUHLE SCENTS*\n\nYour order ${order.orderNumber} is still awaiting payment (R${amountDue.toLocaleString()}). Complete your purchase before your items are released.`
+  return `*TOCA*\n\nYour order ${order.orderNumber} is still awaiting payment (R${amountDue.toLocaleString()}). Complete your purchase before your items are released.`
 }
 
 // Called hourly by the cron registered in index.js. Targets both unpaid

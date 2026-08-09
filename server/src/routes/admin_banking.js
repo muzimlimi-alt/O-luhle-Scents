@@ -147,6 +147,9 @@ router.post('/transactions/:id/match', requireAdmin, async (req, res, next) => {
     const { journalLineId } = req.body
     if (!journalLineId) return res.status(400).json({ error: 'journalLineId is required' })
     const result = await matchTransaction(req.params.id, journalLineId)
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'MATCH_BANK_TRANSACTION', entity: 'BankTransaction', entityId: req.params.id, details: { journalLineId } }
+    })
     res.json(result)
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message })
@@ -157,6 +160,9 @@ router.post('/transactions/:id/match', requireAdmin, async (req, res, next) => {
 router.post('/transactions/:id/unmatch', requireAdmin, async (req, res, next) => {
   try {
     const result = await unmatchTransaction(req.params.id)
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'UNMATCH_BANK_TRANSACTION', entity: 'BankTransaction', entityId: req.params.id }
+    })
     res.json(result)
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message })
@@ -169,6 +175,9 @@ router.post('/transactions/:id/adjust', requireAdmin, async (req, res, next) => 
     const { offsetAccountCode, description } = req.body
     if (!offsetAccountCode) return res.status(400).json({ error: 'offsetAccountCode is required' })
     const result = await createAdjustmentAndMatch(req.params.id, { offsetAccountCode, description, adminUserId: req.adminId })
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'ADJUST_BANK_TRANSACTION', entity: 'BankTransaction', entityId: req.params.id, details: { offsetAccountCode, description } }
+    })
     res.status(201).json(result)
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message })

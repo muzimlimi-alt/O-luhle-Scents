@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Standard "nothing here yet" treatment: icon + title + description +
@@ -16,12 +15,12 @@ export function EmptyState({ icon, title, description, action }) {
       <style dangerouslySetInnerHTML={{ __html: `
         .empty-state-ds {
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          text-align: center; padding: 64px 24px; gap: 6px; color: var(--color-text-muted);
+          text-align: center; padding: var(--sp-7, 48px) var(--sp-5); gap: var(--sp-2); color: var(--text-muted);
         }
-        .empty-state-ds__icon { color: var(--color-text-muted); opacity: 0.5; margin-bottom: 8px; }
-        .empty-state-ds__title { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-text-header); font-weight: 600; margin: 0; }
-        .empty-state-ds__description { font-size: 0.85rem; max-width: 40ch; margin: 0; }
-        .empty-state-ds__action { margin-top: 14px; }
+        .empty-state-ds__icon { color: var(--text-muted); opacity: 0.5; margin-bottom: var(--sp-2); }
+        .empty-state-ds__title { font-family: var(--f-display); font-size: 1.1rem; color: var(--text-primary); font-weight: 400; margin: 0; }
+        .empty-state-ds__description { font-size: .85rem; color: var(--text-muted); max-width: 40ch; margin: 0; }
+        .empty-state-ds__action { margin-top: var(--sp-3); }
       `}} />
     </div>
   );

@@ -1,17 +1,29 @@
-# O'luhle Scents — robots.txt
-# Replace https://www.oluhle.co.za with your actual domain.
+# TOCA — robots.txt
+# Replace https://www.toca.co.za with your actual domain.
 
 User-agent: *
 Allow: /
-Allow: /shop.html
-Allow: /product-detail.html
-Allow: /index.html
 
-# Keep checkout + admin out of search results
-Disallow: /checkout.html
-Disallow: /checkout-success.html
+# Admin portal — internal tool, never for search results.
+# (Also enforced by an X-Robots-Tag header and a noindex meta tag —
+# see server/src/index.js and admin-dashboard/index.html.)
 Disallow: /admin
 
+# API endpoints — not human-facing content
 Disallow: /api/
 
-Sitemap: https://www.oluhle.co.za/sitemap.xml
+# Cart / checkout / account — transactional or personalized, no SEO value.
+# These also carry <meta name="robots" content="noindex"> so any URL that
+# leaks out still gets deindexed on the next crawl.
+Disallow: /cart.html
+Disallow: /checkout.html
+Disallow: /checkout-success.html
+Disallow: /account.html
+Disallow: /account-login.html
+Disallow: /account-register.html
+Disallow: /account-forgot-password.html
+Disallow: /account-reset-password.html
+Disallow: /track.html
+Disallow: /unsubscribe.html
+
+Sitemap: https://www.toca.co.za/sitemap.xml

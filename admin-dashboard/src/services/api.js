@@ -12,23 +12,38 @@ const api = axios.create({
 
 // Auth Interceptor for Bearer Tokens
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('oluhle_admin_token');
+  const token = localStorage.getItem('toca_admin_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 }, (error) => Promise.reject(error));
 
+// A request made with `responseType: 'blob'` (every CSV/Excel export) still
+// gets its error body delivered as a Blob even on a JSON error response —
+// `data?.message`/`data?.error` below would silently be undefined and every
+// export failure showed a useless generic "Request failed with status code
+// 400" instead of the real reason. Unwrap it back to the JSON it actually is.
+async function resolveErrorData(error) {
+  const data = error.response?.data;
+  if (!(data instanceof Blob)) return data;
+  try {
+    return JSON.parse(await data.text());
+  } catch {
+    return data;
+  }
+}
+
 // Error Interceptor for Global Feedback
 api.interceptors.response.use(
   (response) => response.data,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
-    const data = error.response?.data;
+    const data = await resolveErrorData(error);
     const message = data?.message || data?.error || error.message || 'API Communication Error';
 
     if (status === 401) {
-      localStorage.removeItem('oluhle_admin_token');
+      localStorage.removeItem('toca_admin_token');
       // Only notify if not already on login page
       if (!window.location.pathname.includes('/login')) {
         dispatchAdminMessage('error', 'Session Expired', 'Please log in again to continue.');
@@ -50,6 +65,21 @@ function dispatchAdminMessage(type, title, message) {
   window.dispatchEvent(new CustomEvent('admin_message', {
     detail: { type, title, message }
   }));
+}
+
+// Shared by every report's CSV/Excel export button (Export Centre) — one
+// GET with ?format=csv|xlsx appended, same params the on-screen report
+// already uses, triggered as a browser download rather than rendered.
+export async function downloadReport(path, params, format, filename) {
+  const response = await api.get(path, { params: { ...params, format }, responseType: 'blob' });
+  const url = window.URL.createObjectURL(new Blob([response]));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 /* ─── Endpoints ───────────────────────────────────────────────────────────── */
@@ -120,17 +150,18 @@ export const metricsApi = {
 export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   getMe: () => api.get('/auth/me'),
+  logout: () => api.post('/auth/logout'),
 };
 
 export const adminOpsApi = {
   coupons: {
     list: () => api.get('/admin/ops/coupons'),
     create: (data) => api.post('/admin/ops/coupons', data),
+    delete: (id) => api.delete(`/admin/ops/coupons/${id}`),
   },
   suppliers: {
     list: () => api.get('/admin/ops/suppliers'),
     create: (data) => api.post('/admin/ops/suppliers', data),
-    sendRestockAlert: (variantId) => api.post(`/admin/ops/suppliers/restock-alert/${variantId}`),
   },
 
   purchases: {
@@ -180,12 +211,10 @@ export const adminOpsApi = {
     update: (id, data) => api.patch(`/admin/ops/admin-users/${id}`, data),
     updatePassword: (id, password) => api.patch(`/admin/ops/admin-users/${id}/password`, { password }),
     delete: (id) => api.delete(`/admin/ops/admin-users/${id}`),
+    revokeSessions: (id) => api.post(`/admin/ops/admin-users/${id}/revoke-sessions`),
   },
   customers: {
     list: () => api.get('/admin/ops/customers'),
-  },
-  email: {
-    sendBulk: (subject, body) => api.post('/admin/ops/email/bulk', { subject, body }),
   },
   reports: {
     generate: (month = 1) => api.get('/admin/ops/reports/generate', { params: { month }, responseType: 'blob' }),
@@ -231,11 +260,32 @@ export const financeApi = {
   cashFlow: (params) => api.get('/admin/finance/cash-flow', { params }),
   agedReceivables: (asOf) => api.get('/admin/finance/aged-receivables', { params: asOf ? { asOf } : {} }),
   agedPayables: (asOf) => api.get('/admin/finance/aged-payables', { params: asOf ? { asOf } : {} }),
+  fiscalPeriods: () => api.get('/admin/finance/fiscal-periods'),
+  closePeriod: (id) => api.post(`/admin/finance/fiscal-periods/${id}/close`),
+  requestPeriodReopen: (id) => api.post(`/admin/finance/fiscal-periods/${id}/reopen-request`),
+};
+
+export const approvalsApi = {
+  list: () => api.get('/admin/approvals'),
+  approve: (id) => api.post(`/admin/approvals/${id}/approve`),
+  reject: (id, reason) => api.post(`/admin/approvals/${id}/reject`, { reason }),
 };
 
 export const expensesApi = {
   list: () => api.get('/admin/expenses'),
   create: (data) => api.post('/admin/expenses', data),
+};
+
+export const sarsApi = {
+  vatOutputRegister: (params) => api.get('/admin/sars/vat/output-register', { params }),
+  vatInputRegister: (params) => api.get('/admin/sars/vat/input-register', { params }),
+  vatSummary: (params) => api.get('/admin/sars/vat/summary', { params }),
+  complianceSummary: () => api.get('/admin/sars/compliance-summary'),
+  deadlines: {
+    list: () => api.get('/admin/sars/deadlines'),
+    add: (label, dueDate) => api.post('/admin/sars/deadlines', { label, dueDate }),
+    remove: (id) => api.delete(`/admin/sars/deadlines/${id}`),
+  },
 };
 
 export const bankingApi = {
@@ -286,6 +336,19 @@ export const newsletterApi = {
       });
     }
   }
+};
+
+export const adminPrivacyApi = {
+  summary: () => api.get('/admin/privacy/summary'),
+  requests: {
+    list: (params) => api.get('/admin/privacy/requests', { params }),
+    resolve: (id, data) => api.patch(`/admin/privacy/requests/${id}`, data),
+  },
+  consentStats: () => api.get('/admin/privacy/consent-stats'),
+  retentionPolicies: {
+    list: () => api.get('/admin/privacy/retention-policies'),
+    update: (category, data) => api.patch(`/admin/privacy/retention-policies/${category}`, data),
+  },
 };
 
 export const testimonialsApi = {

@@ -1,5 +1,5 @@
 /**
- * O'luhle Scents — Site Content Hydration
+ * TOCA — Site Content Hydration
  * Pulls editable marketing copy from GET /api/admin/settings/public and
  * overlays it onto the hardcoded markup via data-content attributes.
  * Fails soft: if the request fails or a key is missing, the hardcoded

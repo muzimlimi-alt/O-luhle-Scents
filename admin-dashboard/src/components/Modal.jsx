@@ -14,7 +14,7 @@ import { FOCUSABLE_SELECTOR, pushOverlay, popOverlay, isTopOverlay, prefersReduc
  *  - raw (pass `raw`): renders `children` as-is inside the a11y wrapper,
  *    for consumers with their own internal layout.
  */
-export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth = 600 }) {
+export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth = 480 }) {
   const id = useId();
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
@@ -100,13 +100,13 @@ export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth 
         tabIndex={-1}
         {...panelMotionProps}
         className="modal-content"
-        style={{ maxWidth }}
+        style={{ '--modal-w': `${maxWidth}px` }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h3 id={labelledBy} className="modal-title font-title">{title}</h3>
+          <h3 id={labelledBy} className="modal-title">{title}</h3>
           <button className="modal-close" onClick={onClose} aria-label="Close dialog">
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
         <div className="modal-body">{children}</div>
@@ -120,31 +120,35 @@ export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth 
         {panel}
         <style dangerouslySetInnerHTML={{ __html: `
           .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
-            z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;
+            position: fixed; inset: 0; background: rgba(0,0,0,.68); backdrop-filter: blur(4px);
+            z-index: 1000; display: flex; align-items: center; justify-content: center; padding: var(--sp-4);
           }
           .modal-content {
-            background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg);
-            width: 100%; box-shadow: var(--shadow-md); max-height: 90vh; overflow-y: auto;
+            background: var(--bg-section); border: 1px solid var(--border-default); border-radius: var(--r);
+            width: 100%; max-width: min(var(--modal-w, 480px), 100%);
+            box-shadow: var(--sh-xl, 0 24px 70px rgba(0,0,0,.65));
+            max-height: 90vh; overflow-y: auto;
           }
           .modal-header {
-            padding: 20px 24px; border-bottom: 1px solid var(--color-border);
-            display: flex; justify-content: space-between; align-items: center; gap: 16px;
+            padding: var(--sp-5) var(--sp-5) var(--sp-4); border-bottom: 1px solid var(--border-low);
+            display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-4);
           }
-          .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--color-primary); word-break: break-word; }
+          .modal-title { font-family: var(--f-display); font-weight: 400; font-size: 1.4rem; color: var(--text-primary); word-break: break-word; margin: 0; }
           .modal-close {
-            background: none; border: none; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s;
-            width: 44px; height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; margin: -10px;
+            margin-left: auto; flex: none; width: var(--tap, 44px); height: var(--tap, 44px);
+            display: grid; place-items: center;
+            background: none; border: 1px solid var(--border-default); border-radius: var(--r);
+            color: var(--text-secondary); cursor: pointer; transition: all var(--t-fast, .18s) var(--ease, ease);
           }
-          .modal-close:hover { color: var(--color-error-text); }
-          .modal-body { padding: 24px; -webkit-overflow-scrolling: touch; }
+          .modal-close:hover { border-color: var(--y-base); color: var(--y-base); }
+          .modal-close:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow, var(--color-border-focus)); }
+          .modal-body { padding: var(--sp-5); -webkit-overflow-scrolling: touch; }
           [inert] { pointer-events: none; }
           @media (max-width: 480px) {
-            .modal-overlay { padding: 12px; }
-            .modal-header { padding: 16px; }
-            .modal-body { padding: 16px; }
-            .modal-title { font-size: 1.1rem; }
+            .modal-overlay { padding: var(--sp-3); align-items: flex-end; }
+            .modal-content { max-height: 85vh; }
+            .modal-header, .modal-body { padding: var(--sp-4); }
+            .modal-title { font-size: 1.2rem; }
           }
         `}} />
       </div>

@@ -1,5 +1,5 @@
 /**
- * O'luhle Scents — Global Footer Modal
+ * TOCA — Global Footer Modal
  * Injects the legal/info modal and wires up all interactions.
  * This file is included on every page except admin.html.
  */
@@ -30,7 +30,7 @@
       <!-- ── CONNECT ─────────────────────────────────────────────────── -->
       <section class="legal-panel active" id="panel-social" role="tabpanel" aria-labelledby="tab-social">
         <h2 class="legal-panel__title" id="legal-modal-title">Follow Us</h2>
-        <p class="legal-panel__lead">Stay in the world of O'luhle Scents — new arrivals, stories, and exclusive offers.</p>
+        <p class="legal-panel__lead">Stay in the world of TOCA — new arrivals, stories, and exclusive offers.</p>
         <div class="legal-social">
           <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" class="legal-social__item" aria-label="Instagram">
             <span class="legal-social__icon">
@@ -38,7 +38,7 @@
             </span>
             <span class="legal-social__label">
               <strong>Instagram</strong>
-              <small>@oluhlescents</small>
+              <small>@toca</small>
             </span>
           </a>
           <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" class="legal-social__item" aria-label="Facebook">
@@ -47,7 +47,7 @@
             </span>
             <span class="legal-social__label">
               <strong>Facebook</strong>
-              <small>O'luhle Scents</small>
+              <small>TOCA</small>
             </span>
           </a>
           <a href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer" class="legal-social__item" aria-label="TikTok">
@@ -56,17 +56,10 @@
             </span>
             <span class="legal-social__label">
               <strong>TikTok</strong>
-              <small>@oluhlescents</small>
+              <small>@toca</small>
             </span>
           </a>
         </div>
-        <!--<div class="legal-admin-link">
-          <a href="/admin" class="legal-admin-btn">
-
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"/></svg>
-            Admin Portal
-          </a>
-        </div>-->
       </section>
 
       <!-- ── REFUND POLICY ────────────────────────────────────────────── -->
@@ -83,7 +76,7 @@
 
         <h3>How to Return</h3>
         <ol>
-          <li>Email us at <a href="mailto:returns@oluhlescents.co.za">returns@oluhlescents.co.za</a> with your order number and reason for return.</li>
+          <li>Email us at <a href="mailto:returns@toca.co.za">returns@toca.co.za</a> with your order number and reason for return.</li>
           <li>We will issue a return authorisation and shipping instructions.</li>
           <li>Pack the item securely in its original packaging.</li>
           <li>Return shipping costs are the customer's responsibility, except in cases of our error.</li>
@@ -99,7 +92,7 @@
       <section class="legal-panel" id="panel-privacy" role="tabpanel" aria-labelledby="tab-privacy" hidden>
         <h2 class="legal-panel__title">Privacy Policy</h2>
 
-        <p>O'luhle Scents ("we", "us") is committed to protecting your personal information in accordance with the <strong>Protection of Personal Information Act (POPIA)</strong> of South Africa.</p>
+        <p>TOCA ("we", "us") is committed to protecting your personal information in accordance with the <strong>Protection of Personal Information Act (POPIA)</strong> of South Africa.</p>
 
         <h3>What We Collect</h3>
         <p>When you place an order or browse our site, we may collect: your name, email address, phone number, delivery address, payment details (processed securely by our payment provider), and browsing behaviour on our site.</p>
@@ -116,7 +109,7 @@
         <p>We do not sell your personal data. We share information only with service providers necessary to operate our business (e.g. payment gateways, courier services), under strict confidentiality agreements.</p>
 
         <h3>Your Rights</h3>
-        <p>You have the right to access, correct, or request deletion of your personal information at any time. Contact us at <a href="mailto:privacy@oluhlescents.co.za">privacy@oluhlescents.co.za</a>.</p>
+        <p>You have the right to access, correct, or request deletion of your personal information at any time. Contact us at <a href="mailto:privacy@toca.co.za">privacy@toca.co.za</a>.</p>
 
         <h3>Cookies</h3>
         <p>We use essential cookies to maintain your shopping cart and session. No third-party tracking cookies are set without your consent.</p>
@@ -127,7 +120,7 @@
         <h2 class="legal-panel__title">Terms of Service</h2>
 
         <h3>Introduction</h3>
-        <p>By using this website and placing orders, you agree to these Terms of Service. O'luhle Scents is a South African retailer of premium fragrances ("the Site").</p>
+        <p>By using this website and placing orders, you agree to these Terms of Service. TOCA is a South African retailer of premium fragrances ("the Site").</p>
 
         <h3>Who May Order</h3>
         <p>Orders may be placed by individuals of legal age in their country of residence. By placing an order you confirm that you are authorised to use the payment method provided.</p>
@@ -145,7 +138,7 @@
         <p>We accept major credit and debit cards, EFT, and other methods displayed at checkout, processed securely via PayFast.</p>
 
         <h3>Limitation of Liability</h3>
-        <p>To the extent permitted by law, O'luhle Scents is not liable for indirect or consequential damages arising from the use of our products or website.</p>
+        <p>To the extent permitted by law, TOCA is not liable for indirect or consequential damages arising from the use of our products or website.</p>
 
         <h3>Governing Law</h3>
         <p>These terms are governed by the laws of the Republic of South Africa.</p>
@@ -172,7 +165,7 @@
             </span>
             <div>
               <strong>Email</strong>
-              <a href="mailto:info@oluhlescents.co.za">info@oluhlescents.co.za</a>
+              <a href="mailto:info@toca.co.za">info@toca.co.za</a>
             </div>
           </div>
           <div class="legal-contact-item">
@@ -195,7 +188,7 @@
           </div>
         </div>
 
-        <p style="margin-top:28px;font-size:0.82rem;color:var(--color-text-light);">For returns and refund queries, please email <a href="mailto:returns@oluhlescents.co.za">returns@oluhlescents.co.za</a> with your order number.</p>
+        <p style="margin-top:28px;font-size:0.82rem;color:var(--color-text-light);">For returns and refund queries, please email <a href="mailto:returns@toca.co.za">returns@toca.co.za</a> with your order number.</p>
       </section>
 
     </div><!-- /.legal-modal__body -->
@@ -213,11 +206,15 @@
     const tabs     = document.querySelectorAll('.legal-tab');
     const panels   = document.querySelectorAll('.legal-panel');
 
-    // Open — any element with js-open-legal triggers the modal
+    // Open — any element with js-open-legal triggers the modal. An optional
+    // data-legal-tab="privacy" (etc.) opens straight to that panel instead of
+    // the default Social tab — used by privacy-notice links on forms that
+    // collect personal information (checkout, registration).
     document.addEventListener('click', function (e) {
-      if (e.target.closest('.js-open-legal')) {
+      const trigger = e.target.closest('.js-open-legal');
+      if (trigger) {
         e.preventDefault();
-        openModal();
+        openModal(trigger.dataset.legalTab);
       }
     });
 
@@ -255,11 +252,18 @@
       });
     });
 
-    function openModal() {
+    function openModal(startTab) {
       overlay.hidden = false;
       document.body.style.overflow = 'hidden';
-      // Focus first tab for accessibility
-      if (tabs.length) tabs[0].focus();
+
+      const requestedTab = startTab && document.querySelector('.legal-tab[data-tab="' + startTab + '"]');
+      if (requestedTab) {
+        requestedTab.click();
+        requestedTab.focus();
+      } else if (tabs.length) {
+        // Focus first tab for accessibility
+        tabs[0].focus();
+      }
     }
 
     function closeModal() {

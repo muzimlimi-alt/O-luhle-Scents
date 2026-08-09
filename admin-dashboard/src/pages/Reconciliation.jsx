@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { bankingApi, financeApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
@@ -373,13 +373,18 @@ export function Reconciliation() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .reconciliation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; align-items: start; }
-        .reconciliation-grid h3 { margin: 0 0 12px; font-size: 1rem; }
-        .reconciliation-adjust-summary { font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; line-height: 1.6; }
-        .reconciliation-import-row { display: flex; gap: 16px; }
+        .reconciliation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--sp-5); align-items: start; }
+        .reconciliation-grid h3 { margin: 0 0 var(--sp-3); font-size: 1rem; font-weight: 400; }
+        .reconciliation-adjust-summary { font-size: 0.82rem; color: var(--text-muted); margin-bottom: var(--sp-5); line-height: 1.6; }
+        .reconciliation-import-row { display: flex; gap: var(--sp-4); }
         .reconciliation-import-row .form-field { flex: 1; }
-        .banking-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .banking-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
         .page-header__actions .admin-input { width: auto; }
+
+        @media (max-width: 760px) {
+          .reconciliation-grid { grid-template-columns: 1fr; }
+          .reconciliation-import-row { flex-direction: column; gap: var(--sp-2); }
+        }
       `}} />
     </div>
   );

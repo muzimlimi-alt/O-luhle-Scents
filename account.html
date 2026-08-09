@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Account | O'luhle Scents</title>
+  <meta name="robots" content="noindex, follow">
+  <title>My Account | TOCA</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/modern-extensions.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
-  <script>(function(){try{var t=JSON.parse(localStorage.getItem('oluhle_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('toca_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
   <style>
     .account-page { padding-top: 140px; padding-bottom: 80px; min-height: 70vh; }
     .account-layout { display: grid; grid-template-columns: 220px 1fr; gap: 40px; max-width: 960px; margin: 0 auto; align-items: start; }
@@ -53,7 +54,7 @@
       <div class="navbar__left">
         <a href="index.html" style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-text-light);">← Home</a>
       </div>
-      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <a href="index.html" class="navbar__logo">TOCA</a>
       <div class="navbar__right"></div>
     </nav>
   </header>
@@ -67,6 +68,7 @@
           <button data-tab="orders" class="active">Order History</button>
           <button data-tab="addresses">Addresses</button>
           <button data-tab="profile">Profile</button>
+          <button data-tab="privacy">Privacy</button>
           <button class="logout" id="logout-btn">Sign Out</button>
         </nav>
 
@@ -108,6 +110,56 @@
               <p id="profile-message" style="display:none;font-size:0.82rem;margin-top:12px;color:var(--color-text-light);"></p>
             </form>
           </div>
+
+          <div class="account-tab" id="tab-privacy">
+            <h2>Privacy</h2>
+            <p style="color:var(--color-text-light);font-size:0.85rem;margin-top:-8px;margin-bottom:28px;">
+              What we hold about you, what you've consented to, and your rights under South Africa's POPIA. Read our full <a href="#" class="js-open-legal" data-legal-tab="privacy" style="color:var(--color-gold);">Privacy Policy</a>.
+            </p>
+
+            <div class="privacy-block">
+              <h3 style="font-size:1rem;margin-bottom:10px;">Marketing preferences</h3>
+              <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.85rem;">
+                <input type="checkbox" id="privacy-marketing-toggle" style="margin-top:3px;">
+                Send me new arrivals, offers, and fragrance stories by email.
+              </label>
+              <p id="privacy-marketing-status" style="font-size:0.78rem;color:var(--color-text-light);margin-top:6px;"></p>
+
+              <button type="button" class="btn btn--outline-dark btn--sm" id="privacy-cookies-btn" style="margin-top:16px;">Manage Cookie Preferences</button>
+            </div>
+
+            <div class="privacy-block" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--color-border-light);">
+              <h3 style="font-size:1rem;margin-bottom:10px;">Your data</h3>
+              <p style="font-size:0.85rem;color:var(--color-text-light);margin-bottom:14px;">Download everything we hold about your account — profile, addresses, orders, and your consent history.</p>
+              <button type="button" class="btn btn--outline-dark btn--sm" id="privacy-export-btn">Download My Data</button>
+            </div>
+
+            <div class="privacy-block" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--color-border-light);">
+              <h3 style="font-size:1rem;margin-bottom:10px;">Request a correction</h3>
+              <p style="font-size:0.85rem;color:var(--color-text-light);margin-bottom:10px;">Need something fixed that you can't edit yourself above (e.g. a past order's details)? Tell us what's wrong.</p>
+              <form id="privacy-correction-form">
+                <textarea id="privacy-correction-details" rows="3" placeholder="What needs correcting?" style="width:100%;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:inherit;font-size:0.85rem;resize:vertical;" required></textarea>
+                <button type="submit" class="btn btn--outline-dark btn--sm" style="margin-top:10px;">Submit Request</button>
+              </form>
+            </div>
+
+            <div class="privacy-block" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--color-border-light);">
+              <h3 style="font-size:1rem;margin-bottom:10px;">Your requests</h3>
+              <div id="privacy-requests-list"><p style="color:var(--color-text-light);font-size:0.85rem;">Loading…</p></div>
+            </div>
+
+            <div class="privacy-block" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--color-border-light);">
+              <h3 style="font-size:1rem;margin-bottom:10px;">Consent history</h3>
+              <div id="privacy-consent-history"><p style="color:var(--color-text-light);font-size:0.85rem;">Loading…</p></div>
+            </div>
+
+            <div class="privacy-block" style="margin-top:32px;padding-top:24px;border-top:1px solid #e8c5c0;">
+              <h3 style="font-size:1rem;margin-bottom:10px;color:#c0392b;">Delete my account</h3>
+              <p style="font-size:0.85rem;color:var(--color-text-light);margin-bottom:14px;">We'll remove your identifying details (name, email, phone) from our systems. Order and payment records are kept — anonymised — as required for financial record-keeping. This goes to our team for review rather than happening instantly.</p>
+              <button type="button" class="btn btn--outline-dark btn--sm" id="privacy-delete-btn" style="border-color:#c0392b;color:#c0392b;">Request Account Deletion</button>
+              <p id="privacy-delete-message" style="display:none;font-size:0.82rem;margin-top:10px;color:var(--color-text-light);"></p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -115,7 +167,7 @@
 
   <footer style="padding:32px 0;text-align:center;color:var(--color-text-light);font-size:0.75rem;border-top:1px solid var(--color-border-light);">
     <div class="container">
-      <p>&copy; 2026 O'luhle Scents · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a></p>
+      <p>&copy; 2026 TOCA (Pty) Ltd · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a></p>
     </div>
   </footer>
 
@@ -126,6 +178,7 @@
       getToken, logout, getMyProfile, updateMyProfile,
       getMyAddresses, createMyAddress, updateMyAddress, deleteMyAddress,
       getMyOrders, getMyOrder, uploadMyOrderProof,
+      getMyConsent, setMyConsent, exportMyData, getMyDataRequests, createMyDataRequest,
     } from './js/api.js';
     import { renderEftProofWidget } from './js/eft-proof-upload.js';
 
@@ -342,10 +395,163 @@
       }
     });
 
+    // --- Privacy Centre ---
+    const CONSENT_LABELS = {
+      marketing_email: 'Marketing email',
+      cookie_analytics: 'Analytics cookies',
+      cookie_marketing: 'Marketing cookies',
+      cookie_preferences: 'Preference cookies',
+      testimonial_display: 'Testimonial display',
+    };
+    const REQUEST_TYPE_LABELS = { access: 'Access', correction: 'Correction', deletion: 'Deletion', objection: 'Objection', portability: 'Portability' };
+
+    async function loadPrivacy() {
+      loadConsentToggle();
+      loadConsentHistory();
+      loadDataRequests();
+    }
+
+    async function loadConsentToggle() {
+      const toggle = document.getElementById('privacy-marketing-toggle');
+      const statusEl = document.getElementById('privacy-marketing-status');
+      try {
+        const { current } = await getMyConsent();
+        const marketing = current.marketing_email;
+        toggle.checked = !!marketing?.granted;
+        statusEl.textContent = marketing
+          ? `Last updated ${new Date(marketing.createdAt).toLocaleDateString()}.`
+          : 'No decision on file yet — defaults to off.';
+      } catch (err) {
+        statusEl.textContent = 'Could not load your preference right now.';
+      }
+    }
+
+    document.getElementById('privacy-marketing-toggle').addEventListener('change', async (e) => {
+      const statusEl = document.getElementById('privacy-marketing-status');
+      try {
+        await setMyConsent('marketing_email', e.target.checked);
+        statusEl.textContent = e.target.checked ? 'Subscribed to marketing email.' : "You've been unsubscribed from marketing email.";
+        loadConsentHistory();
+      } catch (err) {
+        e.target.checked = !e.target.checked;
+        statusEl.textContent = `Failed to save: ${err.message}`;
+      }
+    });
+
+    document.getElementById('privacy-cookies-btn').addEventListener('click', () => {
+      window.TocaConsent?.openManager();
+    });
+
+    // If the customer changes cookie preferences while logged in, sync those
+    // choices into the same consent ledger as everything else in the Privacy
+    // Centre — otherwise this is the one preference that would only ever
+    // live in localStorage, invisible in the "consent history" below.
+    window.addEventListener('toca:consent', (e) => {
+      if (!getToken()) return;
+      const detail = e.detail || {};
+      ['analytics', 'marketing', 'preferences'].forEach((cat) => {
+        setMyConsent(`cookie_${cat}`, !!detail[cat]).catch(() => {});
+      });
+      loadConsentHistory();
+    });
+
+    async function loadConsentHistory() {
+      const el = document.getElementById('privacy-consent-history');
+      try {
+        const { history } = await getMyConsent();
+        if (!history.length) {
+          el.innerHTML = `<p style="color:var(--color-text-light);font-size:0.85rem;">No consent decisions recorded yet.</p>`;
+          return;
+        }
+        el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` + history.slice(0, 20).map(rec => `
+          <div style="display:flex;justify-content:space-between;gap:12px;font-size:0.82rem;padding:8px 0;border-bottom:1px solid var(--color-border-light);">
+            <span>${CONSENT_LABELS[rec.purpose] || rec.purpose}</span>
+            <span style="color:${rec.granted ? 'var(--color-success, #2e7d32)' : 'var(--color-text-light)'};">${rec.granted ? 'Granted' : 'Revoked'}</span>
+            <span style="color:var(--color-text-light);">${new Date(rec.createdAt).toLocaleDateString()}</span>
+          </div>`).join('') + `</div>`;
+      } catch (err) {
+        el.innerHTML = `<p style="color:#c0392b;font-size:0.85rem;">Failed to load consent history.</p>`;
+      }
+    }
+
+    async function loadDataRequests() {
+      const el = document.getElementById('privacy-requests-list');
+      try {
+        const requests = await getMyDataRequests();
+        if (!requests.length) {
+          el.innerHTML = `<p style="color:var(--color-text-light);font-size:0.85rem;">No requests submitted yet.</p>`;
+          return;
+        }
+        el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` + requests.map(r => `
+          <div style="display:flex;justify-content:space-between;gap:12px;font-size:0.82rem;padding:8px 0;border-bottom:1px solid var(--color-border-light);">
+            <span>${REQUEST_TYPE_LABELS[r.type] || r.type}</span>
+            <span style="text-transform:capitalize;">${r.status.replace('_', ' ')}</span>
+            <span style="color:var(--color-text-light);">${new Date(r.requestedAt).toLocaleDateString()}</span>
+          </div>`).join('') + `</div>`;
+      } catch (err) {
+        el.innerHTML = `<p style="color:#c0392b;font-size:0.85rem;">Failed to load your requests.</p>`;
+      }
+    }
+
+    document.getElementById('privacy-export-btn').addEventListener('click', async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = 'Preparing…';
+      try {
+        const data = await exportMyData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'toca-my-data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert(`Failed to export your data: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Download My Data';
+      }
+    });
+
+    document.getElementById('privacy-correction-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const textarea = document.getElementById('privacy-correction-details');
+      try {
+        await createMyDataRequest('correction', textarea.value.trim());
+        textarea.value = '';
+        loadDataRequests();
+        showToastSafe('Correction request submitted — our team will follow up by email.');
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    document.getElementById('privacy-delete-btn').addEventListener('click', async () => {
+      const confirmed = prompt('This submits a request to permanently anonymise your account. Type DELETE MY ACCOUNT to confirm:');
+      if (confirmed !== 'DELETE MY ACCOUNT') return;
+      const messageEl = document.getElementById('privacy-delete-message');
+      try {
+        await createMyDataRequest('deletion', 'Requested via Privacy Centre', 'DELETE MY ACCOUNT');
+        messageEl.textContent = "Your deletion request has been submitted for review. We'll email you once it's processed.";
+        messageEl.style.display = 'block';
+        loadDataRequests();
+      } catch (err) {
+        messageEl.textContent = err.message;
+        messageEl.style.display = 'block';
+      }
+    });
+
+    function showToastSafe(msg) {
+      if (typeof window.showToast === 'function') window.showToast(msg, 'success');
+      else alert(msg);
+    }
+
     if (getToken()) {
       loadOrders();
       loadAddresses();
       loadProfile();
+      loadPrivacy();
     }
   </script>
 </body>

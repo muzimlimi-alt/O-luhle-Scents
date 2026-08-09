@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { financeApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
 import { Drawer } from '../components/Drawer';
 import { EmptyState } from '../components/EmptyState';
 import { StatusBadge } from '../components/StatusBadge';
+import { ExportButtons } from '../components/ExportButtons';
 import { ReceiptText, Eye } from 'lucide-react';
 
 const SOURCE_TYPES = ['ORDER_SALE', 'ORDER_PAYMENT', 'REFUND', 'PURCHASE_RECEIVE', 'SUPPLIER_PAYMENT', 'MANUAL'];
@@ -69,6 +70,11 @@ export function Journals() {
         </select>
         <input type="date" className="admin-input" value={from} onChange={e => setFrom(e.target.value)} aria-label="From date" />
         <input type="date" className="admin-input" value={to} onChange={e => setTo(e.target.value)} aria-label="To date" />
+        <ExportButtons
+          path="/admin/finance/journals"
+          params={{ ...(sourceType ? { sourceType } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}) }}
+          filename="journals"
+        />
       </div>
 
       <div className="card">
@@ -100,7 +106,7 @@ export function Journals() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .journals-filters { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .journals-filters { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-6); flex-wrap: wrap; }
         .journals-filters .admin-input { width: auto; min-width: 160px; }
       `}} />
     </div>

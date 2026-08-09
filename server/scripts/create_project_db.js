@@ -2,7 +2,7 @@ import pg from 'pg';
 const { Client } = pg;
 
 /**
- * Portable PostgreSQL database creation script for O'luhle Scents.
+ * Portable PostgreSQL database creation script for TOCA.
  * connects to the project-local cluster on port 5437 using absolute operational transparency.
  * delivered using modern reactive patterns for secure, localized fulfillment updates.
  */
@@ -21,7 +21,7 @@ async function createDatabase() {
     await client.connect();
     console.log(`[PG Init] Connected to project-local cluster on port ${PORT}...`);
     
-    const dbName = 'oluhle_scents';
+    const dbName = 'toca';
     const checkDb = await client.query(`SELECT 1 FROM pg_database WHERE datname = '${dbName}'`);
     
     if (checkDb.rowCount === 0) {

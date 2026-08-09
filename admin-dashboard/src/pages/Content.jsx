@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -330,6 +330,16 @@ export function Content() {
           </div>
         </div>
 
+        {/* Contact */}
+        <div className="card content-card">
+          <div className="content-card-header"><h3>Contact — Side Panel Cards</h3></div>
+          <div className="content-card-body">
+            <CharCountField label="Quote Text" k="contact_quote_text" max={200} />
+            <Field label="Quote Author" k="contact_quote_author" />
+            <Field label="“Reach Us” Card Heading" k="contact_reach_heading" />
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="card content-card">
           <div className="content-card-header"><h3>Footer</h3></div>
@@ -340,40 +350,42 @@ export function Content() {
       </form>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .content-mgmt-page { padding: 40px; max-width: 1600px; margin: 0 auto; min-height: 100vh; }
+        .content-mgmt-page { padding: var(--sp-7); max-width: 1600px; margin: 0 auto; min-height: 100vh; }
 
-        .content-mgmt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+        .content-mgmt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--sp-5); }
         .content-card { padding: 0; overflow: hidden; }
-        .content-card-header { padding: 16px 20px; border-bottom: 1px solid var(--color-border); }
-        .content-card-header h3 { font-size: 1rem; font-weight: 600; color: var(--color-text-header); margin: 0; }
-        .content-card-body { padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+        .content-card-header { padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border-default); }
+        .content-card-header h3 { font-size: 1rem; font-weight: 400; color: var(--text-primary); margin: 0; }
+        .content-card-body { padding: var(--sp-5); display: flex; flex-direction: column; gap: 4px; }
 
         .char-count { float: right; font-weight: 400; opacity: 0.7; text-transform: none; letter-spacing: normal; }
-        .char-count--over { opacity: 1; color: var(--color-error-text); font-weight: 700; }
+        .char-count--over { opacity: 1; color: var(--error); font-weight: 500; }
 
-        .image-preview { position: relative; margin-bottom: 10px; border-radius: 4px; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface); }
+        .image-preview { position: relative; margin-bottom: var(--sp-2); border-radius: var(--r); overflow: hidden; border: 1px solid var(--border-default); background: var(--bg-section); }
         .image-preview img, .image-preview video { width: 100%; height: 160px; object-fit: cover; display: block; }
-        .image-preview__remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.75); color: #fff; border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 2px 8px rgba(0,0,0,0.5); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.2s; z-index: 2; }
-        .image-preview__remove:hover { background: #c0392b; border-color: #fff; transform: scale(1.08); }
-        .image-preview__remove:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
+        .image-preview__remove { position: absolute; top: var(--sp-2); right: var(--sp-2); background: rgba(0,0,0,0.75); color: #fff; border: 2px solid rgba(255,255,255,0.85); box-shadow: var(--sh-sm); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background var(--t-fast, .18s) var(--ease, ease), transform var(--t-fast, .18s) var(--ease, ease); z-index: 2; }
+        .image-preview__remove:hover { background: var(--error); border-color: #fff; transform: scale(1.08); }
+        .image-preview__remove:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow, var(--color-border-focus)); }
 
-        .image-upload-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px dashed var(--color-border); border-radius: 4px; font-size: 0.8rem; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s; }
-        .image-upload-btn:hover { border-color: var(--color-primary); color: var(--color-primary-text); }
+        .image-upload-btn { display: inline-flex; align-items: center; gap: var(--sp-2); padding: 10px var(--sp-4); border: 1px dashed var(--border-default); border-radius: var(--r); font-size: 0.8rem; color: var(--text-muted); cursor: pointer; transition: all var(--t-fast, .18s) var(--ease, ease); }
+        .image-upload-btn:hover { border-color: var(--y-base); color: var(--y-base); }
         .image-upload-btn--busy { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
-        .image-upload-btn:has(input:focus-visible) { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
+        .image-upload-btn:has(input:focus-visible) { outline: none; box-shadow: 0 0 0 3px var(--y-glow, var(--color-border-focus)); }
 
-        .announcement-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--color-text); cursor: pointer; margin-bottom: 16px; }
-        .announcement-toggle input { width: 16px; height: 16px; accent-color: var(--color-primary); cursor: pointer; }
+        .announcement-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; margin-bottom: var(--sp-4); }
+        .announcement-toggle input { width: 16px; height: 16px; accent-color: var(--y-base); cursor: pointer; }
 
-        .quill-wrapper { background: #fff; border-radius: 4px; overflow: hidden; }
+        .quill-wrapper { background: #fff; border-radius: var(--r); overflow: hidden; }
         .ql-editor { min-height: 160px; background: #fff; color: #1a1a1a; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
 
         @media (max-width: 460px) {
-          .content-mgmt-page { padding: 20px; }
+          .content-mgmt-page { padding: var(--sp-4); }
           .content-mgmt-grid { grid-template-columns: 1fr; }
+          .content-card-header { padding: var(--sp-3) var(--sp-4); }
+          .content-card-body { padding: var(--sp-4); }
         }
       `}} />
     </div>

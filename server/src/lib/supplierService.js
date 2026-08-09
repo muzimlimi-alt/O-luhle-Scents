@@ -69,13 +69,13 @@ export async function sendRestockNotification(variantId) {
     })
 
     const mailOptions = {
-      from: `"O'luhle Scents Operations" <${user}>`,
+      from: `"TOCA Operations" <${user}>`,
 
       to: supplier.contactEmail,
       subject: `RESTOCK ALERT: ${variant.product.name} (${variant.size})`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #d4af37;">
-          <h2 style="color: #d4af37;">O'LUHLE SCENTS - Restock Request</h2>
+          <h2 style="color: #d4af37;">TOCA - Restock Request</h2>
           <p>Dear ${supplier.name},</p>
           <p>This is an automated notification that our inventory for the following fragrance is running low:</p>
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -93,7 +93,7 @@ export async function sendRestockNotification(variantId) {
             </tr>
           </table>
           <p>Please provide an updated lead time and quotation for a replenishment quantity of 50-100 units.</p>
-          <p>Best regards,<br>Operations Team<br>O'luhle Scents</p>
+          <p>Best regards,<br>Operations Team<br>TOCA</p>
         </div>
       `
     }

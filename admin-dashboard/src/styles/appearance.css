@@ -1,0 +1,185 @@
+/* ============================================================
+   TOCA Admin — Appearance system
+   Three independent axes, each an <html> (:root) class, each a pure
+   token override — nothing here targets a page component by name
+   except the Presence rules at the end (mapped to the admin's real
+   class names: .card, .page-title, .page-header__title, .kpi-card/
+   -value/-label, .modern-table — audited against src/pages and
+   src/styles/App.css, not the aspirational names from the original
+   spec).
+
+   Applied by AppearanceProvider (src/context/AppearanceProvider.jsx),
+   which is the ONLY code allowed to touch these classes on <html>.
+
+   Why :root and not <body>: design-tokens.css's --color-* aliases
+   (--color-primary: var(--y-base), --color-border-focus: var(--y-glow),
+   etc.) live in :root. A custom property's var() references resolve
+   against the SAME element's cascade at the point the alias is
+   declared — the resolved value then inherits down as a plain literal,
+   it does not re-resolve per descendant. Overriding --y-base only on
+   <body> would leave every :root-declared alias frozen on the
+   Obsidian/Gold default forever; putting the class on :root itself
+   (<html>) is what makes those aliases actually follow Accent/Finish.
+   ============================================================ */
+
+/* ═══════════════════════════ FINISH ═══════════════════════════ */
+
+/* Obsidian is the house default and lives in design-tokens.css :root —
+   no class needed for it. */
+
+/* Ember — warm near-black, candlelit */
+:root.finish-ember {
+  --bg-page: #110c08;
+  --bg-section: #191209;
+  --bg-surface: #221a11;
+  --bg-elevated: #2e2318;
+  --bg-glass: rgba(34, 26, 17, .7);
+
+  --text-primary: #fdf8f1;
+  --text-secondary: #c2b3a1;
+  --text-muted: #9a8b78;
+  --text-inverse: #110c08;
+
+  --border-low: rgba(253, 248, 241, .08);
+  --border-default: rgba(253, 248, 241, .15);
+  --border-strong: rgba(253, 248, 241, .34);
+}
+
+/* Ivory — light editorial, paper-and-ink */
+:root.finish-ivory {
+  --bg-page: #f2eee6;
+  --bg-section: #e9e4d9;
+  --bg-surface: #fffdf8;
+  --bg-elevated: #f6f3ea;
+  --bg-glass: rgba(255, 253, 248, .8);
+
+  --text-primary: #171410;
+  --text-secondary: #4b463d;
+  --text-muted: #635d50;
+  --text-inverse: #fffdf8;
+
+  --border-low: rgba(23, 20, 16, .1);
+  --border-default: rgba(23, 20, 16, .18);
+  --border-strong: rgba(23, 20, 16, .38);
+
+  --sh-sm: 0 1px 3px rgba(23, 20, 16, .08);
+  --sh-md: 0 4px 20px rgba(23, 20, 16, .1);
+  --sh-lg: 0 8px 40px rgba(23, 20, 16, .14);
+  --sh-xl: 0 24px 70px rgba(23, 20, 16, .2);
+
+  /* Status text pairings re-tuned for a light surface — see the
+     dark-surface defaults in design-tokens.css :root. */
+  --success-text: #064e3b;
+  --warning-text: #92400e;
+  --error-text: #7f1d1d;
+  --info-text: #1c5a80;
+}
+:root.finish-ivory .scrim,
+:root.finish-ivory .modal-backdrop,
+:root.finish-ivory .drawer-backdrop,
+:root.finish-ivory .drawer-overlay {
+  background: rgba(23, 20, 16, .42);
+}
+:root.finish-ivory table tbody tr:hover,
+:root.finish-ivory .modern-table tr:hover td {
+  background: rgba(23, 20, 16, .03);
+}
+
+/* ═══════════════════════════ HOUSE ACCENT ═══════════════════════════ */
+/* Bright variants for the dark finishes (Obsidian/Ember) */
+:root.accent-gold {
+  --y-rgb: 212, 175, 55; --y-base: #D4AF37; --y-hover: #E8C14B; --y-light: #F4E4B5; --y-dark: #9A7B2C;
+  --y-muted: rgba(212, 175, 55, .15); --y-glow: rgba(212, 175, 55, .3);
+}
+:root.accent-vetiver {
+  --y-rgb: 140, 192, 132; --y-base: #8CC084; --y-hover: #A3D49B; --y-light: #D9EDD4; --y-dark: #4E7A48;
+  --y-muted: rgba(140, 192, 132, .15); --y-glow: rgba(140, 192, 132, .3);
+}
+:root.accent-cassis {
+  --y-rgb: 219, 143, 166; --y-base: #DB8FA6; --y-hover: #EBA6BB; --y-light: #F6D9E2; --y-dark: #8E5468;
+  --y-muted: rgba(219, 143, 166, .15); --y-glow: rgba(219, 143, 166, .3);
+}
+:root.accent-cuivre {
+  --y-rgb: 224, 160, 122; --y-base: #E0A07A; --y-hover: #F0B692; --y-light: #F8DFCE; --y-dark: #99603F;
+  --y-muted: rgba(224, 160, 122, .15); --y-glow: rgba(224, 160, 122, .3);
+}
+
+/* Deep variants under Ivory — accent-on-paper (text) and white-on-accent
+   (buttons/badges) both clear 4.5:1 / 3:1. */
+:root.finish-ivory.accent-gold {
+  --y-rgb: 138, 106, 20; --y-base: #8A6A14; --y-hover: #6F5410; --y-light: #4A3A0C; --y-dark: #C9A94A;
+  --y-muted: rgba(138, 106, 20, .13); --y-glow: rgba(138, 106, 20, .26);
+}
+:root.finish-ivory.accent-vetiver {
+  --y-rgb: 47, 107, 58; --y-base: #2F6B3A; --y-hover: #245430; --y-light: #16321D; --y-dark: #7FA886;
+  --y-muted: rgba(47, 107, 58, .13); --y-glow: rgba(47, 107, 58, .26);
+}
+:root.finish-ivory.accent-cassis {
+  --y-rgb: 142, 47, 78; --y-base: #8E2F4E; --y-hover: #74253F; --y-light: #3D1424; --y-dark: #C98AA0;
+  --y-muted: rgba(142, 47, 78, .13); --y-glow: rgba(142, 47, 78, .26);
+}
+:root.finish-ivory.accent-cuivre {
+  --y-rgb: 154, 79, 30; --y-base: #9A4F1E; --y-hover: #7E4018; --y-light: #45210C; --y-dark: #C99070;
+  --y-muted: rgba(154, 79, 30, .13); --y-glow: rgba(154, 79, 30, .26);
+}
+
+/* Swatch dots used by AppearancePanel (components/AppearancePanel.jsx) —
+   same bright/deep split as the accent tokens above, so the swatch always
+   matches what picking it will actually look like under the current Finish. */
+.sw-gold { background: #D4AF37; }
+.sw-vetiver { background: #8CC084; }
+.sw-cassis { background: #DB8FA6; }
+.sw-cuivre { background: #E0A07A; }
+:root.finish-ivory .sw-gold { background: #8A6A14; }
+:root.finish-ivory .sw-vetiver { background: #2F6B3A; }
+:root.finish-ivory .sw-cassis { background: #8E2F4E; }
+:root.finish-ivory .sw-cuivre { background: #9A4F1E; }
+
+/* ═══════════════════════════ PRESENCE ═══════════════════════════ */
+
+/* Boutique — gallery air, oversized display numerals, wider tracking */
+:root.presence-boutique { --sp-5: 28px; --sp-6: 40px; --sp-7: 64px; }
+.presence-boutique .page-title,
+.presence-boutique .page-header__title { font-size: 3.1rem; }
+.presence-boutique .kpi-card,
+.presence-boutique .stat-card { padding: var(--sp-6); }
+.presence-boutique .kpi-value,
+.presence-boutique .stat-value {
+  font-size: 3.1rem;
+  font-weight: 300;
+  margin: var(--sp-5) 0 var(--sp-3);
+}
+.presence-boutique .kpi-label,
+.presence-boutique .stat-label { letter-spacing: .28em; }
+.presence-boutique .card { padding: var(--sp-6); }
+.presence-boutique .modern-table td,
+.presence-boutique .modern-table th { padding: 18px var(--sp-5); }
+.presence-boutique .eyebrow { letter-spacing: .4em; }
+
+/* Operations — dense working tool: sans headings, mono figures, tight rows */
+:root.presence-operations { --sp-5: 16px; --sp-6: 20px; --sp-7: 28px; }
+.presence-operations h1, .presence-operations h2,
+.presence-operations h3, .presence-operations h4 {
+  font-family: var(--f-body);
+  font-weight: 400;
+  letter-spacing: -.012em;
+}
+.presence-operations h1 em, .presence-operations h2 em, .presence-operations h3 em {
+  font-style: normal;
+  font-weight: 500;
+}
+.presence-operations .page-title,
+.presence-operations .page-header__title { font-size: 1.6rem; }
+.presence-operations .card { padding: var(--sp-4); }
+.presence-operations .kpi-card,
+.presence-operations .stat-card { padding: var(--sp-4); }
+.presence-operations .kpi-value,
+.presence-operations .stat-value {
+  font-family: var(--f-mono);
+  font-size: 1.55rem;
+  font-weight: 500;
+  letter-spacing: -.02em;
+  margin: var(--sp-3) 0 6px;
+}
+.presence-operations .modern-table td,
+.presence-operations .modern-table th { padding: 9px var(--sp-3); }

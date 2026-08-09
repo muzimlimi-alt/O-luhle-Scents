@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
@@ -46,7 +46,7 @@ export function Reports() {
       const url = window.URL.createObjectURL(new Blob([response]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `O_luhle_Executive_Report_Month_${monthOffset}.pdf`;
+      a.download = `TOCA_Executive_Report_Month_${monthOffset}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -256,29 +256,30 @@ export function Reports() {
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .inv-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .finance-stat-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 16px; }
-        .inv-stat { padding: 14px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; display: flex; flex-direction: column; gap: 6px; }
-        .inv-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px; }
+        .inv-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+        .finance-stat-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: var(--sp-4); }
+        .inv-stat { padding: 14px; background: var(--bg-section); border: 1px solid var(--border-default); border-radius: var(--r); display: flex; flex-direction: column; gap: 6px; }
+        .inv-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
         .inv-stat-value { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
         .finance-coverage-note {
-          font-size: 0.78rem; color: var(--color-warning-text); background: rgba(251, 191, 36, 0.1);
-          border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 4px; padding: 10px 14px; margin-bottom: 16px;
+          font-size: 0.78rem; color: var(--warning); background: rgba(var(--warn-rgb), 0.1);
+          border: 1px solid rgba(var(--warn-rgb), 0.3); border-radius: var(--r); padding: 10px 14px; margin-bottom: var(--sp-4);
         }
         .finance-coverage-note--info {
-          color: var(--color-text-muted); background: var(--color-surface); border-color: var(--color-border);
+          color: var(--text-muted); background: var(--bg-section); border-color: var(--border-default);
         }
 
         .report-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
-        .report-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; }
-        .report-row-title { display: block; font-size: 0.85rem; font-weight: 600; }
-        .report-row-subtitle { display: block; font-size: 0.7rem; color: var(--color-text-muted); }
-        .report-row-value { font-size: 0.8rem; font-weight: 700; color: var(--color-primary-text); white-space: nowrap; margin-left: 12px; }
+        .report-row { display: flex; justify-content: space-between; align-items: center; padding: 10px var(--sp-3); background: var(--bg-section); border: 1px solid var(--border-default); border-radius: var(--r); }
+        .report-row-title { display: block; font-size: 0.85rem; font-weight: 400; }
+        .report-row-subtitle { display: block; font-size: 0.7rem; color: var(--text-muted); }
+        .report-row-value { font-size: 0.8rem; font-weight: 700; color: var(--y-base); white-space: nowrap; margin-left: var(--sp-3); }
 
         @media (max-width: 480px) {
           .inv-stat-grid { grid-template-columns: 1fr; }
-          .report-row { flex-wrap: wrap; gap: 4px; }
+          .finance-stat-grid { grid-template-columns: 1fr; }
+          .report-row { flex-wrap: wrap; gap: var(--sp-1); }
         }
       `}} />
     </div>

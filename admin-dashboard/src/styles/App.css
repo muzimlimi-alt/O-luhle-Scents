@@ -1,63 +1,6 @@
-.admin-layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: var(--color-bg-dark);
-}
-
-/* Sidebar - Legacy Width 220px */
-.sidebar {
-  width: 220px;
-  background-color: var(--color-bg-card);
-  border-right: 1px solid var(--color-border);
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  top: 70px; /* Header height offset */
-  bottom: 0;
-  left: 0;
-  z-index: 50;
-  padding: 32px 0;
-}
-
-.sidebar-header {
-  display: none; /* In legacy, branding was in the top fixed header */
-}
-
-.sidebar-nav {
-  padding: 0;
-  flex-grow: 1;
-  overflow-y: auto;
-}
-
-.nav-link {
-  display: block;
-  padding: 10px 24px;
-  font-size: 0.85rem;
-  color: var(--color-text);
-  text-decoration: none;
-  border-left: 3px solid transparent;
-  transition: all 0.2s;
-  border-radius: 0;
-  margin-bottom: 0;
-}
-
-.nav-link:hover {
-  color: var(--color-primary);
-  border-left-color: var(--color-primary);
-  background-color: rgba(184, 155, 106, 0.05);
-}
-
-.nav-link.active {
-  color: var(--color-primary);
-  border-left-color: var(--color-primary);
-  background-color: rgba(184, 155, 106, 0.08);
-  font-weight: 600;
-}
-
-.nav-link:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--color-border-focus);
-}
+/* App shell layout (.app/.side/.top/.main) lives in DashboardLayout.jsx
+   and Sidebar.jsx's own scoped <style> blocks, matching this codebase's
+   convention of co-locating layout CSS with the component that owns it. */
 
 /* Global keyboard-focus ring for native form controls — the app has no
    shared <input>/<select>/<textarea> base class, so this attaches directly
@@ -71,52 +14,6 @@ textarea:focus-visible {
   border-color: var(--color-primary);
 }
 
-.nav-icon {
-  margin-right: 12px;
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
-.sidebar-footer {
-  padding: 24px 16px;
-  border-top: 1px solid var(--color-border);
-}
-
-.logout-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  border-radius: 4px;
-  transition: var(--transition);
-  font-size: 0.85rem;
-}
-
-.logout-btn:hover {
-  color: var(--color-error-text);
-  background-color: rgba(192, 57, 43, 0.1);
-}
-
-.logout-btn span {
-  margin-left: 12px;
-}
-
-/* Main Content area - Legacy Adjustments */
-.main-content {
-  flex-grow: 1;
-  margin-left: 220px;
-  padding: 40px;
-  min-width: 0;
-  margin-top: 70px; /* Header height offset */
-  width: 100%;
-  box-sizing: border-box;
-}
-
 .content-header {
   display: flex;
   flex-wrap: wrap;
@@ -126,16 +23,7 @@ textarea:focus-visible {
   margin-bottom: 28px;
 }
 
-/* ── Responsive shell: below this, the sidebar is an off-canvas drawer
-   (see Sidebar.jsx) rather than a permanent column, so content reclaims
-   the full width instead of leaving a permanent 220px gutter. ── */
-@media (max-width: 1024px) {
-  .sidebar { top: 70px; }
-  .main-content { margin-left: 0; padding: 28px; }
-}
-
 @media (max-width: 640px) {
-  .main-content { padding: 16px; }
   .page-title { font-size: 1.2rem; }
 }
 
@@ -207,11 +95,13 @@ textarea:focus-visible {
 }
 
 .card {
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 24px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-low);
+  border-radius: var(--r);
+  padding: var(--sp-5);
+  transition: border-color var(--t-fast, .18s) var(--ease, ease);
 }
+.card:hover { border-color: var(--border-default); }
 
 /* DataTable renders its own header/cell padding — when a .card exists only
    to frame a table (no heading or other sibling content), it should sit
@@ -223,10 +113,8 @@ textarea:focus-visible {
 }
 
 .card h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--color-text-header);
-  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--text-primary);
 }
 
 /* Used across Dashboard/AdminUsers/Analytics/Quotes to keep a wide table's
@@ -246,26 +134,32 @@ textarea:focus-visible {
   .form-grid-2 { grid-template-columns: 1fr; }
 }
 
+.modern-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .modern-table th {
   text-align: left;
-  padding: 10px 14px;
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
+  font-weight: 400;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: .66rem;
+  letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
-  border-bottom: 1px solid var(--color-border);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-section);
   white-space: nowrap;
 }
+.modern-table th.num, .modern-table td.num { text-align: right; }
 
 .modern-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--color-border-light);
-  color: var(--color-text);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-low);
+  color: var(--text-secondary);
   vertical-align: middle;
 }
+.modern-table tbody tr:last-child td { border-bottom: 0; }
 
+.modern-table tbody tr { transition: background var(--t-fast, .18s) var(--ease, ease); }
 .modern-table tr:hover td {
-  background-color: rgba(184, 155, 106, 0.02);
+  background-color: rgba(255, 255, 255, .028);
 }
 
 /* Classic Status Badges */
@@ -308,7 +202,7 @@ textarea:focus-visible {
 .loader-gold {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(184, 155, 106, 0.1);
+  border: 3px solid rgba(var(--y-rgb), 0.1);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -346,13 +240,13 @@ textarea:focus-visible {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, rgba(184, 155, 106, 0.05) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(var(--y-rgb), 0.05) 0%, transparent 100%);
   pointer-events: none;
 }
 
 .elite-btn {
   background: var(--color-primary) !important;
-  color: #1a1611 !important;
+  color: var(--text-inverse) !important;
   border: none !important;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -364,7 +258,7 @@ textarea:focus-visible {
 
 .elite-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(184, 155, 106, 0.25);
+  box-shadow: 0 8px 20px rgba(var(--y-rgb), 0.25);
   filter: brightness(1.1);
 }
 
@@ -418,45 +312,57 @@ textarea:focus-visible {
 .status-badge-ds {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.68rem;
-  font-weight: 600;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: var(--r-pill);
+  font-size: .7rem;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: .1em;
   white-space: nowrap;
+  border: 1px solid;
 }
+.status-badge-ds::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
 .status-badge-ds__icon { display: inline-flex; }
-.status-badge-ds--success { background: rgba(39, 174, 96, 0.1); color: var(--color-success-text); }
-.status-badge-ds--warning { background: rgba(251, 191, 36, 0.1); color: var(--color-warning-text); }
-.status-badge-ds--error { background: rgba(192, 57, 43, 0.1); color: var(--color-error-text); }
-.status-badge-ds--info { background: rgba(41, 128, 185, 0.1); color: var(--color-info-text); }
-.status-badge-ds--neutral { background: var(--color-surface); color: var(--color-text-muted); border: 1px solid var(--color-border-light); }
+.status-badge-ds--success { color: var(--success); border-color: rgba(var(--ok-rgb), .4); background: rgba(var(--ok-rgb), .09); }
+.status-badge-ds--warning { color: var(--warning); border-color: rgba(var(--warn-rgb), .4); background: rgba(var(--warn-rgb), .09); }
+.status-badge-ds--error { color: var(--error); border-color: rgba(var(--bad-rgb), .4); background: rgba(var(--bad-rgb), .09); }
+.status-badge-ds--info { color: var(--info); border-color: rgba(var(--info-rgb), .4); background: rgba(var(--info-rgb), .09); }
+.status-badge-ds--neutral { color: var(--text-muted); border-color: var(--border-default); }
 
 /* ============================================================
    Design system — FormField (components/FormField.jsx) + shared
    input styling. Replaces .elite-glass-input/.settings-input/
    .input-field/.search-glass-input and other one-off input classes.
    ============================================================ */
-.form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
-.form-field__label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); }
-.form-field__required { color: var(--color-error-text); }
-.form-field__hint { font-size: 0.78rem; color: var(--color-text-muted); margin: 0; }
-.form-field__error { font-size: 0.78rem; color: var(--color-error-text); margin: 0; display: flex; align-items: center; gap: 4px; }
+.form-field { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-5); }
+.form-field__label { font-size: .7rem; font-weight: 400; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); }
+.form-field__required { color: var(--error, #c0392b); }
+.form-field__hint { font-size: .74rem; color: var(--text-muted); margin: 0; }
+.form-field__error { font-size: .74rem; color: var(--error, #c0392b); margin: 0; display: flex; align-items: center; gap: 4px; }
 
 .form-input {
   width: 100%;
-  padding: 10px 14px;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  transition: var(--transition);
+  height: var(--tap);
+  padding: 0 var(--sp-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r);
+  color: var(--text-primary);
+  font-family: var(--f-body);
+  font-weight: 300;
+  font-size: .86rem;
+  transition: border-color var(--t-fast, .18s) var(--ease, ease);
 }
-.form-input::placeholder { color: var(--color-text-muted); opacity: 0.7; }
-.form-input:hover:not(:disabled) { border-color: var(--color-primary); }
-.form-input:disabled { opacity: 0.5; cursor: not-allowed; background: var(--color-surface); }
-textarea.form-input { resize: vertical; min-height: 80px; }
+.form-input::placeholder { color: var(--text-muted); }
+.form-input:hover:not(:disabled) { border-color: var(--border-strong); }
+.form-input:disabled { opacity: 0.5; cursor: not-allowed; }
+select.form-input {
+  appearance: none;
+  padding-right: var(--sp-7, 36px);
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+textarea.form-input { height: auto; min-height: 96px; padding: var(--sp-3) var(--sp-4); resize: vertical; }

@@ -298,7 +298,7 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
       const p = await tx.product.create({
         data: {
           name,
-          brand: brand || "O'luhle Scents",
+          brand: brand || "TOCA",
           description: description || "",
           category: safeCategoryId ? { connect: { id: safeCategoryId } } : undefined,
           supplier: safeSupplierId ? { connect: { id: safeSupplierId } } : undefined,

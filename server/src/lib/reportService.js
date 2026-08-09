@@ -54,7 +54,7 @@ export async function generateMonthlyPerformanceReport(monthOffset = 1) {
     doc.pipe(stream)
 
     // --- Header ---
-    doc.fillColor('#000').fontSize(26).font('Helvetica-Bold').text("O'luhle Scents Executive Report", 50, 50)
+    doc.fillColor('#000').fontSize(26).font('Helvetica-Bold').text("TOCA Executive Report", 50, 50)
     doc.fillColor('#d4af37').fontSize(14).text(`Monthly Performance Analysis - ${monthLabel}`, 50, 85)
     doc.rect(0, 120, 600, 3).fill('#d4af37')
 

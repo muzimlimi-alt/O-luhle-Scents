@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi, productsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { Drawer } from '../components/Drawer';
@@ -336,35 +336,37 @@ export function Purchases() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .pay-summary { font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; line-height: 1.6; }
-        .attr-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
-        .suggested-reorders { margin-bottom: 24px; }
-        .suggestion-list { display: flex; flex-direction: column; gap: 10px; }
+        .pay-summary { font-size: 0.82rem; color: var(--text-muted); margin-bottom: var(--sp-5); line-height: 1.6; }
+        .attr-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
+        .suggested-reorders { margin-bottom: var(--sp-5); }
+        .suggestion-list { display: flex; flex-direction: column; gap: var(--sp-2); }
         .suggestion-row {
-          display: flex; align-items: center; justify-content: space-between; gap: 16px;
-          padding: 12px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
+          display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4);
+          padding: var(--sp-3) var(--sp-4); background: var(--bg-section); border: 1px solid var(--border-default); border-radius: var(--r);
         }
-        .suggestion-supplier { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; }
-        .suggestion-count { color: var(--color-text-muted); font-size: 0.8rem; flex: 1; text-align: right; margin-right: 8px; }
+        .suggestion-supplier { display: flex; align-items: center; gap: var(--sp-2); font-weight: 400; font-size: 0.85rem; }
+        .suggestion-count { color: var(--text-muted); font-size: 0.8rem; flex: 1; text-align: right; margin-right: var(--sp-2); }
 
         .po-form { display: flex; flex-direction: column; }
-        .po-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .po-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
         .po-item-row select, .po-item-row input {
-          background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
-          padding: 10px 12px; color: var(--color-text); font-size: 0.85rem;
+          background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--r);
+          padding: 10px var(--sp-3); color: var(--text-primary); font-size: 0.85rem; font-family: var(--f-body); font-weight: 300;
         }
 
-        .po-items-header { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-        .po-items-header label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
+        .po-items-header { display: flex; justify-content: space-between; align-items: center; margin-top: var(--sp-2); }
+        .po-items-header label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
 
-        .po-item-row { display: grid; grid-template-columns: 2fr 80px 100px 36px; gap: 8px; align-items: center; }
+        .po-item-row { display: grid; grid-template-columns: 2fr 80px 100px 36px; gap: var(--sp-2); align-items: center; }
 
-        .po-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
-        .icon-btn.danger { color: var(--color-error-text, #c0392b); }
+        .po-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-3); }
+        .icon-btn.danger { color: var(--error); }
 
         @media (max-width: 600px) {
           .po-row { grid-template-columns: 1fr; }
-          .po-item-row { grid-template-columns: 1fr; gap: 6px; padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; }
+          .po-item-row { grid-template-columns: 1fr; gap: 6px; padding: var(--sp-3); border: 1px solid var(--border-default); border-radius: var(--r); }
+          .suggestion-row { flex-direction: column; align-items: stretch; text-align: left; }
+          .suggestion-count { text-align: left; margin-right: 0; }
         }
       `}} />
     </div>

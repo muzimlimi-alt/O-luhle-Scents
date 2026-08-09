@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { EmptyState } from './EmptyState';
 
@@ -88,21 +87,27 @@ export function DataTable({ columns, data, actions, loading, page, totalPages, o
       <style dangerouslySetInnerHTML={{ __html: `
         .table-wrapper { position: relative; }
         .table-scroll { overflow-x: auto; }
-        .modern-table { width: 100%; border-collapse: collapse; }
         .empty-cell { padding: 0; }
-        .table-footer { padding: 16px; display: flex; justify-content: flex-end; border-top: 1px solid var(--color-border); }
-        .pagination { display: flex; align-items: center; gap: 12px; }
-        .page-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text); padding: 4px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
-        .page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+        .table-footer { padding: var(--sp-4); display: flex; justify-content: flex-end; border-top: 1px solid var(--border-low); }
+        .pagination { display: flex; align-items: center; gap: var(--sp-3); }
+        .page-btn {
+          background: none; border: 1px solid var(--border-default); color: var(--text-secondary);
+          width: var(--tap); height: var(--tap); display: grid; place-items: center;
+          border-radius: var(--r); cursor: pointer; transition: all var(--t-fast, .18s) var(--ease, ease);
+        }
+        .page-btn:hover:not(:disabled) { border-color: var(--y-base); color: var(--y-base); }
         .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .page-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-border-focus); }
-        .page-info { font-size: 0.8rem; color: var(--color-text-muted); }
+        .page-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow, var(--color-border-focus)); }
+        .page-info { font-size: .78rem; color: var(--text-muted); font-family: var(--f-mono); }
 
-        .skeleton-row { height: 48px; background: linear-gradient(90deg, var(--color-bg-dark) 25%, var(--color-bg-card) 50%, var(--color-bg-dark) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; margin-bottom: 8px; border-radius: 4px; }
-        .skeleton-row.header { height: 32px; opacity: 0.5; margin-bottom: 16px; }
+        .skeleton-row { height: 48px; background: linear-gradient(90deg, var(--bg-section) 25%, var(--bg-elevated) 50%, var(--bg-section) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; margin-bottom: var(--sp-2); border-radius: var(--r); }
+        .skeleton-row.header { height: 32px; opacity: 0.5; margin-bottom: var(--sp-4); }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @media (prefers-reduced-motion: reduce) {
           .skeleton-row { animation: none; opacity: 0.6; }
+        }
+        @media (max-width: 480px) {
+          .table-footer { padding: var(--sp-3); }
         }
       `}} />
     </div>

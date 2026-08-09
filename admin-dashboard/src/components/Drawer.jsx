@@ -10,13 +10,18 @@ import { FOCUSABLE_SELECTOR, pushOverlay, popOverlay, isTopOverlay, prefersReduc
  * work on" case. Destructive confirmations stay on the centered Modal.
  *
  * Two modes:
- *  - default (pass `title`): standard title/body chrome.
+ *  - default (pass `title`): standard title/body/foot chrome.
  *  - raw (pass `raw`): renders `children` as-is inside the a11y wrapper,
  *    for consumers with their own internal layout (tabbed editors, rich
  *    text, etc). The consumer owns its own width/height/slide animation —
  *    Drawer only supplies the overlay, right-anchored flex slot, and a11y.
+ *
+ * `footer` is optional — pass it to get a sticky action bar (matching the
+ * reference's .drawer-foot) that stays visible while `children` scrolls.
+ * Older callers that put their own action row inside `children` keep
+ * working unchanged; migrate them to `footer` as they're touched.
  */
-export function Drawer({ isOpen, onClose, title, children, raw = false, width = 480 }) {
+export function Drawer({ isOpen, onClose, title, eyebrow, children, footer, raw = false, width = 480, narrow = false }) {
   const id = useId();
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
@@ -101,17 +106,21 @@ export function Drawer({ isOpen, onClose, title, children, raw = false, width = 
         aria-labelledby={labelledBy}
         tabIndex={-1}
         {...panelMotionProps}
-        className="drawer-panel"
-        style={{ width }}
+        className={`drawer-panel ${narrow ? 'drawer-panel--narrow' : ''}`}
+        style={{ '--drawer-w': `${width}px` }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="drawer-header">
-          <h3 id={labelledBy} className="drawer-title font-title">{title}</h3>
+        <div className="drawer-head">
+          <div className="drawer-head__text">
+            {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+            <h2 id={labelledBy} className="drawer-title">{title}</h2>
+          </div>
           <button className="drawer-close" onClick={onClose} aria-label="Close panel">
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
         <div className="drawer-body">{children}</div>
+        {footer && <div className="drawer-foot">{footer}</div>}
       </Motion.div>
     );
   }
@@ -122,35 +131,44 @@ export function Drawer({ isOpen, onClose, title, children, raw = false, width = 
         {panel}
         <style dangerouslySetInnerHTML={{ __html: `
           .drawer-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px);
+            position: fixed; inset: 0; background: rgba(0,0,0,.68); backdrop-filter: blur(3px);
             z-index: 1000; display: flex; align-items: stretch; justify-content: flex-end;
           }
           .drawer-panel {
-            height: 100%; max-width: 100vw; background: var(--color-bg-card);
-            border-left: 1px solid var(--color-border); box-shadow: var(--shadow-lg, -8px 0 30px rgba(0,0,0,0.3));
+            height: 100%; width: min(var(--drawer-w, 480px), 100vw); max-width: 100vw;
+            background: var(--bg-section); border-left: 1px solid var(--border-default);
+            box-shadow: var(--sh-xl, -8px 0 30px rgba(0,0,0,.3));
             display: flex; flex-direction: column;
           }
-          .drawer-header {
-            padding: 20px 24px; border-bottom: 1px solid var(--color-border);
-            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 16px;
+          .drawer-panel--narrow { width: min(420px, 100vw); }
+          .drawer-head {
+            flex: none; display: flex; align-items: flex-start; gap: var(--sp-4);
+            padding: var(--sp-5) var(--sp-5) var(--sp-4); border-bottom: 1px solid var(--border-low);
           }
-          .drawer-title { font-size: 1.25rem; font-weight: 700; color: var(--color-primary); word-break: break-word; }
+          .drawer-head__text { min-width: 0; flex: 1; }
+          .drawer-title { font-family: var(--f-display); font-weight: 400; font-size: 1.4rem; color: var(--text-primary); word-break: break-word; margin: 0; }
           .drawer-close {
-            background: none; border: none; color: var(--color-text-muted); cursor: pointer; transition: all 0.2s;
-            width: 44px; height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; margin: -10px;
+            margin-left: auto; flex: none; width: var(--tap, 44px); height: var(--tap, 44px);
+            display: grid; place-items: center;
+            background: none; border: 1px solid var(--border-default); border-radius: var(--r);
+            color: var(--text-secondary); cursor: pointer; transition: all var(--t-fast, .18s) var(--ease, ease);
           }
-          .drawer-close:hover { color: var(--color-error-text); }
-          .drawer-body { flex: 1; overflow-y: auto; padding: 24px; -webkit-overflow-scrolling: touch; }
+          .drawer-close:hover { border-color: var(--y-base); color: var(--y-base); }
+          .drawer-close:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow, var(--color-border-focus)); }
+          .drawer-body { flex: 1; overflow-y: auto; padding: var(--sp-5); -webkit-overflow-scrolling: touch; }
+          .drawer-foot {
+            flex: none; display: flex; gap: var(--sp-3); flex-wrap: wrap;
+            padding: var(--sp-4) var(--sp-5); border-top: 1px solid var(--border-low); background: var(--bg-page);
+          }
 
           @media (prefers-reduced-motion: reduce) {
-            .drawer-panel { transition-duration: 0.01s !important; }
+            .drawer-panel { transition-duration: .01s !important; }
           }
-          @media (max-width: 640px) {
-            .drawer-panel { width: 100% !important; }
-            .drawer-header { padding: 16px; }
-            .drawer-body { padding: 16px; }
-            .drawer-title { font-size: 1.1rem; }
+          @media (max-width: 480px) {
+            .drawer-head, .drawer-body, .drawer-foot { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+            .drawer-title { font-size: 1.2rem; }
+            .drawer-foot { flex-direction: column; }
+            .drawer-foot > * { width: 100%; }
           }
           [inert] { pointer-events: none; }
         `}} />

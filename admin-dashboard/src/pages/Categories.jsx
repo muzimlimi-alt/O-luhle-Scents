@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { categoriesApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { Drawer } from '../components/Drawer';
@@ -169,7 +169,12 @@ export function Categories() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .cat-form { display: flex; flex-direction: column; }
-        .cat-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .cat-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
+
+        @media (max-width: 480px) {
+          .cat-actions { flex-wrap: wrap; }
+          .cat-actions button { flex: 1; }
+        }
       `}} />
     </div>
   );

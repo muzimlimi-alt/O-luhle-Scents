@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
@@ -38,7 +38,7 @@ export function Invoices() {
       const url = window.URL.createObjectURL(new Blob([blob]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `O_luhle_Invoices_Archive.zip`;
+      a.download = `TOCA_Invoices_Archive.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -49,7 +49,7 @@ export function Invoices() {
 
   const handleDownload = async (invoiceId, invNum) => {
     try {
-      const token = localStorage.getItem('oluhle_admin_token');
+      const token = localStorage.getItem('toca_admin_token');
       const response = await fetch(`http://localhost:3000/api/admin/ops/invoices/${invoiceId}/pdf`, {
         headers: { Authorization: `Bearer ${token}` }
       });

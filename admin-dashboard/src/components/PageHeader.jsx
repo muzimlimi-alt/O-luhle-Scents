@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Standard page header: icon + title + optional subtitle, with actions

@@ -1,5 +1,5 @@
 /**
- * O'luhle Scents — Contact Form Handler
+ * TOCA — Contact Form Handler
  * Connects the homepage contact form to POST /api/contact/send
  */
 (function () {

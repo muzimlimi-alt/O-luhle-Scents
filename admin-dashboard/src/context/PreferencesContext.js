@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 
 export const PreferencesContext = createContext();
 
-export const PREF_KEY = 'oluhle_admin_prefs';
+export const PREF_KEY = 'toca_admin_prefs';
 
 export const usePreferences = () => {
   const context = useContext(PreferencesContext);

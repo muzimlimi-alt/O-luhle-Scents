@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { paymentsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
@@ -74,7 +74,7 @@ export default function Payments() {
     setProofPayment(payment);
     setProofLoading(true);
     try {
-      const token = localStorage.getItem('oluhle_admin_token');
+      const token = localStorage.getItem('toca_admin_token');
       const response = await fetch(paymentsApi.proofUrl(payment.id), { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to load proof of payment');
       const blob = await response.blob();
@@ -262,37 +262,42 @@ export default function Payments() {
       </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .elite-payments-container { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+        .elite-payments-container { padding: var(--sp-7); max-width: 1400px; margin: 0 auto; min-height: 100vh; }
 
         .atelier-discovery {
-          display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 24px;
+          display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-6); gap: var(--sp-6);
         }
 
         .search-glass-wrapper {
-          position: relative; background: var(--color-bg-card); border: 1.5px solid var(--color-border); border-radius: 4px;
-          padding: 10px 16px; display: flex; align-items: center; flex: 1;
+          position: relative; background: var(--bg-elevated); border: 1.5px solid var(--border-default); border-radius: var(--r);
+          padding: var(--sp-3) var(--sp-4); display: flex; align-items: center; flex: 1;
         }
         .search-glass-input {
-          background: none; border: none; color: var(--color-text); width: 100%; outline: none; margin-left: 12px; font-size: 0.9rem;
+          background: none; border: none; color: var(--text-primary); width: 100%; outline: none; margin-left: var(--sp-3); font-size: 0.9rem; font-family: var(--f-body); font-weight: 300;
         }
 
-        .filter-glass-matrix { display: flex; gap: 16px; align-items: center; }
+        .filter-glass-matrix { display: flex; gap: var(--sp-4); align-items: center; }
         .select-glass-wrapper {
-          background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px;
-          padding: 8px 16px; display: flex; align-items: center; gap: 10px;
+          background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--r);
+          padding: var(--sp-2) var(--sp-4); display: flex; align-items: center; gap: 10px;
         }
         .select-glass-wrapper select {
-          background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem;
+          background: none; border: none; color: var(--text-primary); outline: none; cursor: pointer; font-size: 0.85rem; font-family: var(--f-body); font-weight: 300;
         }
 
-        .proof-image { width: 100%; border-radius: 6px; border: 1px solid var(--color-border); }
-        .proof-pdf-link { text-align: center; padding: 24px 0; }
-        .reject-context { font-size: 0.82rem; color: var(--color-text-muted); margin: 0 0 16px; }
-        .attr-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .proof-image { width: 100%; border-radius: var(--r); border: 1px solid var(--border-default); }
+        .proof-pdf-link { text-align: center; padding: var(--sp-6) 0; }
+        .reject-context { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 var(--sp-4); }
+        .attr-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
 
         @media (max-width: 768px) {
           .atelier-discovery { flex-direction: column; align-items: stretch; }
+          .elite-payments-container { padding: var(--sp-5); }
           .filter-glass-matrix { flex-wrap: wrap; }
+        }
+
+        @media (max-width: 480px) {
+          .elite-payments-container { padding: var(--sp-4); }
         }
       `}} />
     </div>

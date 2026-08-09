@@ -22,7 +22,8 @@ export async function validateCoupon(code, subtotal) {
   }
 
   const value = Number(coupon.value || 0)
-  const discountAmount = coupon.discountType === 'PERCENTAGE'
+  const isPercent = coupon.discountType === 'PERCENTAGE' || coupon.discountType === 'PERCENT'
+  const discountAmount = isPercent
     ? Math.round(subtotal * (value / 100) * 100) / 100
     : Math.min(value, subtotal) // FIXED — never discount past R0
 

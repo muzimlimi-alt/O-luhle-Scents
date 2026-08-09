@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
 import { Drawer } from '../components/Drawer';
 import { PageHeader } from '../components/PageHeader';
@@ -166,8 +166,13 @@ export function ShippingMethods() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .attr-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
-        .icon-btn.danger { color: var(--color-error-text); }
+        .attr-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
+        .icon-btn.danger { color: var(--error); }
+
+        @media (max-width: 480px) {
+          .attr-actions { flex-wrap: wrap; }
+          .attr-actions button { flex: 1; }
+        }
       `}} />
     </div>
   );

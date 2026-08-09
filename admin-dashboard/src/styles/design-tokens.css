@@ -1,8 +1,17 @@
 /* ============================================================
-   O'luhle Scents Admin — Design Tokens
+   TOCA Admin — Design Tokens
    Single source of truth for color, type, spacing, and elevation.
    Consume via var(--token-name); never hardcode a hex/rgba that
    already has a token here.
+
+   Canonical tokens (--bg-*, --y-*, --text-*, --border-*, --sp-*, ...)
+   are the ones the Appearance system (src/styles/appearance.css)
+   overrides per Finish/Accent on :root (<html> — same element as the
+   :root block below, which matters: see appearance.css's header for
+   why). The --color-* names below are kept as aliases so the ~35
+   existing pages that already reference them keep working unchanged —
+   never re-add a literal value to a --color-* token, point it at a
+   canonical token instead.
 
    Breakpoint scale (no CSS var equivalent exists — @media can't
    consume custom properties — so this is the documented convention
@@ -13,83 +22,232 @@
    ============================================================ */
 
 :root {
-  /* Constant Brand Identity Tokens */
-  --color-primary: #b89b6a;      /* Oluhle Gold — backgrounds, borders, icons, accents. NOT for text on light surfaces (fails contrast) — use --color-primary-text instead. */
-  --color-primary-light: #d4bc91;
-  --color-primary-dark: #8c7650;
+  /* ── Canonical tokens — Obsidian · Gold (house default) ── */
+  --bg-page: #0a0a0a;
+  --bg-section: #111111;
+  --bg-surface: #1a1a1a;
+  --bg-elevated: #242424;
+  --bg-glass: rgba(20, 20, 20, .7);
 
-  --color-success: #27ae60;
-  --color-warning: #fbbf24;
-  --color-error: #c0392b;
-  --color-info: #2980b9;
+  --y-rgb: 212, 175, 55;
+  --y-base: #D4AF37;
+  --y-hover: #E8C14B;
+  --y-light: #F4E4B5;
+  --y-dark: #9A7B2C;
+  --y-muted: rgba(212, 175, 55, .15);
+  --y-glow: rgba(212, 175, 55, .3);
 
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-display: 'Cormorant Garamond', 'Outfit', serif;
-  --font-body: 'Outfit', 'Inter', sans-serif;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #8f8f8f;
+  --text-inverse: #0a0a0a;
 
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 8px;
+  --success: #34d399;
+  --error: #f87171;
+  --warning: #fbbf24;
+  --info: #60a5fa;
+  --ok-rgb: 74, 222, 128;
+  --warn-rgb: 251, 191, 36;
+  --bad-rgb: 248, 113, 113;
+  --info-rgb: 96, 165, 250;
 
-  /* Global Base: Light & Refined */
-  --color-bg-dark: #fbfaf8;
-  --color-bg-card: #ffffff;
-  --color-surface: #f3f1ed;
+  /* Status pairings tuned for TEXT on dark surfaces (default/Ember).
+     body.finish-ivory overrides these to the light-surface-safe set —
+     see appearance.css. Ember stays dark enough to reuse the default. */
+  --success-text: #d1fae5;
+  --warning-text: #fef3c7;
+  --error-text: #fee2e2;
+  --info-text: #cfe8fb;
 
-  --color-text: #2c2824;
-  --color-text-muted: #5a5650;
-  --color-text-header: #1a1611;
+  --border-low: rgba(255, 255, 255, .08);
+  --border-default: rgba(255, 255, 255, .15);
+  --border-strong: rgba(255, 255, 255, .34);
+  --focus-ring: var(--y-base);
 
-  --color-border: rgba(184, 155, 106, 0.22);
-  --color-border-light: rgba(184, 155, 106, 0.12);
-  --color-border-focus: rgba(184, 155, 106, 0.4); /* drives the global :focus-visible ring (buttons.css) */
+  --f-display: 'Cormorant Garamond', Georgia, serif;
+  --f-body: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --f-mono: 'JetBrains Mono', monospace;
+  --fs-xs: .72rem;
+  --fs-sm: .83rem;
+  --fs-base: .95rem;
+  --fs-lg: 1.06rem;
+  --fs-xl: 1.3rem;
+  --h4: 1.25rem;
+  --h3: 1.6rem;
+  --h2: 2.1rem;
+  --h1: 2.6rem;
+  --eyebrow-tracking: .3em;
+  --eyebrow-size: .7rem;
 
-  /* Text-safe pairings for their base color — each of these is
-     verified ≥4.5:1 against --color-bg-card in its own theme.
-     Use these for TEXT; use the plain --color-{success,warning,
-     error,primary} tokens above only for backgrounds/icons/borders. */
-  --color-success-text: #064e3b;
-  --color-warning-text: #92400e;
-  --color-error-text: #7f1d1d;
-  --color-info-text: #1c5a80;
-  --color-primary-text: #6b5632; /* ~7:1 on white — swap in .theme-dark below */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
 
-  --shadow-sm: 0 1px 2px rgba(130, 110, 80, 0.08);
-  --shadow-md: 0 8px 24px rgba(130, 110, 80, 0.1);
-  --shadow-lg: 0 15px 40px rgba(130, 110, 80, 0.15);
+  --r: 2px;
+  --r-md: 4px;
+  --r-lg: 8px;
+  --r-pill: 999px;
 
-  --glass-bg: #ffffff;
-  --color-accent-dark: #6b5632;
-  --color-sidebar-header: var(--color-primary-dark);
+  --sh-sm: 0 1px 3px rgba(0, 0, 0, .4);
+  --sh-md: 0 4px 20px rgba(0, 0, 0, .45);
+  --sh-lg: 0 8px 40px rgba(0, 0, 0, .55);
+  --sh-xl: 0 24px 70px rgba(0, 0, 0, .65);
+
+  --ease: cubic-bezier(.25, .46, .45, .94);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --t: .35s;
+  --t-fast: .18s;
+
+  --nav-w: 270px;
+  --nav-w-rail: 76px;
+  --top-h: 68px;
+  --tap: 44px;
+
+  /* ── Legacy aliases — every existing page reads these; keep them
+     wired to the canonical tokens above so Finish/Accent flow through
+     without touching 35 page components. ── */
+  --color-primary: var(--y-base);
+  --color-primary-light: var(--y-light);
+  --color-primary-dark: var(--y-dark);
+  --color-primary-text: var(--y-base);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+  --color-success-text: var(--success-text);
+  --color-warning-text: var(--warning-text);
+  --color-error-text: var(--error-text);
+  --color-info-text: var(--info-text);
+
+  --transition: all var(--t) var(--ease);
+  --font-display: var(--f-display);
+  --font-body: var(--f-body);
+
+  --radius-sm: var(--r);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+
+  --color-bg-dark: var(--bg-page);
+  --color-bg-card: var(--bg-surface);
+  --color-bg-alt: var(--bg-section);
+  --color-surface: var(--bg-section);
+
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-text-header: var(--text-primary);
+
+  --color-border: var(--border-default);
+  --color-border-light: var(--border-low);
+  --color-border-focus: var(--y-glow);
+
+  --shadow-sm: var(--sh-sm);
+  --shadow-md: var(--sh-md);
+  --shadow-lg: var(--sh-lg);
+
+  --glass-bg: var(--bg-glass);
+  --color-accent-dark: var(--y-dark);
+  --color-sidebar-header: var(--y-base);
 }
 
-/* Theme Classes */
-
+/* Legacy scoped overrides — force a fixed palette within a subtree
+   regardless of the admin's chosen Finish (e.g. Login is always dark
+   chrome; a couple of components force a light island). Independent of
+   the body-level finish-, accent-, and presence- classes in
+   appearance.css, which are the primary mechanism going forward. */
 .theme-dark {
-  --color-bg-dark: #0f0e0c;
-  --color-bg-card: #1a1611;
-  --color-surface: #1e1a14;
+  --color-bg-dark: #0a0a0a;
+  --color-bg-card: #1a1a1a;
+  --color-surface: #111111;
+  --color-bg-alt: #111111;
 
-  --color-text: #e8e2d8;
-  --color-text-muted: rgba(232, 226, 216, 0.55); /* was 0.48 — measured ~4.1:1, failed AA normal-text; 0.55 measures ~4.95:1 */
-  --color-text-header: #f5f0e8;
+  --color-text: #ffffff;
+  --color-text-muted: #8f8f8f;
+  --color-text-header: #ffffff;
 
-  --color-border: rgba(184, 155, 106, 0.18);
-  --color-border-light: rgba(184, 155, 106, 0.08);
-  --color-border-focus: rgba(184, 155, 106, 0.4);
+  --color-border: rgba(255, 255, 255, .15);
+  --color-border-light: rgba(255, 255, 255, .08);
+  --color-border-focus: var(--y-glow);
 
   --color-success-text: #d1fae5;
   --color-warning-text: #fef3c7;
   --color-error-text: #fee2e2;
   --color-info-text: #cfe8fb;
-  --color-primary-text: #d4bc91; /* ~9.7:1 on dark card */
+  --color-primary-text: var(--y-base);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, .4);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, .5);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, .7);
 
-  --glass-bg: rgba(26, 22, 17, 0.85);
-  --color-sidebar-header: var(--color-primary);
+  --glass-bg: rgba(20, 20, 20, .85);
+
+  /* Canonical-token mirror, so any restyled shared component (Drawer,
+     FormField, etc.) nested in a forced-dark subtree stays forced-dark
+     too, instead of silently falling through to the admin's chosen Finish. */
+  --bg-page: #0a0a0a;
+  --bg-section: #111111;
+  --bg-surface: #1a1a1a;
+  --bg-elevated: #242424;
+  --bg-glass: rgba(20, 20, 20, .85);
+  --text-primary: #ffffff;
+  --text-secondary: #c7c7c7;
+  --text-muted: #8f8f8f;
+  --border-low: rgba(255, 255, 255, .08);
+  --border-default: rgba(255, 255, 255, .15);
+  --border-strong: rgba(255, 255, 255, .32);
+  --sh-sm: var(--shadow-sm);
+  --sh-md: var(--shadow-md);
+  --sh-lg: var(--shadow-lg);
+  --sh-xl: 0 24px 70px rgba(0, 0, 0, .75);
+}
+
+.theme-light {
+  --color-bg-dark: #f2eee6;
+  --color-bg-card: #fffdf8;
+  --color-surface: #e9e4d9;
+  --color-bg-alt: #e9e4d9;
+
+  --color-text: #171410;
+  --color-text-muted: #635d50;
+  --color-text-header: #171410;
+
+  --color-border: rgba(23, 20, 16, .18);
+  --color-border-light: rgba(23, 20, 16, .1);
+  --color-border-focus: var(--y-glow);
+
+  --color-success-text: #064e3b;
+  --color-warning-text: #92400e;
+  --color-error-text: #7f1d1d;
+  --color-info-text: #1c5a80;
+  --color-primary-text: #8A6A14;
+
+  --shadow-sm: 0 1px 3px rgba(23, 20, 16, .08);
+  --shadow-md: 0 4px 20px rgba(23, 20, 16, .1);
+  --shadow-lg: 0 8px 40px rgba(23, 20, 16, .14);
+
+  --glass-bg: rgba(255, 253, 248, .85);
+
+  /* Canonical-token mirror — see .theme-dark for why. */
+  --bg-page: #f2eee6;
+  --bg-section: #e9e4d9;
+  --bg-surface: #fffdf8;
+  --bg-elevated: #f6f3ea;
+  --bg-glass: rgba(255, 253, 248, .85);
+  --text-primary: #171410;
+  --text-secondary: #4b463d;
+  --text-muted: #635d50;
+  --border-low: rgba(23, 20, 16, .1);
+  --border-default: rgba(23, 20, 16, .18);
+  --border-strong: rgba(23, 20, 16, .38);
+  --sh-sm: var(--shadow-sm);
+  --sh-md: var(--shadow-md);
+  --sh-lg: var(--shadow-lg);
+  --sh-xl: 0 24px 70px rgba(23, 20, 16, .2);
 }
 
 * {
@@ -101,14 +259,72 @@
   -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, .logo-text {
+  font-family: var(--f-display);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -.005em;
+}
+
+h1 em, h2 em, h3 em, h4 em {
+  font-style: italic;
+  color: var(--y-base);
+  font-weight: 400;
+}
+
 body {
   background-color: var(--color-bg-dark);
   color: var(--color-text);
+  font-family: var(--f-body);
+  font-weight: 300;
+  font-size: var(--fs-base);
+  line-height: 1.6;
   overflow-x: hidden;
 }
 
-h1, h2, h3, .logo-text {
-  font-family: var(--font-display);
+a {
+  color: var(--y-base);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--y-hover);
+  text-decoration: underline;
+}
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: var(--r);
+}
+
+.eyebrow {
+  display: block;
+  font-size: var(--eyebrow-size);
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: uppercase;
+  color: var(--y-base);
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* Manual per-admin override (Preferences -> Display & Precision -> Reduce
+   motion), independent of the OS-level media query above — applied by
+   PreferencesProvider as a class on <html>, same pattern as compact-mode/
+   privacy-mode. */
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation-duration: .001ms !important;
+  transition-duration: .001ms !important;
 }
 
 ::-webkit-scrollbar {

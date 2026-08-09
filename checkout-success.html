@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Confirmed | O'luhle Scents</title>
+  <meta name="robots" content="noindex, follow">
+  <title>Order Confirmed | TOCA</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/modern-extensions.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
-  <script>(function(){try{var t=JSON.parse(localStorage.getItem('oluhle_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('toca_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
 </head>
 <body>
 
@@ -16,7 +17,7 @@
   <header class="header">
     <nav class="navbar">
       <div class="navbar__left"></div>
-      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <a href="index.html" class="navbar__logo">TOCA</a>
       <div class="navbar__right"></div>
     </nav>
   </header>
@@ -94,7 +95,7 @@
 
   <footer style="padding:32px 0;text-align:center;color:var(--color-text-light);font-size:0.75rem;border-top:1px solid var(--color-border-light);">
     <div class="container">
-      <p>&copy; 2026 O'luhle Scents · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a> · <button class="checkout-footer-legal js-open-legal">Legal &amp; More</button> · <button class="checkout-footer-legal js-open-cookies">Cookie Settings</button></p>
+      <p>&copy; 2026 TOCA (Pty) Ltd · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a> · <button class="checkout-footer-legal js-open-legal">Legal &amp; More</button> · <button class="checkout-footer-legal js-open-cookies">Cookie Settings</button></p>
       <p style="margin-top:6px;opacity:0.6;">Site by <a href="https://culchar.co.za" target="_blank" rel="noopener noreferrer" style="color:var(--color-gold-dark);text-decoration:none;">Cul.Char</a></p>
     </div>
   </footer>
@@ -141,6 +142,14 @@
       {
         const order = await getOrder(orderId);
         if (refEl) refEl.textContent = `Order reference: ${order.orderNumber || orderId}`;
+
+        // Reaching this page with a real order is the actual "checkout is
+        // done" event — not order-creation itself (checkout.html no longer
+        // clears the cart there, since PayFast can still be cancelled or
+        // fail and the customer needs their cart intact if they land back
+        // on checkout.html). Idempotent — this function re-runs on every
+        // poll tick while awaiting PayFast's ITN.
+        localStorage.removeItem('toca_cart');
 
         // The *active* EFT payment — for a single-payment order there's only
         // ever one; for a deposit order (Partial Payments) this naturally

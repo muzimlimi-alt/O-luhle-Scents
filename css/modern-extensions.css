@@ -1,5 +1,5 @@
 /* ============================================================
-   O'luhle Scents — Modern Extensions
+   TOCA — Modern Extensions
    Premium UI Enhancements (Glassmorphism & Gold Accents)
    ============================================================ */
 
@@ -990,7 +990,7 @@
 }
 
 /* ============================================================
-   NEWSLETTER SECTION — O'luhle Circle Subscription
+   NEWSLETTER SECTION — TOCA Circle Subscription
    ============================================================ */
 
 .newsletter {
@@ -1104,6 +1104,8 @@
   gap: 10px;
   animation: nws-fb-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+.newsletter__feedback[hidden] { display: none; }
 
 @keyframes nws-fb-in {
   from { opacity: 0; transform: translateY(-6px); }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Drawer } from './Drawer';
 import { FormField } from './FormField';
 import { adminOpsApi, productsApi } from '../services/api';
@@ -150,13 +150,26 @@ export function CreateOrderDrawer({ isOpen, onClose, onCreated }) {
   };
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Create Order" width={620}>
-      <form onSubmit={handleSubmit} className="co-form">
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create Order"
+      width={620}
+      footer={(
+        <>
+          <button type="button" className="btn btn--outline" onClick={onClose}>Cancel</button>
+          <button type="submit" form="create-order-form" className="btn btn--primary" disabled={submitting}>
+            {submitting ? 'Creating...' : 'Create Order'}
+          </button>
+        </>
+      )}
+    >
+      <form id="create-order-form" onSubmit={handleSubmit} className="co-form">
         <section className="co-section">
           <h4>Customer</h4>
           <div className="co-toggle">
-            <button type="button" className={customerMode === 'existing' ? 'active' : ''} onClick={() => setCustomerMode('existing')}>Existing Customer</button>
-            <button type="button" className={customerMode === 'new' ? 'active' : ''} onClick={() => setCustomerMode('new')}>New Customer</button>
+            <button type="button" aria-pressed={customerMode === 'existing'} className={customerMode === 'existing' ? 'active' : ''} onClick={() => setCustomerMode('existing')}>Existing Customer</button>
+            <button type="button" aria-pressed={customerMode === 'new'} className={customerMode === 'new' ? 'active' : ''} onClick={() => setCustomerMode('new')}>New Customer</button>
           </div>
 
           {customerMode === 'existing' ? (
@@ -306,53 +319,49 @@ export function CreateOrderDrawer({ isOpen, onClose, onCreated }) {
           </FormField>
         </section>
 
-        <div className="co-actions">
-          <button type="button" className="btn btn--outline" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn btn--primary" disabled={submitting}>
-            {submitting ? 'Creating...' : 'Create Order'}
-          </button>
-        </div>
       </form>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .co-form { display: flex; flex-direction: column; gap: 24px; }
-        .co-section h4 { margin: 0 0 12px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary-text); }
-        .co-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .co-form { display: flex; flex-direction: column; gap: var(--sp-6); }
+        .co-section h4 { margin: 0 0 var(--sp-3); font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--y-base); font-weight: 400; }
+        .co-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 
-        .co-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
-        .co-toggle button { flex: 1; padding: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); border-radius: 4px; cursor: pointer; font-size: 0.82rem; }
-        .co-toggle button.active { background: var(--color-primary); color: var(--color-primary-text); border-color: var(--color-primary); }
+        .co-toggle { display: flex; border: 1px solid var(--border-default); border-radius: var(--r); overflow: hidden; margin-bottom: var(--sp-4); }
+        .co-toggle button { flex: 1; min-height: var(--tap); padding: 0 var(--sp-3); border: 0; border-right: 1px solid var(--border-low); background: none; color: var(--text-muted); cursor: pointer; font-size: .76rem; letter-spacing: .05em; text-transform: uppercase; transition: all var(--t-fast, .18s) var(--ease, ease); }
+        .co-toggle button:last-child { border-right: 0; }
+        .co-toggle button:hover { color: var(--text-primary); background: var(--bg-elevated); }
+        .co-toggle button.active { background: rgba(var(--y-rgb), .14); color: var(--y-base); }
 
         .co-search-wrap { position: relative; display: flex; align-items: center; }
-        .co-search-icon { position: absolute; left: 10px; color: var(--color-text-muted); }
-        .co-search-wrap input { width: 100%; padding-left: 30px; }
-        .co-clear { position: absolute; right: 8px; background: none; border: none; cursor: pointer; color: var(--color-text-muted); }
+        .co-search-icon { position: absolute; left: var(--sp-3); color: var(--text-muted); pointer-events: none; }
+        .co-search-wrap input { width: 100%; padding-left: 34px; }
+        .co-clear { position: absolute; right: var(--sp-2); background: none; border: none; cursor: pointer; color: var(--text-muted); }
+        .co-clear:hover { color: var(--y-base); }
 
-        .co-dropdown { border: 1px solid var(--color-border); border-radius: 4px; margin-top: 4px; max-height: 200px; overflow-y: auto; background: var(--color-bg-card); }
-        .co-dropdown-item { display: flex; justify-content: space-between; padding: 8px 12px; cursor: pointer; font-size: 0.82rem; gap: 10px; }
-        .co-dropdown-item:hover { background: var(--color-surface); }
-        .co-muted { color: var(--color-text-muted); font-size: 0.75rem; white-space: nowrap; }
+        .co-dropdown { border: 1px solid var(--border-default); border-radius: var(--r); margin-top: var(--sp-1, 4px); max-height: 200px; overflow-y: auto; background: var(--bg-elevated); }
+        .co-dropdown-item { display: flex; justify-content: space-between; padding: var(--sp-2) var(--sp-3); cursor: pointer; font-size: .82rem; gap: var(--sp-3); }
+        .co-dropdown-item:hover { background: var(--bg-section); }
+        .co-muted { color: var(--text-muted); font-size: .75rem; white-space: nowrap; }
 
-        .co-table-wrap { overflow-x: auto; margin-top: 12px; }
-        .co-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-        .co-table th { text-align: left; padding: 6px 8px; color: var(--color-text-muted); font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--color-border); }
-        .co-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-light); }
+        .co-table-wrap { overflow-x: auto; margin-top: var(--sp-3); }
+        .co-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+        .co-table th { text-align: left; padding: var(--sp-2) var(--sp-3); color: var(--text-muted); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; border-bottom: 1px solid var(--border-default); }
+        .co-table td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-low); color: var(--text-secondary); }
         .co-qty-input { width: 60px; }
-        .icon-btn.danger { color: var(--color-error-text); background: none; border: none; cursor: pointer; }
+        .icon-btn.danger { color: var(--error); background: none; border: none; cursor: pointer; }
+        .icon-btn.danger:hover { opacity: .8; }
 
-        .co-inline-input { display: flex; gap: 8px; }
+        .co-inline-input { display: flex; gap: var(--sp-2); }
         .co-inline-input input { flex: 1; }
-        .co-hint { font-size: 0.75rem; color: var(--color-text-muted); margin: 6px 0 0; }
-        .co-success { color: var(--color-success-text); }
+        .co-hint { font-size: .75rem; color: var(--text-muted); margin: var(--sp-2) 0 0; }
+        .co-success { color: var(--success); }
 
-        .co-pricing { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--color-border); }
-        .co-pricing-row { display: flex; justify-content: space-between; font-size: 0.85rem; }
-        .co-pricing-row.co-total { font-weight: 700; font-size: 0.95rem; padding-top: 6px; border-top: 1px solid var(--color-border); }
+        .co-pricing { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--border-low); }
+        .co-pricing-row { display: flex; justify-content: space-between; font-size: .85rem; color: var(--text-secondary); }
+        .co-pricing-row.co-total { color: var(--text-primary); font-size: .95rem; padding-top: var(--sp-2); border-top: 1px solid var(--border-low); }
 
-        .co-milestones { display: flex; flex-direction: column; gap: 8px; }
-        .co-milestone-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 8px; align-items: center; }
-
-        .co-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 4px; }
+        .co-milestones { display: flex; flex-direction: column; gap: var(--sp-2); }
+        .co-milestone-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: var(--sp-2); align-items: center; }
 
         @media (max-width: 600px) {
           .co-grid-2 { grid-template-columns: 1fr; }

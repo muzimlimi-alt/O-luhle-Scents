@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 import { Plus, Check, X, RotateCcw, Pencil, Trash2, Quote, GripVertical, ArrowUpDown, ImagePlus } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
@@ -246,7 +246,7 @@ export default function Testimonials() {
             <input type="text" value={form.designation} onChange={e => setForm(f => ({ ...f, designation: e.target.value.slice(0, 120) }))} placeholder="e.g. Loyal Customer" maxLength={120} />
           </FormField>
           <FormField label="Testimonial" required>
-            <textarea rows={4} value={form.quote} onChange={e => setForm(f => ({ ...f, quote: e.target.value }))} placeholder="What did they say about O'luhle Scents?" required />
+            <textarea rows={4} value={form.quote} onChange={e => setForm(f => ({ ...f, quote: e.target.value }))} placeholder="What did they say about TOCA?" required />
           </FormField>
 
           <div className="testimonial-photo-field">
@@ -318,62 +318,68 @@ export default function Testimonials() {
       </Modal>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .testimonials-page { padding: 40px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+        .testimonials-page { padding: var(--sp-7); max-width: 1400px; margin: 0 auto; min-height: 100vh; }
 
-        .testimonials-filter-row { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
-        .select-glass-wrapper { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 16px; display: flex; align-items: center; height: 42px; }
-        .select-glass-wrapper select { background: none; border: none; color: var(--color-text); outline: none; cursor: pointer; font-size: 0.85rem; }
+        .testimonials-filter-row { display: flex; gap: var(--sp-3); align-items: center; margin-bottom: var(--sp-5); flex-wrap: wrap; }
+        .select-glass-wrapper { background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--r); padding: var(--sp-2) var(--sp-4); display: flex; align-items: center; height: var(--tap); }
+        .select-glass-wrapper select { background: none; border: none; color: var(--text-primary); outline: none; cursor: pointer; font-size: 0.85rem; font-family: var(--f-body); font-weight: 300; }
 
         .action-cell-inner { display: flex; gap: 6px; }
-        .icon-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text-muted); padding: 6px; border-radius: 4px; cursor: pointer; display: inline-flex; transition: all 0.2s; }
-        .icon-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
-        .icon-btn.danger:hover { border-color: var(--color-error-text); color: var(--color-error-text); }
+        .icon-btn { background: none; border: 1px solid var(--border-default); color: var(--text-muted); padding: 6px; border-radius: var(--r); cursor: pointer; display: inline-flex; transition: all var(--t-fast, .18s) var(--ease, ease); }
+        .icon-btn:hover { border-color: var(--y-base); color: var(--y-base); }
+        .icon-btn.danger:hover { border-color: var(--error); color: var(--error); }
 
-        .testimonial-cell { display: flex; align-items: center; gap: 12px; }
+        .testimonial-cell { display: flex; align-items: center; gap: var(--sp-3); }
         .testimonial-cell__avatar {
           width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
-          background: var(--color-surface); border: 1px solid var(--color-border);
+          background: var(--bg-section); border: 1px solid var(--border-default);
           display: flex; align-items: center; justify-content: center;
-          font-family: var(--font-display); font-size: 0.9rem; color: var(--color-primary-text);
+          font-family: var(--f-display); font-size: 0.9rem; color: var(--y-base);
         }
         .testimonial-cell__avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .testimonial-quote-cell { color: var(--color-text-muted); font-size: 0.85rem; }
-        .text-muted { color: var(--color-text-muted); font-size: 0.78rem; }
+        .testimonial-quote-cell { color: var(--text-muted); font-size: 0.85rem; }
+        .text-muted { color: var(--text-muted); font-size: 0.78rem; }
 
-        .testimonial-form { display: flex; flex-direction: column; gap: 20px; }
+        .testimonial-form { display: flex; flex-direction: column; gap: var(--sp-5); }
         .testimonial-form textarea { resize: vertical; min-height: 90px; }
-        .drawer-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
-        .btn--danger-outline { color: var(--color-error-text); border-color: var(--color-error-text); }
+        .drawer-actions { display: flex; gap: var(--sp-3); justify-content: flex-end; flex-wrap: wrap; margin-top: var(--sp-2); }
+        .btn--danger-outline { color: var(--error); border-color: var(--error); }
 
-        .testimonial-photo-field { display: flex; flex-direction: column; gap: 10px; }
-        .form-field__label { font-size: 0.8rem; font-weight: 600; color: var(--color-text); }
-        .hint-text { font-weight: 400; color: var(--color-text-muted); }
-        .testimonial-photo-row { display: flex; align-items: center; gap: 16px; }
+        .testimonial-photo-field { display: flex; flex-direction: column; gap: var(--sp-2); }
+        .form-field__label { font-size: 0.8rem; font-weight: 400; color: var(--text-secondary); }
+        .hint-text { font-weight: 300; color: var(--text-muted); }
+        .testimonial-photo-row { display: flex; align-items: center; gap: var(--sp-4); }
         .testimonial-photo-preview {
           width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
-          background: var(--color-surface); border: 1px solid var(--color-border);
+          background: var(--bg-section); border: 1px solid var(--border-default);
           display: flex; align-items: center; justify-content: center;
-          font-family: var(--font-display); font-size: 1.3rem; color: var(--color-primary-text);
+          font-family: var(--f-display); font-size: 1.3rem; color: var(--y-base);
         }
         .testimonial-photo-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .testimonial-photo-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .testimonial-photo-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
         .testimonial-photo-upload { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 
-        .reorder-hint { font-size: 0.82rem; color: var(--color-text-muted); margin: 0 0 16px; }
-        .reorder-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; margin-bottom: 20px; }
+        .reorder-hint { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 var(--sp-4); }
+        .reorder-list { display: flex; flex-direction: column; gap: var(--sp-2); max-height: 50vh; overflow-y: auto; margin-bottom: var(--sp-5); }
         .reorder-item {
-          display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-          background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
+          display: flex; align-items: center; gap: var(--sp-3); padding: 10px var(--sp-3);
+          background: var(--bg-section); border: 1px solid var(--border-default); border-radius: var(--r);
         }
-        .reorder-drag { color: var(--color-text-muted); cursor: grab; display: inline-flex; flex-shrink: 0; }
+        .reorder-drag { color: var(--text-muted); cursor: grab; display: inline-flex; flex-shrink: 0; }
         .reorder-item__avatar { width: 32px; height: 32px; font-size: 0.8rem; }
         .reorder-item__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .reorder-item__text strong { font-size: 0.85rem; }
-        .reorder-item__text span { font-size: 0.75rem; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .reorder-item__text strong { font-size: 0.85rem; font-weight: 400; }
+        .reorder-item__text span { font-size: 0.75rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         @media (max-width: 768px) {
-          .testimonials-page { padding: 20px; }
+          .testimonials-page { padding: var(--sp-4); }
           .page-header__actions { width: 100%; }
+        }
+
+        @media (max-width: 480px) {
+          .testimonials-filter-row { flex-direction: column; align-items: stretch; }
+          .select-glass-wrapper { height: auto; }
+          .testimonial-photo-row { flex-wrap: wrap; }
         }
       `}} />
     </div>

@@ -29,7 +29,14 @@ function ipToInt(parts) {
 
 export function isPayfastIP(ip) {
   if (!ip || typeof ip !== 'string') return false
-  const parts = ip.split('.').map(Number)
+
+  // Node/Express can represent an IPv4 client as an IPv6-mapped address
+  // (e.g. "::ffff:197.97.145.150") depending on the socket/proxy layer —
+  // strip that prefix before the dotted-quad parse below, or a perfectly
+  // real PayFast IP gets rejected purely on notation.
+  const normalized = ip.replace(/^::ffff:/i, '')
+
+  const parts = normalized.split('.').map(Number)
   if (parts.length !== 4 || parts.some(n => isNaN(n) || n < 0 || n > 255)) return false
 
   return PAYFAST_IP_RANGES.some(({ base, bits }) => {
@@ -111,7 +118,7 @@ export function buildPaymentPayload(order) {
     email_address: order.email,
     m_payment_id:  order.id,
     amount:        parseFloat(order.totalAmount).toFixed(2),
-    item_name:     "Oluhle Scents Order",
+    item_name:     "TOCA Order",
   }
 
   data.signature = buildSignature(data, process.env.PAYFAST_PASSPHRASE || null, false)

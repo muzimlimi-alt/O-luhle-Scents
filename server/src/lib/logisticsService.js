@@ -1,16 +1,5 @@
 import prisma from './prisma.js'
 
-// Admin-configurable courier list — see ShippingMethod model / the Shipping
-// Methods admin page. This replaces what used to be a hardcoded COURIERS map;
-// Order.courierName stays a plain string snapshot of courier.name so existing
-// orders and every other reader of that field are unaffected.
-export async function listActiveShippingMethods() {
-  return prisma.shippingMethod.findMany({
-    where: { active: true },
-    orderBy: { name: 'asc' }
-  })
-}
-
 export async function fulfillOrder(orderId, { trackingNumber, courierKey, estimatedDelivery }) {
   const courier = await prisma.shippingMethod.findUnique({ where: { key: courierKey } })
   if (!courier || !courier.active) throw new Error('Invalid courier selection')
@@ -35,7 +24,7 @@ export async function fulfillOrder(orderId, { trackingNumber, courierKey, estima
         orderId,
         status: 'SHIPPED',
         message: `Package handed over to ${courier.name}. Tracking: ${trackingNumber}`,
-        location: 'O\'luhle Scents Fulfillment Center'
+        location: 'TOCA Fulfillment Center'
       }
     })
 

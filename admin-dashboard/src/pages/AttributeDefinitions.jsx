@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
 import { Drawer } from '../components/Drawer';
 import { PageHeader } from '../components/PageHeader';
@@ -166,23 +166,25 @@ export function AttributeDefinitions() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .attr-list { display: flex; flex-direction: column; gap: 8px; }
-        .attr-row { display: flex; align-items: center; gap: 16px; padding: 10px 14px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; }
+        .attr-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+        .attr-row { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-3) var(--sp-4); background: var(--bg-section); border: 1px solid var(--border-default); border-radius: var(--r); }
         .attr-row > div:first-child { flex: 1; }
-        .attr-label { font-weight: 600; font-size: 0.88rem; }
-        .attr-key { color: var(--color-text-muted); font-size: 0.75rem; font-family: monospace; }
-        .attr-meta { display: flex; gap: 8px; align-items: center; }
-        .attr-type { font-size: 0.72rem; color: var(--color-text-muted); background: var(--color-bg-card); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--color-border); }
-        .icon-btn.danger { color: var(--color-error-text); }
+        .attr-label { font-weight: 500; font-size: 0.88rem; }
+        .attr-key { color: var(--text-muted); font-size: 0.75rem; font-family: var(--f-mono, monospace); }
+        .attr-meta { display: flex; gap: var(--sp-2); align-items: center; }
+        .attr-type { font-size: 0.72rem; color: var(--text-muted); background: var(--bg-surface); padding: 2px var(--sp-2); border-radius: var(--r-pill); border: 1px solid var(--border-default); }
+        .icon-btn.danger { color: var(--error); }
 
         .attr-form { display: flex; flex-direction: column; }
-        .attr-checkboxes { display: flex; flex-direction: column; gap: 10px; font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; }
-        .attr-checkboxes label { display: flex; align-items: center; gap: 8px; }
-        .attr-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .attr-checkboxes { display: flex; flex-direction: column; gap: var(--sp-3); font-size: 0.82rem; color: var(--text-muted); margin-bottom: var(--sp-5); }
+        .attr-checkboxes label { display: flex; align-items: center; gap: var(--sp-2); }
+        .attr-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
 
         @media (max-width: 480px) {
           .attr-row { flex-wrap: wrap; }
           .attr-meta { flex-wrap: wrap; }
+          .attr-actions { flex-wrap: wrap; }
+          .attr-actions button { flex: 1; }
         }
       `}} />
     </div>

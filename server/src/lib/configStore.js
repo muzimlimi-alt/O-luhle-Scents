@@ -5,7 +5,7 @@ let lastFetch = 0
 const TTL = 30000 // 30 seconds
 
 /**
- * High-performance configuration store for the O'luhle Scents global management suite.
+ * High-performance configuration store for the TOCA global management suite.
  * prioritizes database-backed 'GlobalSetting' values with absolute synchronization across the fulfillment engine.
  * includes an 'InMemory Cache' (30s TTL) to minimize database load during high-frequency operations.
  * provides automatic fallbacks to process.env for zero-downtime administrative migration.

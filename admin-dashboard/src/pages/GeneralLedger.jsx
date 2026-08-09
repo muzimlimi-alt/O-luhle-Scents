@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { financeApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
 import { Drawer } from '../components/Drawer';
 import { LoadingState } from '../components/LoadingState';
 import { EmptyState } from '../components/EmptyState';
+import { ExportButtons } from '../components/ExportButtons';
 import { BookOpen, Eye } from 'lucide-react';
 
 const TYPE_SECTIONS = [
@@ -48,17 +49,25 @@ export function GeneralLedger() {
 
   useEffect(() => { fetchTrialBalance(); }, [fetchTrialBalance]);
 
+  // Guards against an out-of-order response: click Account A, then quickly
+  // click Account B before A's fetch resolves — without this, a slow A
+  // response arriving after B's fast one would silently overwrite B's
+  // correctly-loaded rows while the drawer title still reads B.
+  const requestIdRef = useRef(0);
+
   const openLedger = async (account) => {
+    const requestId = ++requestIdRef.current;
     setSelectedAccount(account);
     setLedgerLoading(true);
     try {
       const result = await financeApi.ledger(account.code, asOf ? { to: asOf } : {});
+      if (requestIdRef.current !== requestId) return; // a newer request has since started
       setLedgerEntries(result);
     } catch (err) {
       console.error('Ledger fetch failed:', err.message);
-      setLedgerEntries(null);
+      if (requestIdRef.current === requestId) setLedgerEntries(null);
     } finally {
-      setLedgerLoading(false);
+      if (requestIdRef.current === requestId) setLedgerLoading(false);
     }
   };
 
@@ -69,10 +78,13 @@ export function GeneralLedger() {
         title="General Ledger"
         subtitle="Every account's cumulative balance, computed live from the posted journals — never a separately stored copy."
         actions={(
-          <label className="ledger-asof">
-            As of
-            <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} className="admin-input" />
-          </label>
+          <>
+            <label className="ledger-asof">
+              As of
+              <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} className="admin-input" />
+            </label>
+            <ExportButtons path="/admin/finance/trial-balance" params={asOf ? { asOf } : {}} filename={`trial-balance${asOf ? '-' + asOf : ''}`} />
+          </>
         )}
       />
 
@@ -117,6 +129,10 @@ export function GeneralLedger() {
         {ledgerLoading ? (
           <LoadingState label="Loading entries..." />
         ) : ledgerEntries?.entries?.length ? (
+          <>
+          <div style={{ marginBottom: '12px' }}>
+            <ExportButtons path={`/admin/finance/ledger/${selectedAccount?.code}`} params={asOf ? { to: asOf } : {}} filename={`ledger-${selectedAccount?.code}`} />
+          </div>
           <DataTable
             columns={[
               { key: 'journalNumber', label: 'Journal' },
@@ -128,16 +144,22 @@ export function GeneralLedger() {
             ]}
             data={ledgerEntries.entries}
           />
+          </>
         ) : (
           <EmptyState title="No entries" description="No journal lines have posted to this account yet." />
         )}
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .ledger-asof { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--color-text-muted); }
-        .ledger-totals { display: flex; gap: 32px; margin-bottom: 24px; font-size: 0.85rem; }
-        .ledger-section { margin-bottom: 24px; }
-        .ledger-section h3 { margin: 0 0 12px; font-size: 1rem; }
+        .ledger-asof { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.8rem; color: var(--text-muted); }
+        .ledger-totals { display: flex; gap: var(--sp-6); margin-bottom: var(--sp-6); font-size: 0.85rem; flex-wrap: wrap; }
+        .ledger-section { margin-bottom: var(--sp-6); }
+        .ledger-section h3 { margin: 0 0 var(--sp-3); font-size: 1rem; font-weight: 400; }
+
+        @media (max-width: 480px) {
+          .ledger-totals { gap: var(--sp-4); }
+          .ledger-asof { width: 100%; flex-wrap: wrap; }
+        }
       `}} />
     </div>
   );

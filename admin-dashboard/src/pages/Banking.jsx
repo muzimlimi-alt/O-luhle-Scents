@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { bankingApi, financeApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
@@ -273,10 +273,15 @@ export function Banking() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .banking-default-check { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 20px; }
-        .banking-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+        .banking-default-check { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.82rem; color: var(--text-muted); margin-bottom: var(--sp-5); }
+        .banking-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
         .banking-status-toggle { background: none; border: none; padding: 0; cursor: pointer; }
         .banking-status-toggle:disabled { cursor: default; opacity: 0.6; }
+
+        @media (max-width: 480px) {
+          .banking-actions { flex-wrap: wrap; }
+          .banking-actions .btn, .banking-actions .btn--primary { flex: 1 1 auto; }
+        }
       `}} />
     </div>
   );

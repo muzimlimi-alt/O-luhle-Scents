@@ -29,9 +29,9 @@ export async function generateQuotePDF(quoteId) {
     doc.pipe(stream)
 
     // --- Header ---
-    doc.fillColor('#000').fontSize(24).font('Helvetica-Bold').text("O'LUHLE SCENTS", 50, 50)
+    doc.fillColor('#000').fontSize(24).font('Helvetica-Bold').text("TOCA", 50, 50)
     doc.fontSize(10).font('Helvetica').text('123 Luxury Avenue, Sandton, Johannesburg', 50, 80)
-    doc.text('Phone: +27 11 000 0000 | Email: b2b@oluhle.co.za', 50, 95)
+    doc.text('Phone: +27 11 000 0000 | Email: b2b@toca.co.za', 50, 95)
 
     doc.rect(0, 130, 600, 2).fill('#d4af37') // Gold bar
 
@@ -95,7 +95,7 @@ export async function generateQuotePDF(quoteId) {
 
     // --- Footer ---
     doc.fontSize(10).font('Helvetica-Oblique').fillColor('#999')
-    doc.text('O\'luhle Scents — The Art of Professional Fragrance Curating.', 50, 750, { align: 'center' })
+    doc.text('TOCA — The Art of Professional Fragrance Curating.', 50, 750, { align: 'center' })
 
     doc.end()
 
