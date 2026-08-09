@@ -1,5 +1,5 @@
 {
-  "name": "oluhle-scents-server",
+  "name": "toca-server",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -23,6 +23,7 @@
     "cors": "^2.8.5",
     "csv-parse": "^7.0.2",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express": "^4.21.1",
     "express-rate-limit": "^8.6.1",
     "jsonwebtoken": "^9.0.2",

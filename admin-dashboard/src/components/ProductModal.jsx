@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   X, Plus, Trash2, GripVertical, AlertCircle, Loader2,
-  Upload, Sparkles, Camera, ImagePlus, Settings,
-  Package, DollarSign, Info, Layout, Boxes, Truck
+  Sparkles, Camera, ImagePlus,
+  Package, Info, Layout, Boxes, Truck
 } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
 import { adminOpsApi } from '../services/api';
@@ -22,7 +22,7 @@ const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api')
 
 const EMPTY_FORM = {
   name: '',
-  brand: "O'luhle Scents",
+  brand: "TOCA",
   categoryId: '',
   supplierId: '',
   description: '',
@@ -95,7 +95,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
     if (product) {
       setFormData({
         name: product.name || '',
-        brand: product.brand || "O'luhle Scents",
+        brand: product.brand || "TOCA",
         categoryId: (product.category && typeof product.category === 'object') ? product.category.id : (product.categoryId || ''),
         supplierId: product.supplierId || '',
         description: product.description || '',
@@ -475,7 +475,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                         type="text"
                         value={formData.brand}
                         onChange={e => set('brand', e.target.value.slice(0, 100))}
-                        placeholder="O'luhle Scents"
+                        placeholder="TOCA"
                         maxLength={100}
                       />
                     </FormField>

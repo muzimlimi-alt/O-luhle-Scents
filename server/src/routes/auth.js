@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '../lib/prisma.js'
 import { loginLimiter } from '../middleware/rateLimit.js'
+import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -36,14 +37,32 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     )
 
+    // Tracked so this specific token can be revoked before it naturally
+    // expires — logout below, or an admin force-revoking another admin's
+    // sessions (admin_ops.js) both just delete this row. expiresAt mirrors
+    // the JWT's own `exp` claim so the two can never drift apart.
+    const { exp } = jwt.decode(token)
+    await prisma.adminSession.create({
+      data: { adminUserId: admin.id, token, expiresAt: new Date(exp * 1000) },
+    })
+
     res.json({
       token,
       user: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
     })
-  } catch (err) { 
+  } catch (err) {
     console.error('[Login Failure]', err);
     next(err);
   }
+})
+
+// POST /api/auth/logout — ends this token's session immediately, rather than
+// leaving it valid (just discarded client-side) until it naturally expires.
+router.post('/logout', requireAuth, async (req, res, next) => {
+  try {
+    await prisma.adminSession.deleteMany({ where: { token: req.token } })
+    res.json({ success: true })
+  } catch (err) { next(err) }
 })
 
 // GET /api/auth/me — verify session

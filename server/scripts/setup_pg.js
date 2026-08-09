@@ -2,8 +2,8 @@ import pg from 'pg';
 const { Client } = pg;
 
 /**
- * High-performance database initialization script for O'luhle Scents.
- * attempts to create the 'oluhle_scents' database on the local PostgreSQL service (Port 5432).
+ * High-performance database initialization script for TOCA.
+ * attempts to create the 'toca' database on the local PostgreSQL service (Port 5432).
  * uses default credentials and provides absolute operational transparency.
  */
 async function initDb() {
@@ -14,7 +14,7 @@ async function initDb() {
     await client.connect();
     console.log('[Init] Connected to local PostgreSQL...');
     
-    const dbName = 'oluhle_scents';
+    const dbName = 'toca';
     const res = await client.query(`SELECT 1 FROM pg_database WHERE datname='${dbName}'`);
     
     if (res.rowCount === 0) {

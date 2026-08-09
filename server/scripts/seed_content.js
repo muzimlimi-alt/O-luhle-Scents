@@ -46,7 +46,7 @@ const CONTENT_DEFAULTS = [
   ['story_label', 'Our Story'],
   ['story_heading', 'Crafting Moments Through Scent'],
   ['story_body',
-    "<p>O'luhle Scents brings you an exclusive collection from Officina Del Toca — a house dedicated to the ancient art of perfumery. Each fragrance is an extrait de parfum, the purest and most concentrated form of perfume.</p>" +
+    "<p>TOCA brings you an exclusive collection from Officina Del Toca — a house dedicated to the ancient art of perfumery. Each fragrance is an extrait de parfum, the purest and most concentrated form of perfume.</p>" +
     "<p>Our collection spans from the bold and captivating Premium range to the vibrant Essentials, ensuring there is a scent for every personality and occasion. Every bottle is a work of art, designed to evoke emotion and leave a lasting impression.</p>" +
     "<p>Based in South Africa, we are committed to making luxury accessible without compromise. From our meticulous sourcing to our elegant packaging, every detail reflects our passion for excellence.</p>"],
   ['story_cta_1_label', 'Discover your Fragrance'],
@@ -56,9 +56,14 @@ const CONTENT_DEFAULTS = [
 
   // Newsletter
   ['newsletter_label', 'Stay Connected'],
-  ['newsletter_heading', "Join the O'luhle Circle"],
+  ['newsletter_heading', "Join the TOCA Circle"],
   ['newsletter_text', 'Be the first to discover new arrivals, exclusive offers, and fragrance guides.'],
   ['newsletter_button', 'Subscribe'],
+
+  // Contact section — side-panel cards
+  ['contact_quote_text', "Thank you for stopping by. We'd love to know what your thoughts are — get in touch with us."],
+  ['contact_quote_author', "— TOCA"],
+  ['contact_reach_heading', 'Or reach us directly'],
 
   // Footer / global
   ['footer_note', "Luxury fragrances from Officina Del Toca. Extrait de parfum crafted for those who appreciate the finer things."],
@@ -72,7 +77,7 @@ const CONTENT_DEFAULTS = [
 // /api/admin/settings/public endpoint (which only ever returns the 'content'
 // group) can serve them without widening that route to a second group.
 const CONTACT_DEFAULTS = [
-  ['business_email', 'info@oluhlescents.co.za'],
+  ['business_email', 'info@toca.co.za'],
   ['business_whatsapp', '+27761112096'],
   ['business_address', 'South Africa — Nationwide Shipping'],
 ]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -30,7 +30,7 @@ export function DashboardLayout() {
           >
             <Menu size={22} />
           </button>
-          <div className="navbar__logo">O'luhle <em>Scents</em></div>
+          <div className="navbar__logo">TOCA</div>
         </div>
         <div className="header-actions-classic">
            <div className="search-bar-classic">
@@ -42,7 +42,7 @@ export function DashboardLayout() {
            <div className="user-profile-classic">
               <div className="user-info-text">
                  <p className="user-name">{user?.name || 'Administrator'}</p>
-                 <p className="user-email">{user?.email || 'admin@oluhle.com'}</p>
+                 <p className="user-email">{user?.email || 'admin@toca.co.za'}</p>
               </div>
               <div className="user-avatar">
                  <User size={18} />

@@ -31,9 +31,9 @@ export async function generateInvoice(orderId) {
     doc.pipe(stream)
 
     // --- Header ---
-    doc.fillColor('#000').fontSize(24).font('Helvetica-Bold').text("O'LUHLE SCENTS", 50, 50)
+    doc.fillColor('#000').fontSize(24).font('Helvetica-Bold').text("TOCA", 50, 50)
     doc.fontSize(10).font('Helvetica').text('123 Luxury Avenue, Sandton, Johannesburg', 50, 80)
-    doc.text('Phone: +27 11 000 0000 | Email: luxury@oluhle.co.za', 50, 95)
+    doc.text('Phone: +27 11 000 0000 | Email: luxury@toca.co.za', 50, 95)
 
     doc.rect(0, 130, 600, 2).fill('#d4af37') // Gold bar
 
@@ -85,7 +85,7 @@ export async function generateInvoice(orderId) {
 
     // --- Footer ---
     doc.fontSize(10).font('Helvetica-Oblique').fillColor('#999')
-    doc.text('Thank you for choosing O\'luhle Scents. Your luxury fragrance journey begins here.', 50, 750, { align: 'center' })
+    doc.text('Thank you for choosing TOCA. Your luxury fragrance journey begins here.', 50, 750, { align: 'center' })
 
     doc.end()
 
@@ -156,7 +156,7 @@ export async function sendWhatsAppNotification(orderId, status) {
 
     if (!order || !order.customer?.phone) return
 
-    const message = `*O'LUHLE SCENTS*\n\nYour order is now *${status.toUpperCase()}*. Your luxury fragrance journey is in motion.\n\n_Ref: ${order.id.split('-')[0].toUpperCase()}_`
+    const message = `*TOCA*\n\nYour order is now *${status.toUpperCase()}*. Your luxury fragrance journey is in motion.\n\n_Ref: ${order.id.split('-')[0].toUpperCase()}_`
     await sendWhatsApp(orderId, order.customer.phone, message, { status })
   } catch (err) {
     console.error('[sendWhatsAppNotification] Failed:', err.message)

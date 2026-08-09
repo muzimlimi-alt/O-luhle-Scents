@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit';
 
 /**
- * Generates an elegant PDF invoice for O'luhle Scents.
+ * Generates an elegant PDF invoice for TOCA.
  * @param {Object} order - Full order object with customer and items.
  * @param {Object} invoice - Invoice details (number, date).
  * @returns {Promise<Buffer>} - Responds with the PDF buffer.
@@ -15,9 +15,9 @@ export async function generateInvoicePDF(order, invoice) {
       doc.on('end', () => resolve(Buffer.concat(buffers)));
 
       // ── Header (Premium Gold Branding) ───────────────────────────────────
-      doc.fillColor('#d4af37').fontSize(24).font('Helvetica-Bold').text("O'luhle Scents", 50, 50);
+      doc.fillColor('#d4af37').fontSize(24).font('Helvetica-Bold').text("TOCA", 50, 50);
       doc.fillColor('#444444').fontSize(10).font('Helvetica').text('123 Luxury Lane, Sandton, Johannesburg', 50, 80);
-      doc.text('Phone: +27 12 345 6789 | Email: contact@oluhle.com', 50, 95);
+      doc.text('Phone: +27 12 345 6789 | Email: contact@toca.co.za', 50, 95);
       
       doc.fillColor('#000000').fontSize(20).text('INVOICE', 400, 50, { align: 'right' });
       doc.fontSize(10).text(`Invoice #: ${invoice.invoiceNumber}`, 400, 80, { align: 'right' });
@@ -63,7 +63,7 @@ export async function generateInvoicePDF(order, invoice) {
       doc.fillColor('#d4af37').text(`R${Number(order.totalAmount).toLocaleString()}`, 460, summaryY, { width: 90, align: 'right' });
 
       // ── Footer ─────────────────────────────────────────────────────────
-      doc.fillColor('#aaaaaa').fontSize(9).text('Thank you for choosing O\'luhle Scents. Your scent, your signature.', 50, 750, { align: 'center', width: 500 });
+      doc.fillColor('#aaaaaa').fontSize(9).text('Thank you for choosing TOCA. Your scent, your signature.', 50, 750, { align: 'center', width: 500 });
       
       doc.end();
     } catch (err) {

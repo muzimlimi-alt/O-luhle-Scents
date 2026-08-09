@@ -11,8 +11,8 @@ const categoryData = [
 
 const productData = [
   { 
-    name: 'Zale', 
-    brand: 'O\'luhle Scents', 
+    name: 'Zale',
+    brand: 'TOCA',
     categorySlug: 'premium',
     description: 'A bold, captivating blend of oud and amber.',
     variants: [
@@ -21,8 +21,8 @@ const productData = [
     ]
   },
   { 
-    name: 'Mika', 
-    brand: 'O\'luhle Scents', 
+    name: 'Mika',
+    brand: 'TOCA',
     categorySlug: 'premium',
     description: 'Warm spice meets soft vanilla undertones.',
     variants: [
@@ -30,8 +30,8 @@ const productData = [
     ]
   },
   { 
-    name: 'Luna', 
-    brand: 'O\'luhle Scents', 
+    name: 'Luna',
+    brand: 'TOCA',
     categorySlug: 'signature',
     description: 'Dreamy night jasmine with powdery iris.',
     variants: [
@@ -94,13 +94,13 @@ async function main() {
   }
 
   console.log('🔒 Initializing administrative portal...')
-  const adminEmail = 'admin@oluhle.com'
+  const adminEmail = 'admin@toca.co.za'
   const passwordHash = await bcrypt.hash('adminPassword123', 12)
   await prisma.adminUser.create({
     data: {
       email: adminEmail,
       passwordHash,
-      name: 'O\'luhle Admin',
+      name: 'TOCA Admin',
       role: 'ADMIN',
       isActive: true
     }

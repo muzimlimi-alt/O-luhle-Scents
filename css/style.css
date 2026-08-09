@@ -1,5 +1,5 @@
 /* ============================================================
-   O'luhle Scents — Luxury Perfume eCommerce
+   TOCA — Luxury Perfume eCommerce
    Premium CSS with mobile-first responsive design
    ============================================================ */
 
@@ -695,20 +695,6 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
   transform: scale(1.05);
 }
 
-.product-card__badge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 4px 12px;
-  background: var(--color-dark);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  border-radius: var(--radius);
-}
-
 .product-card__actions {
   position: absolute;
   bottom: 12px;
@@ -754,24 +740,11 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
   color: var(--color-dark);
 }
 
-.product-card__category {
-  font-size: 0.7rem;
-  color: var(--color-text-light);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
 .product-card__price {
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--color-gold-dark);
-}
-
-.product-card__price .price-divider {
-  color: var(--color-border);
-  margin: 0 6px;
 }
 
 /* --- Category Banners --- */
@@ -1318,32 +1291,6 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
   object-fit: cover;
 }
 
-.product-gallery__thumbs {
-  display: flex;
-  gap: 8px;
-}
-
-.product-gallery__thumb {
-  width: 72px;
-  height: 90px;
-  overflow: hidden;
-  border-radius: var(--radius);
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: border-color var(--transition);
-}
-
-.product-gallery__thumb.active,
-.product-gallery__thumb:hover {
-  border-color: var(--color-gold);
-}
-
-.product-gallery__thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .product-info__brand {
   font-size: 0.7rem;
   letter-spacing: 0.3em;
@@ -1459,22 +1406,6 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
   padding-top: 24px;
 }
 
-.product-meta__item {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 0.82rem;
-}
-
-.product-meta__item strong {
-  font-weight: 500;
-  min-width: 80px;
-}
-
-.product-meta__item span {
-  color: var(--color-text-light);
-}
-
 /* --- Cart Page --- */
 .cart-section { padding-top: 40px; }
 
@@ -1571,37 +1502,6 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
   .cart-table tr {
     display: table-row;
   }
-}
-
-.cart-item__image {
-  width: 80px;
-  height: 100px;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--color-bg-alt);
-}
-
-.cart-item__image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cart-item__details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.cart-item__name {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 500;
-}
-
-.cart-item__variant {
-  font-size: 0.78rem;
-  color: var(--color-text-light);
 }
 
 .cart-item__remove {
@@ -1961,24 +1861,6 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
 
 .toast__close:hover { opacity: 1; }
 
-/* Global Elite Alerts */
-.elite-alert {
-  padding: 20px 24px;
-  border-radius: var(--radius);
-  margin-bottom: 24px;
-  background: rgba(184, 155, 106, 0.05);
-  border: 1px solid rgba(184, 155, 106, 0.15);
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.elite-alert--error {
-  background: rgba(217, 83, 79, 0.05);
-  border-color: rgba(217, 83, 79, 0.2);
-  color: #d9534f;
-}
-
 /* --- Empty State --- */
 .empty-state {
   text-align: center;
@@ -2076,18 +1958,8 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
 
 /* --- Utility --- */
 .text-center { text-align: center; }
-.text-gold { color: var(--color-gold); }
 .mt-sm { margin-top: 16px; }
 .mt-md { margin-top: 32px; }
-.mb-md { margin-bottom: 32px; }
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-}
 
 /* --- Scroll Animations --- */
 .reveal {
@@ -2104,7 +1976,6 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
 .reveal-delay-1 { transition-delay: 0.1s; }
 .reveal-delay-2 { transition-delay: 0.2s; }
 .reveal-delay-3 { transition-delay: 0.3s; }
-.reveal-delay-4 { transition-delay: 0.4s; }
 
 /* --- Responsive Fine-Tuning --- */
 @media (max-width: 480px) {

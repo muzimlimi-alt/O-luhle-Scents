@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { financeApi } from '../services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { financeApi, approvalsApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
 import { LoadingState } from '../components/LoadingState';
 import { StatusBadge } from '../components/StatusBadge';
-import { PieChart, TrendingUp, Scale, Waves } from 'lucide-react';
+import { useMessaging } from '../context/MessagingContext';
+import { useAuth } from '../context/AuthContext';
+import { PieChart, TrendingUp, Scale, Waves, Lock, Unlock } from 'lucide-react';
 
 const fmt = (n) => `R${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -12,6 +14,7 @@ const TABS = [
   { id: 'income', label: 'Income Statement', icon: <TrendingUp size={16} /> },
   { id: 'balance', label: 'Balance Sheet', icon: <Scale size={16} /> },
   { id: 'cashflow', label: 'Cash Flow', icon: <Waves size={16} /> },
+  { id: 'periods', label: 'Fiscal Periods', icon: <Lock size={16} /> },
 ];
 
 function IncomeStatementTab() {
@@ -211,6 +214,136 @@ function CashFlowTab() {
   );
 }
 
+function FiscalPeriodsTab() {
+  const { showMessage } = useMessaging();
+  const { user } = useAuth();
+  const [periods, setPeriods] = useState([]);
+  const [reopenRequests, setReopenRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [periodsData, approvals] = await Promise.all([
+        financeApi.fiscalPeriods(),
+        approvalsApi.list().catch(() => []), // don't let a stale/legacy refund approval break this tab
+      ]);
+      setPeriods(periodsData);
+      setReopenRequests(approvals.filter(a => a.entityType === 'REOPEN_PERIOD'));
+    } catch (err) {
+      console.error('Fiscal periods fetch failed:', err.message);
+      setPeriods([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const pendingReopenFor = (periodId) => reopenRequests.find(r => r.payload?.periodId === periodId);
+
+  const handleClose = async (period) => {
+    if (!window.confirm(`Close ${period.label}? This sweeps its net ${period.previewNetProfit >= 0 ? 'income' : 'loss'} of ${fmt(Math.abs(period.previewNetProfit))} into Retained Earnings and blocks any further postings dated inside it. Reopening afterward requires a second admin's approval.`)) return;
+    setBusyId(period.id);
+    try {
+      await financeApi.closePeriod(period.id);
+      showMessage('success', 'Period Closed', `${period.label} is now closed.`);
+      fetchAll();
+    } catch (err) {
+      showMessage('error', 'Close Failed', err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleRequestReopen = async (period) => {
+    setBusyId(period.id);
+    try {
+      await financeApi.requestPeriodReopen(period.id);
+      showMessage('success', 'Reopen Requested', `Waiting on a different administrator to approve reopening ${period.label}.`);
+      fetchAll();
+    } catch (err) {
+      showMessage('error', 'Request Failed', err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDecide = async (requestId, approve) => {
+    setBusyId(requestId);
+    try {
+      if (approve) await approvalsApi.approve(requestId);
+      else await approvalsApi.reject(requestId, 'Declined from Fiscal Periods');
+      showMessage('success', approve ? 'Reopen Approved' : 'Reopen Rejected', '');
+      fetchAll();
+    } catch (err) {
+      showMessage('error', 'Action Failed', err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (loading) return <LoadingState label="Loading fiscal periods..." />;
+
+  return (
+    <div>
+      <p className="periods-intro">
+        A period auto-opens the first time something posts into it, and blocks new postings once closed. Close oldest-to-newest — closing sweeps that period's net income into Retained Earnings, which is also what turns the Balance Sheet's "Net Income (undistributed)" line into a real, permanent figure.
+      </p>
+
+      {reopenRequests.length > 0 && (
+        <div className="periods-approvals">
+          <h3>Pending Reopen Requests</h3>
+          {reopenRequests.map(r => (
+            <div key={r.id} className="periods-approval-row">
+              <span>{r.payload?.periodLabel} — requested by {r.requestedBy?.name || 'an administrator'}</span>
+              {r.requestedById === user?.id ? (
+                <span className="periods-approval-hint">Waiting on a different administrator</span>
+              ) : (
+                <div className="periods-approval-actions">
+                  <button className="btn-sm" disabled={busyId === r.id} onClick={() => handleDecide(r.id, true)}>Approve</button>
+                  <button className="btn-sm" disabled={busyId === r.id} onClick={() => handleDecide(r.id, false)}>Reject</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="table-wrapper">
+        <table className="modern-table">
+          <thead>
+            <tr><th>Period</th><th>Date Range</th><th>Status</th><th>Net Income (if closed now)</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {periods.map(p => {
+              const pending = pendingReopenFor(p.id);
+              return (
+                <tr key={p.id}>
+                  <td><strong>{p.label}</strong></td>
+                  <td>{new Date(p.startDate).toLocaleDateString()} – {new Date(p.endDate).toLocaleDateString()}</td>
+                  <td><StatusBadge tone={p.status === 'OPEN' ? 'success' : 'neutral'} icon={p.status === 'OPEN' ? <Unlock size={12} /> : <Lock size={12} />} label={p.status} /></td>
+                  <td>{p.status === 'OPEN' ? fmt(p.previewNetProfit) : '—'}</td>
+                  <td>
+                    {p.status === 'OPEN' ? (
+                      <button className="btn-sm" disabled={busyId === p.id} onClick={() => handleClose(p)}>Close Period</button>
+                    ) : pending ? (
+                      <span className="periods-approval-hint">Reopen requested</span>
+                    ) : (
+                      <button className="btn-sm" disabled={busyId === p.id} onClick={() => handleRequestReopen(p)}>Request Reopen</button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function FinancialStatements() {
   const [activeTab, setActiveTab] = useState('income');
 
@@ -239,6 +372,7 @@ export function FinancialStatements() {
         {activeTab === 'income' && <IncomeStatementTab />}
         {activeTab === 'balance' && <BalanceSheetTab />}
         {activeTab === 'cashflow' && <CashFlowTab />}
+        {activeTab === 'periods' && <FiscalPeriodsTab />}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
@@ -271,6 +405,13 @@ export function FinancialStatements() {
         .report-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; }
         .report-row-title { font-size: 0.85rem; }
         .report-row-value { font-size: 0.85rem; font-weight: 700; }
+
+        .periods-intro { font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 20px; max-width: 70ch; }
+        .periods-approvals { background: rgba(184,155,106,0.08); border: 1px solid rgba(184,155,106,0.2); border-radius: 4px; padding: 14px 16px; margin-bottom: 20px; }
+        .periods-approvals h3 { margin: 0 0 10px; font-size: 0.85rem; }
+        .periods-approval-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; font-size: 0.82rem; flex-wrap: wrap; }
+        .periods-approval-actions { display: flex; gap: 8px; }
+        .periods-approval-hint { color: var(--color-text-muted); font-size: 0.78rem; font-style: italic; }
       `}} />
     </div>
   );

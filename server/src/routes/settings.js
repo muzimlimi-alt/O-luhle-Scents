@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import sanitizeHtml from 'sanitize-html'
 import prisma from '../lib/prisma.js'
-import { requireAdmin } from '../middleware/auth.js'
+import { requireRole } from '../middleware/auth.js'
 import configStore from '../lib/configStore.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -49,7 +49,7 @@ const SANITIZE_OPTS = {
 }
 
 // GET /api/admin/settings/public — unauthenticated, content group only.
-// Declared before requireAdmin so it is never accidentally protected.
+// Declared before requireRole('admin') so it is never accidentally protected.
 // Deliberately NOT extended to 'general': that group is also where
 // newly-added Config.jsx fields (EMAIL_*, TWILIO_*) land by default the
 // first time they're saved, since handleChange() has no group for a key it
@@ -72,7 +72,7 @@ router.get('/public', async (req, res, next) => {
 // or video (e.g. the hero background). Returns a public URL; the caller
 // still has to save it against a settings key via POST / like any other
 // content field.
-router.post('/upload-image', requireAdmin, upload.single('image'), (req, res, next) => {
+router.post('/upload-image', requireRole('admin'), upload.single('image'), (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image file provided' })
     res.json({ url: `/images/site/${req.file.filename}` })
@@ -80,7 +80,7 @@ router.post('/upload-image', requireAdmin, upload.single('image'), (req, res, ne
 })
 
 // GET /api/admin/settings — admin: list all grouped
-router.get('/', requireAdmin, async (req, res, next) => {
+router.get('/', requireRole('admin'), async (req, res, next) => {
   try {
     const settings = await prisma.globalSetting.findMany({
       orderBy: [{ group: 'asc' }, { key: 'asc' }]
@@ -98,7 +98,7 @@ router.get('/', requireAdmin, async (req, res, next) => {
 })
 
 // POST /api/admin/settings — admin: bulk upsert
-router.post('/', requireAdmin, async (req, res, next) => {
+router.post('/', requireRole('admin'), async (req, res, next) => {
   try {
     const { settings } = req.body // Expects [{ key, value, group }]
     if (!Array.isArray(settings)) {

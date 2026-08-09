@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { settingsApi } from '../services/api';
 import {
   Settings as SettingsIcon,
   Save,
   Phone,
-  Mail,
-  MapPin,
   Server,
   CreditCard,
   ShieldCheck,
   AlertCircle,
   Truck,
   RefreshCw,
-  Bell
+  Bell,
+  Percent
 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { FormField } from '../components/FormField';
@@ -51,10 +50,15 @@ export function Settings() {
     fetchSettings();
   }, []);
 
-  const handleChange = (key, value) => {
+  // `group` is only needed the first time a key is ever set — once it's been
+  // saved and re-fetched, prev[key].group is already correct and this param
+  // is ignored. Without it, a brand-new key (never saved before) would fall
+  // through to handleSave's `s.group || 'general'` default regardless of
+  // which settings card it's actually shown in.
+  const handleChange = (key, value, group) => {
     setSettings(prev => ({
       ...prev,
-      [key]: { ...prev[key], value }
+      [key]: { group: prev[key]?.group || group, value }
     }));
   };
 
@@ -105,11 +109,81 @@ export function Settings() {
               <input type="text" value={val('business_whatsapp')} onChange={e => handleChange('business_whatsapp', e.target.value)} placeholder="+27..." />
             </FormField>
             <FormField label="Support Email">
-              <input type="email" value={val('business_email')} onChange={e => handleChange('business_email', e.target.value)} placeholder="info@oluhlescents.co.za" />
+              <input type="email" value={val('business_email')} onChange={e => handleChange('business_email', e.target.value)} placeholder="info@toca.co.za" />
             </FormField>
             <FormField label="Physical Address">
               <textarea rows={3} value={val('business_address')} onChange={e => handleChange('business_address', e.target.value)} />
             </FormField>
+          </div>
+        </div>
+
+        <div className="card settings-card">
+          <div className="settings-card-header">
+            <Percent size={20} color="var(--color-primary)" />
+            <h3>Tax &amp; SARS Compliance</h3>
+          </div>
+          <div className="settings-card-body">
+            <FormField label="VAT Vendor Status" hint="Only a business actually registered with SARS as a VAT vendor may legally charge VAT. Leave off until registration is confirmed — checkout charges zero VAT while off, regardless of what rate is configured on the Tax Rates page.">
+              <select value={val('vat_registered') || 'false'} onChange={e => handleChange('vat_registered', e.target.value, 'tax')}>
+                <option value="false">Not registered — charge no VAT</option>
+                <option value="true">Registered — apply configured VAT rate</option>
+              </select>
+            </FormField>
+            <div className={`settings-info-box${val('vat_registered') === 'true' ? ' settings-info-box--warn' : ''}`}>
+              <AlertCircle size={14} />
+              <span>
+                {val('vat_registered') === 'true'
+                  ? 'VAT is being charged at checkout using the active rate on the Tax Rates page.'
+                  : 'Checkout is currently charging no VAT, regardless of the Tax Rates page.'}
+              </span>
+            </div>
+
+            <FormField label="Registered Company Name" hint="Legal entity name as registered with CIPC — used on tax invoices once compliant invoicing is enabled.">
+              <input type="text" value={val('company_legal_name')} onChange={e => handleChange('company_legal_name', e.target.value, 'tax')} placeholder="e.g. TOCA (Pty) Ltd" />
+            </FormField>
+            <FormField label="Trading Name" hint="Leave blank if the same as the registered company name.">
+              <input type="text" value={val('company_trading_name')} onChange={e => handleChange('company_trading_name', e.target.value, 'tax')} placeholder="TOCA" />
+            </FormField>
+            <div className="settings-row">
+              <FormField label="Company Registration Number" hint="CIPC registration number.">
+                <input type="text" value={val('company_registration_number')} onChange={e => handleChange('company_registration_number', e.target.value, 'tax')} placeholder="e.g. 2024/123456/07" />
+              </FormField>
+              <FormField label="VAT Registration Number" hint="10-digit SARS VAT number — only enter once registration is confirmed.">
+                <input type="text" value={val('vat_registration_number')} onChange={e => handleChange('vat_registration_number', e.target.value, 'tax')} placeholder="e.g. 4123456789" />
+              </FormField>
+            </div>
+            <FormField label="Income Tax Reference Number">
+              <input type="text" value={val('income_tax_reference_number')} onChange={e => handleChange('income_tax_reference_number', e.target.value, 'tax')} placeholder="SARS income tax reference number" />
+            </FormField>
+            <div className="settings-row">
+              <FormField label="PAYE Number" hint="Only relevant once a payroll module exists — safe to leave blank.">
+                <input type="text" value={val('paye_number')} onChange={e => handleChange('paye_number', e.target.value, 'tax')} />
+              </FormField>
+              <FormField label="SDL Number" hint="Skills Development Levy — leave blank if not applicable.">
+                <input type="text" value={val('sdl_number')} onChange={e => handleChange('sdl_number', e.target.value, 'tax')} />
+              </FormField>
+              <FormField label="UIF Number">
+                <input type="text" value={val('uif_number')} onChange={e => handleChange('uif_number', e.target.value, 'tax')} />
+              </FormField>
+            </div>
+            <div className="settings-row">
+              <FormField label="Financial Year Start" hint="SARS default for most businesses is March; a registered company may elect a different year-end.">
+                <select value={val('financial_year_start_month') || ''} onChange={e => handleChange('financial_year_start_month', e.target.value, 'tax')}>
+                  <option value="">Not set</option>
+                  {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                    <option key={m} value={i + 1}>{m}</option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Financial Year End">
+                <select value={val('financial_year_end_month') || ''} onChange={e => handleChange('financial_year_end_month', e.target.value, 'tax')}>
+                  <option value="">Not set</option>
+                  {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                    <option key={m} value={i + 1}>{m}</option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
           </div>
         </div>
 
@@ -161,8 +235,8 @@ export function Settings() {
           </div>
           <div className="settings-card-body">
             <div className="settings-row">
-              <FormField label="Order Number Prefix" hint="Used for both order references and EFT payment references, e.g. OSC-100548.">
-                <input type="text" value={val('order_number_prefix')} onChange={e => handleChange('order_number_prefix', e.target.value)} placeholder="OSC" />
+              <FormField label="Order Number Prefix" hint="Used for both order references and EFT payment references, e.g. TCA-100548.">
+                <input type="text" value={val('order_number_prefix')} onChange={e => handleChange('order_number_prefix', e.target.value)} placeholder="TCA" />
               </FormField>
               <FormField label="Stock Reservation Hold (hours)" hint="How long stock is held for an unpaid EFT order before it's auto-cancelled.">
                 <input type="number" min="1" value={val('eft_reservation_hours')} onChange={e => handleChange('eft_reservation_hours', e.target.value)} placeholder="72" />
@@ -172,7 +246,7 @@ export function Settings() {
               <input type="number" min="1" value={val('eft_proof_max_size_mb')} onChange={e => handleChange('eft_proof_max_size_mb', e.target.value)} placeholder="10" />
             </FormField>
             <FormField label="Verification Notification Emails" hint="Comma-separated — notified whenever a customer uploads proof of payment.">
-              <input type="text" value={val('eft_verification_notify_emails')} onChange={e => handleChange('eft_verification_notify_emails', e.target.value)} placeholder="orders@oluhle.co.za, finance@oluhle.co.za" />
+              <input type="text" value={val('eft_verification_notify_emails')} onChange={e => handleChange('eft_verification_notify_emails', e.target.value)} placeholder="orders@toca.co.za, finance@toca.co.za" />
             </FormField>
             <div className="settings-info-box">
               Bank account details shown to EFT customers are managed on the <Link to="/finance/banking">Banking</Link> page — add an account there and mark it default.
@@ -281,6 +355,9 @@ export function Settings() {
           background: rgba(184,155,106,0.08); border: 1px solid rgba(184,155,106,0.2);
           padding: 12px; border-radius: 4px; font-size: 0.8rem; color: var(--color-text-muted);
           margin-top: 8px;
+        }
+        .settings-info-box--warn {
+          background: rgba(192,57,43,0.08); border-color: rgba(192,57,43,0.25); color: var(--color-error-text, #c0392b);
         }
 
         @media (max-width: 460px) {

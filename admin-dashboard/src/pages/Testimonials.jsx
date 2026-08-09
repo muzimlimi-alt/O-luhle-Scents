@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 import { Plus, Check, X, RotateCcw, Pencil, Trash2, Quote, GripVertical, ArrowUpDown, ImagePlus } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
@@ -246,7 +246,7 @@ export default function Testimonials() {
             <input type="text" value={form.designation} onChange={e => setForm(f => ({ ...f, designation: e.target.value.slice(0, 120) }))} placeholder="e.g. Loyal Customer" maxLength={120} />
           </FormField>
           <FormField label="Testimonial" required>
-            <textarea rows={4} value={form.quote} onChange={e => setForm(f => ({ ...f, quote: e.target.value }))} placeholder="What did they say about O'luhle Scents?" required />
+            <textarea rows={4} value={form.quote} onChange={e => setForm(f => ({ ...f, quote: e.target.value }))} placeholder="What did they say about TOCA?" required />
           </FormField>
 
           <div className="testimonial-photo-field">

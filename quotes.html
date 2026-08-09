@@ -3,9 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Professional Quote Request | O'luhle Scents</title>
+  <title>Professional Quote Request | TOCA</title>
+  <meta name="description" content="Request a professional or bulk fragrance quote from TOCA — corporate gifting, events, and wholesale inquiries welcome.">
+  <link rel="canonical" href="https://www.toca.co.za/quotes.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TOCA">
+  <meta property="og:title" content="Professional Quote Request | TOCA">
+  <meta property="og:description" content="Request a professional or bulk fragrance quote from TOCA — corporate gifting, events, and wholesale inquiries welcome.">
+  <meta property="og:url" content="https://www.toca.co.za/quotes.html">
+  <meta property="og:image" content="https://www.toca.co.za/images/Here_s_an_enhanced_Banana_2_pr_2.jpg">
+  <meta property="og:locale" content="en_ZA">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Professional Quote Request | TOCA">
+  <meta name="twitter:description" content="Request a professional or bulk fragrance quote from TOCA — corporate gifting, events, and wholesale inquiries welcome.">
+  <meta name="twitter:image" content="https://www.toca.co.za/images/Here_s_an_enhanced_Banana_2_pr_2.jpg">
+
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+
+  <!-- Structured Data: Breadcrumbs -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.toca.co.za/" },
+      { "@type": "ListItem", "position": 2, "name": "Professional Quote Request", "item": "https://www.toca.co.za/quotes.html" }
+    ]
+  }
+  </script>
   <style>
     .rfq-page {
       padding-top: 120px;
@@ -351,7 +381,7 @@
           <a href="track.html">Track</a>
         </div>
       </div>
-      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <a href="index.html" class="navbar__logo">TOCA</a>
       <div class="navbar__right">
         <div class="nav-icons">
           <a href="cart.html" class="nav-icon" aria-label="Cart">
@@ -439,6 +469,11 @@
               <textarea id="notes" rows="4" placeholder="e.g. bulk packaging, specific delivery windows, custom labelling…"></textarea>
             </div>
 
+            <label style="display:flex;align-items:flex-start;gap:10px;margin:20px 0;cursor:pointer;font-size:0.82rem;color:var(--color-text-light);line-height:1.5;">
+              <input type="checkbox" id="rfq-consent" required style="margin-top:3px;flex-shrink:0;">
+              I agree to the <a href="#" class="js-open-legal" data-legal-tab="privacy">Privacy Policy</a> — my details will be used to prepare and follow up on this quote.
+            </label>
+
             <div class="rfq-submit-row">
               <button type="submit" class="btn btn--primary" id="submit-btn">
                 SUBMIT QUOTE REQUEST
@@ -446,7 +481,7 @@
             </div>
 
             <p class="rfq-disclaimer">
-              By submitting you agree to our privacy policy. No payment is required at this stage.<br>
+              No payment is required at this stage.<br>
               A formal quote will be emailed within 24 business hours.
             </p>
 
@@ -617,5 +652,6 @@
 
     init();
   </script>
+  <script src="js/footer.js"></script>
 </body>
 </html>

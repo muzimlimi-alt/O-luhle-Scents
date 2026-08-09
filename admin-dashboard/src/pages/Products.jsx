@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { productsApi, categoriesApi } from '../services/api';
 import {
   Plus, Search, Filter, Edit2, Trash2, Package,
@@ -145,7 +145,7 @@ export function Products() {
       <PageHeader
         icon={<Package size={22} />}
         title="Products"
-        subtitle="Curating the finest artisanal fragrances in the O'luhle collection."
+        subtitle="Curating the finest artisanal fragrances in the TOCA collection."
         actions={(
           <button onClick={handleCreate} className="btn btn--primary">
             <Plus size={18} /> Create Product
@@ -262,7 +262,7 @@ export function Products() {
                     {/* RIGHT: DETAILS & VARIANTS */}
                     <div className="card-main-body">
                       <div className="product-identity">
-                        <span className="brand-eyebrow">{product.brand || "O'luhle Scents"}</span>
+                        <span className="brand-eyebrow">{product.brand || "TOCA"}</span>
                         <h3 className="product-name">{product.name}</h3>
                         {product.tags?.length > 0 && (
                           <div className="tag-cloud">

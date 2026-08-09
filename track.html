@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Track Your Shipment | O'luhle Scents</title>
+  <meta name="robots" content="noindex, follow">
+  <title>Track Your Shipment | TOCA</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
   <style>
@@ -392,7 +393,7 @@
           <a href="index.html #about">About</a>
         </div>
       </div>
-      <a href="index.html" class="navbar__logo">O'luhle <em>Scents</em></a>
+      <a href="index.html" class="navbar__logo">TOCA</a>
       <div class="navbar__right">
         <div class="nav-icons">
           <a href="cart.html" class="nav-icon" aria-label="Cart">
@@ -498,7 +499,7 @@
                 <div class="timeline-status">${ev.status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</div>
                 <div class="timeline-msg">${escapeHtml(ev.message || 'Shipment update processed.')}</div>
                 <div class="timeline-meta">
-                  <span>📍 ${escapeHtml(ev.location || 'O\'luhle Fulfillment Center')}</span>
+                  <span>📍 ${escapeHtml(ev.location || 'TOCA Fulfillment Center')}</span>
                   <span>${new Date(ev.createdAt).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                 </div>
               </div>

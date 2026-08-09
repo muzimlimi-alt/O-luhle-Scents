@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { Dashboard } from './pages/Dashboard';
@@ -14,6 +13,9 @@ import { Suppliers } from './pages/Suppliers';
 import { Purchases } from './pages/Purchases';
 import { AdminUsers } from './pages/AdminUsers';
 import { AuditLogs } from './pages/AuditLogs';
+import { Privacy } from './pages/Privacy';
+import { VatReports } from './pages/VatReports';
+import { ComplianceDashboard } from './pages/ComplianceDashboard';
 import { Quotes } from './pages/Quotes';
 import { Reports } from './pages/Reports';
 import Payments from './pages/Payments';
@@ -102,6 +104,9 @@ function App() {
               <Route path="testimonials" element={<Testimonials />} />
               <Route path="admin-users" element={<AdminUsers />} />
               <Route path="audit-logs" element={<AuditLogs />} />
+              <Route path="privacy" element={<Privacy />} />
+              <Route path="sars" element={<ComplianceDashboard />} />
+              <Route path="sars/vat" element={<VatReports />} />
               <Route path="preferences" element={<Preferences />} />
               <Route path="content" element={<Content />} />
               <Route path="shipping-methods" element={<ShippingMethods />} />

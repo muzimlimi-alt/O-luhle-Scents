@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { newsletterApi } from '../services/api';
 import { Modal } from '../components/Modal';
 import { Drawer } from '../components/Drawer';

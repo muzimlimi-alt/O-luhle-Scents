@@ -4,6 +4,7 @@ import prisma from '../lib/prisma.js'
 import { sendNewsletterConfirmation } from '../utils/email.js'
 import { requireAdmin } from '../middleware/auth.js'
 import { newsletterLimiter } from '../middleware/rateLimit.js'
+import { recordConsent } from '../lib/consentService.js'
 
 const router = Router()
 
@@ -64,6 +65,8 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
           sendNewsletterConfirmation(email, token).catch(err =>
             console.warn('[Newsletter] Email send failed:', err.message)
           )
+          recordConsent({ subjectEmail: email, purpose: 'marketing_email', granted: true, method: source === 'frontend' ? 'newsletter_signup' : 'admin_action', ipAddress: req.ip, userAgent: req.headers['user-agent'] })
+            .catch(e => console.warn('[Newsletter] Consent record failed:', e.message))
         }
         // Return silent upsert success for checkout flow
         return res.status(200).json({ type: 'success', message: 'Already subscribed.' })
@@ -72,7 +75,7 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
       // Frontend: friendly warning
       return res.status(200).json({
         type: 'warning',
-        message: "You're already part of the O'luhle Circle — no need to subscribe again.",
+        message: "You're already part of the TOCA Circle — no need to subscribe again.",
       })
     }
 
@@ -93,10 +96,12 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
     sendNewsletterConfirmation(email, token).catch(err =>
       console.warn('[Newsletter] Confirmation email failed:', err.message)
     )
+    recordConsent({ subjectEmail: email, purpose: 'marketing_email', granted: true, method: source === 'frontend' ? 'newsletter_signup' : 'admin_action', ipAddress: req.ip, userAgent: req.headers['user-agent'] })
+      .catch(e => console.warn('[Newsletter] Consent record failed:', e.message))
 
     return res.status(201).json({
       type: 'success',
-      message: "Thank you for joining the O'luhle Circle! Exclusive offers and new arrivals are on their way.",
+      message: "Thank you for joining the TOCA Circle! Exclusive offers and new arrivals are on their way.",
     })
 
   } catch (err) {
@@ -168,7 +173,7 @@ router.post('/unsubscribe', async (req, res) => {
 
     // Check token expiry
     if (subscriber.tokenExpiresAt && new Date() > new Date(subscriber.tokenExpiresAt)) {
-      return res.status(410).json({ success: false, reason: 'expired_token', message: 'This unsubscribe link has expired. Please contact us at info@oluhlescents.co.za to be removed.' })
+      return res.status(410).json({ success: false, reason: 'expired_token', message: 'This unsubscribe link has expired. Please contact us at info@toca.co.za to be removed.' })
     }
 
     if (subscriber.status === 'unsubscribed') {
@@ -186,11 +191,14 @@ router.post('/unsubscribe', async (req, res) => {
       },
     })
 
+    recordConsent({ subjectEmail: subscriber.email, purpose: 'marketing_email', granted: false, method: 'unsubscribe_link', ipAddress: req.ip, userAgent: req.headers['user-agent'] })
+      .catch(e => console.warn('[Newsletter] Consent record failed:', e.message))
+
     return res.status(200).json({
       success: true,
       alreadyUnsubscribed: false,
       email: subscriber.email,
-      message: "You've been successfully unsubscribed from the O'luhle Circle.",
+      message: "You've been successfully unsubscribed from the TOCA Circle.",
     })
 
   } catch (err) {

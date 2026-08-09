@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { metricsApi, ordersApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminOpsApi } from '../services/api';
 import { Modal } from '../components/Modal';
 import { Drawer } from '../components/Drawer';
@@ -9,7 +9,7 @@ import { FormField } from '../components/FormField';
 import { EmptyState } from '../components/EmptyState';
 import { useMessaging } from '../context/MessagingContext';
 import {
-  UserPlus, Shield, ShieldCheck, Edit2, Trash2, Key, Search, Filter, RefreshCw
+  UserPlus, Shield, ShieldCheck, Edit2, Trash2, Key, Search, Filter, RefreshCw, LogOut
 } from 'lucide-react';
 
 export function AdminUsers() {
@@ -139,6 +139,21 @@ export function AdminUsers() {
     }
   };
 
+  // Compromised-credential response: ends every session currently signed in
+  // as this admin without deactivating the account itself. Doesn't need a
+  // confirmation modal — unlike delete, it's non-destructive (they can just
+  // log back in), so the same lightweight pattern as password reset fits.
+  const handleRevokeSessions = async (row) => {
+    try {
+      const { sessionsRevoked } = await adminOpsApi.adminUsers.revokeSessions(row.id);
+      showMessage('success', 'Sessions Ended', sessionsRevoked > 0
+        ? `${row.name} has been signed out of ${sessionsRevoked} active session(s).`
+        : `${row.name} had no active sessions.`);
+    } catch (err) {
+      showMessage('error', 'Failed to End Sessions', err.message);
+    }
+  };
+
   return (
     <div className="elite-governance-container animate-fade-in">
       <PageHeader
@@ -219,6 +234,7 @@ export function AdminUsers() {
             <div className="action-matrix">
                <button className="icon-btn" title="Edit" onClick={() => { setSelectedUser(row); setIsEditOpen(true); }}><Edit2 size={14} /></button>
                <button className="icon-btn" title="Reset password" onClick={() => { setSelectedUser(row); setIsPasswordOpen(true); }}><Key size={14} /></button>
+               <button className="icon-btn" title="Sign out everywhere" onClick={() => handleRevokeSessions(row)}><LogOut size={14} /></button>
                <button className="icon-btn danger" title="Delete" onClick={() => { setSelectedUser(row); setIsDeleteOpen(true); }}><Trash2 size={14} /></button>
             </div>
           )}

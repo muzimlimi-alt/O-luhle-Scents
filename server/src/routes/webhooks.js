@@ -94,6 +94,16 @@ export async function processPayfastPayment(pfData) {
       }
     })
 
+    // The only Notification created on a successful PayFast payment today
+    // was for its unhappy paths (mismatch, low stock) — a normal, fully
+    // successful payment produced zero rows in the admin notification feed.
+    await tx.notification.create({
+      data: {
+        type: 'PAYMENT_RECEIVED',
+        message: `Payment received for order ${order.orderNumber} — R${Number(payment.amount).toLocaleString()} via PayFast.`
+      }
+    })
+
     // 3c. Consume the stock held at checkout — moves reserved units into
     // an actual sale (decrements quantity + reserved together) and logs it.
     const reservedVariantIds = new Set(order.reservations.map(r => r.variantId))

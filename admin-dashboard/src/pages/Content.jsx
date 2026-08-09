@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -327,6 +327,16 @@ export function Content() {
             </label>
             <CharCountField label="Message" k="announcement_message" max={120} />
             <Field label="Link (optional)" k="announcement_href" />
+          </div>
+        </div>
+
+        {/* Contact */}
+        <div className="card content-card">
+          <div className="content-card-header"><h3>Contact — Side Panel Cards</h3></div>
+          <div className="content-card-body">
+            <CharCountField label="Quote Text" k="contact_quote_text" max={200} />
+            <Field label="Quote Author" k="contact_quote_author" />
+            <Field label="“Reach Us” Card Heading" k="contact_reach_heading" />
           </div>
         </div>
 

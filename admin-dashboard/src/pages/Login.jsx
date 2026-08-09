@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -54,7 +54,7 @@ export function Login() {
             <div className="ornament-line"></div>
           </div>
 
-          <p className="brand-subtitle">O'luhle Scents</p>
+          <p className="brand-subtitle">TOCA</p>
           <h2 className="portal-title">Admin Portal</h2>
           <p className="portal-hint">Restricted access — authorised personnel only</p>
 
@@ -80,7 +80,7 @@ export function Login() {
               <input 
                 type="email" 
                 className="classic-input" 
-                placeholder="admin@oluhle.com" 
+                placeholder="admin@toca.co.za"
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

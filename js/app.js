@@ -1,10 +1,10 @@
 /* ============================================================
-   O'luhle Scents — Main JavaScript
+   TOCA — Main JavaScript
    Cart, Filtering, UI Interactions, Multi-Currency
    ============================================================ */
 
 let PRODUCTS = [];
-let currentCurrency = localStorage.getItem('oluhle_currency') || 'ZAR';
+let currentCurrency = localStorage.getItem('toca_currency') || 'ZAR';
 
 const CURRENCY_SYMBOLS = {
   'ZAR': 'R',
@@ -59,7 +59,7 @@ function getPlaceholderImage(name) {
 // --- Cart State ---
 function getSanitizedCart() {
   try {
-    const raw = JSON.parse(localStorage.getItem('oluhle_cart') || '[]');
+    const raw = JSON.parse(localStorage.getItem('toca_cart') || '[]');
     return raw.map(item => ({
       id: item.id || item.productId, // Support both legacy and new naming
       variantId: item.variantId,
@@ -79,7 +79,7 @@ function getSanitizedCart() {
 let cart = getSanitizedCart();
 
 function saveCart() {
-  localStorage.setItem('oluhle_cart', JSON.stringify(cart));
+  localStorage.setItem('toca_cart', JSON.stringify(cart));
   window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
   updateCartUI();
 }
@@ -409,7 +409,7 @@ function initHeaderScrollState() {
 async function handleCurrencyChange(e) {
   const newCurrency = e.target.value;
   currentCurrency = newCurrency;
-  localStorage.setItem('oluhle_currency', newCurrency);
+  localStorage.setItem('toca_currency', newCurrency);
   
   // Reload shop if present
   if (document.getElementById('shop-products')) {
@@ -557,7 +557,7 @@ const EliteMessaging = {
       document.body.appendChild(this.container);
     }
 
-    window.addEventListener('oluhle_message', (e) => {
+    window.addEventListener('toca_message', (e) => {
       const { type, title, message } = e.detail;
       this.show(type, title, message);
     });

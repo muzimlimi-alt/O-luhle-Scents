@@ -3,7 +3,7 @@ import { getProduct, validateCart } from './api.js';
 document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
-    const currency = localStorage.getItem('oluhle_currency') || 'ZAR';
+    const currency = localStorage.getItem('toca_currency') || 'ZAR';
 
     if (!productId) {
         window.location.href = 'shop.html';
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderProduct(product) {
-        document.title = `${product.name} | O'luhle Scents`;
+        injectSEO(product);
         elements.name.textContent = product.name;
         elements.brand.textContent = product.brand ? `${product.brand} · ${product.type || 'Extrait de Parfum'}` : (product.type || 'Extrait de Parfum');
         elements.desc.textContent = product.description;
@@ -126,6 +126,85 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function setMetaTag(attr, key, value) {
+        let el = document.querySelector(`meta[${attr}="${key}"]`);
+        if (!el) {
+            el = document.createElement('meta');
+            el.setAttribute(attr, key);
+            document.head.appendChild(el);
+        }
+        el.setAttribute('content', value);
+    }
+
+    function setLinkTag(rel, href) {
+        let el = document.querySelector(`link[rel="${rel}"]`);
+        if (!el) {
+            el = document.createElement('link');
+            el.setAttribute('rel', rel);
+            document.head.appendChild(el);
+        }
+        el.setAttribute('href', href);
+    }
+
+    // Overwrites the static fallback <head> tags with this product's real
+    // data — search engines and social link-preview bots that execute JS
+    // (Googlebot, most others) see the per-product title/description/image;
+    // the static markup already in the HTML covers bots that don't.
+    function injectSEO(product) {
+        const title = `${product.name} | TOCA`;
+        const canonicalUrl = `https://www.toca.co.za/product-detail.html?id=${product.id}`;
+        const description = (product.description || `${product.name} — premium extrait de parfum from TOCA.`).slice(0, 300);
+        const image = `https://www.toca.co.za/images/products/${product.primaryImage || 'placeholder.jpg'}`;
+
+        document.title = title;
+        setMetaTag('name', 'description', description);
+        setLinkTag('canonical', canonicalUrl);
+
+        setMetaTag('property', 'og:type', 'product');
+        setMetaTag('property', 'og:title', title);
+        setMetaTag('property', 'og:description', description);
+        setMetaTag('property', 'og:url', canonicalUrl);
+        setMetaTag('property', 'og:image', image);
+
+        setMetaTag('name', 'twitter:title', title);
+        setMetaTag('name', 'twitter:description', description);
+        setMetaTag('name', 'twitter:image', image);
+
+        const prices = (product.variants || []).map(v => Number(v.price)).filter(n => !isNaN(n));
+        const inStock = (product.variants || []).some(v => (v.inventory?.quantity || 0) > 0);
+        const currency = product.variants?.[0]?.currency || 'ZAR';
+
+        const jsonLd = {
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name,
+            description: description,
+            image: image,
+            sku: String(product.id),
+            brand: { '@type': 'Brand', name: product.brand || "TOCA" },
+        };
+        if (prices.length) {
+            jsonLd.offers = {
+                '@type': 'AggregateOffer',
+                priceCurrency: currency,
+                lowPrice: Math.min(...prices).toFixed(2),
+                highPrice: Math.max(...prices).toFixed(2),
+                offerCount: prices.length,
+                availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                url: canonicalUrl
+            };
+        }
+
+        let script = document.getElementById('product-jsonld');
+        if (!script) {
+            script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.id = 'product-jsonld';
+            document.head.appendChild(script);
+        }
+        script.textContent = JSON.stringify(jsonLd);
+    }
+
     function selectVariant(variant, btn) {
         selectedVariant = variant;
         document.querySelectorAll('.size-option').forEach(b => b.classList.remove('active'));
@@ -187,7 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const qty = parseInt(elements.qtyInput.value);
-            const cart = JSON.parse(localStorage.getItem('oluhle_cart') || '[]');
+            const cart = JSON.parse(localStorage.getItem('toca_cart') || '[]');
             const existing = cart.find(item => item.variantId === selectedVariant.id);
 
             if (existing) {
@@ -201,11 +280,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     price: Number(selectedVariant.price) || 0,
                     qty: qty,
                     image: productData.primaryImage ? `products/${productData.primaryImage}` : '',
-                    currency: localStorage.getItem('oluhle_currency') || 'ZAR'
+                    currency: localStorage.getItem('toca_currency') || 'ZAR'
                 });
             }
 
-            localStorage.setItem('oluhle_cart', JSON.stringify(cart));
+            localStorage.setItem('toca_cart', JSON.stringify(cart));
             window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
             
             // Visual feedback

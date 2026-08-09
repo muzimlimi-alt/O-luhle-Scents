@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ordersApi, adminOpsApi, productsApi } from '../services/api';
 import { Drawer } from '../components/Drawer';
 import { DataTable } from '../components/DataTable';
@@ -330,7 +330,7 @@ export function Orders() {
                value={fulfillData.trackingNumber}
                onChange={e => setFulfillData({...fulfillData, trackingNumber: e.target.value})}
                required
-               placeholder="e.g. TCG-OLUHLE-8849"
+               placeholder="e.g. TCG-TOCA-8849"
              />
            </FormField>
 

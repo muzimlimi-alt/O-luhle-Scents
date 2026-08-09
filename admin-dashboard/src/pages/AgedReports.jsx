@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { financeApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
 import { LoadingState } from '../components/LoadingState';
 import { EmptyState } from '../components/EmptyState';
 import { StatusBadge } from '../components/StatusBadge';
+import { ExportButtons } from '../components/ExportButtons';
 import { History, Users, Truck } from 'lucide-react';
 
 const fmt = (n) => `R${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -21,7 +22,7 @@ const TABS = [
   { id: 'payables', label: 'Aged Payables', icon: <Truck size={16} /> },
 ];
 
-function AgingTab({ fetcher, partyLabel, totalLabel, idKey, partyKey, totalKey }) {
+function AgingTab({ fetcher, path, partyLabel, totalLabel, idKey, partyKey, totalKey }) {
   const [asOf, setAsOf] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,7 @@ function AgingTab({ fetcher, partyLabel, totalLabel, idKey, partyKey, totalKey }
       <div className="aging-filters">
         <label>As of</label>
         <input type="date" className="admin-input" value={asOf} onChange={e => setAsOf(e.target.value)} />
+        <ExportButtons path={path} params={asOf ? { asOf } : {}} filename={path.split('/').pop()} />
       </div>
 
       {loading ? (
@@ -113,10 +115,10 @@ export function AgedReports() {
 
       <div className="card">
         {activeTab === 'receivables' && (
-          <AgingTab fetcher={financeApi.agedReceivables} partyLabel="Customer" totalLabel="Receivables" idKey="orderId" partyKey="customerName" totalKey="totalAmount" />
+          <AgingTab fetcher={financeApi.agedReceivables} path="/admin/finance/aged-receivables" partyLabel="Customer" totalLabel="Receivables" idKey="orderId" partyKey="customerName" totalKey="totalAmount" />
         )}
         {activeTab === 'payables' && (
-          <AgingTab fetcher={financeApi.agedPayables} partyLabel="Supplier" totalLabel="Payables" idKey="purchaseId" partyKey="supplierName" totalKey="totalCost" />
+          <AgingTab fetcher={financeApi.agedPayables} path="/admin/finance/aged-payables" partyLabel="Supplier" totalLabel="Payables" idKey="purchaseId" partyKey="supplierName" totalKey="totalCost" />
         )}
       </div>
 

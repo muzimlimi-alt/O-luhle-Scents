@@ -6,7 +6,7 @@ const PORT = 5432;
 const USER = 'postgres';
 
 async function probe() {
-  console.log(`[PG Probe] Searching for O'luhle Scents database on port ${PORT}...`);
+  console.log(`[PG Probe] Searching for TOCA database on port ${PORT}...`);
   
   for (const password of PASSWORDS) {
     const client = new Client({
@@ -21,7 +21,7 @@ async function probe() {
       await client.connect();
       console.log(`[PG Probe] ✅ SUCCESS! Connected with password: "${password}"`);
       
-      const dbName = 'oluhle_scents';
+      const dbName = 'toca';
       const checkDb = await client.query(`SELECT 1 FROM pg_database WHERE datname = '${dbName}'`);
       
       if (checkDb.rowCount === 0) {

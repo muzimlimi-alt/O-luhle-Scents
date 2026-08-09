@@ -1,4 +1,3 @@
-import React from 'react';
 
 const TONE_CLASS = {
   success: 'status-badge-ds--success',

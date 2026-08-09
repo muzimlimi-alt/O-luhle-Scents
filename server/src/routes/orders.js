@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
 import { sendNewsletterConfirmation } from '../utils/email.js'
+import { recordConsent } from '../lib/consentService.js'
 
 import { calculateShipping } from '../lib/shippingService.js'
 import { reserveStock, InsufficientStockError } from '../lib/inventoryService.js'
@@ -275,6 +276,22 @@ router.post('/', async (req, res, next) => {
     // Fire-and-forget: response already sent, so this never blocks or crashes it
     if (newsletterOptIn && contact?.email) {
       handleCheckoutNewsletterOptIn(contact.email.trim().toLowerCase())
+    }
+
+    // Record the marketing-consent decision either way — true if they opted
+    // in, false if they didn't — so there's a provable, timestamped answer
+    // to "did this customer consent to marketing email," not just an inferred
+    // one (POPIA audit finding F3).
+    if (contact?.email) {
+      recordConsent({
+        customerId: order.customerId,
+        subjectEmail: contact.email.trim().toLowerCase(),
+        purpose: 'marketing_email',
+        granted: Boolean(newsletterOptIn),
+        method: 'checkout_form',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      }).catch((e) => console.warn('[Checkout] Consent record failed:', e.message))
     }
 
   } catch (err) {

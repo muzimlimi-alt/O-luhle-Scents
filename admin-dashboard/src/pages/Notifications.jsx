@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState } from '../components/EmptyState';
@@ -21,12 +21,16 @@ const humanizeType = (type) => (type || '')
   .replace(/_/g, ' ')
   .replace(/\b\w/g, c => c.toUpperCase());
 
-// Only LOW_STOCK and PAYMENT_MISMATCH are actually created anywhere in the
-// app today; anything else falls back to the neutral/info treatment rather
-// than assuming a fixed INFO/WARNING/ERROR vocabulary that doesn't exist.
+// Not every Notification type is listed here — anything missing falls back
+// to the neutral/info treatment rather than assuming a fixed
+// INFO/WARNING/ERROR vocabulary that doesn't exist on the model itself.
 const SEVERITY = {
   PAYMENT_MISMATCH: 'critical',
   LOW_STOCK: 'warning',
+  STOCK_UNAVAILABLE_AFTER_PAYMENT: 'critical',
+  // A payment reached PayFast but its confirmation never arrived — same
+  // urgency as a mismatch, since a real sale may have been silently lost.
+  PAYFAST_ITN_NOT_RECEIVED: 'critical',
 };
 
 export default function Notifications() {

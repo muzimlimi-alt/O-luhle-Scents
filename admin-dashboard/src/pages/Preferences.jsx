@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
 import { useTheme } from '../context/ThemeContext';
 import {
-  Palette, 
-  Monitor, 
-  Smartphone, 
-  EyeOff, 
-  Zap, 
-  CheckCircle, 
+  Palette,
+  Monitor,
+  Zap,
+  CheckCircle,
   RotateCcw,
   Layout,
   Table
@@ -36,7 +34,7 @@ export function Preferences() {
     <div className="preferences-page">
       <div className="content-header" style={{ marginBottom: '32px' }}>
         <h2 className="page-title">Administrative Preferences</h2>
-        <p className="page-subtitle">Configure your personal O'luhle Scents management experience</p>
+        <p className="page-subtitle">Configure your personal TOCA management experience</p>
       </div>
 
       <div className="settings-container" style={{ maxWidth: '800px' }}>

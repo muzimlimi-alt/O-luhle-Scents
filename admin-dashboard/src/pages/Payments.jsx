@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { paymentsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
@@ -74,7 +74,7 @@ export default function Payments() {
     setProofPayment(payment);
     setProofLoading(true);
     try {
-      const token = localStorage.getItem('oluhle_admin_token');
+      const token = localStorage.getItem('toca_admin_token');
       const response = await fetch(paymentsApi.proofUrl(payment.id), { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to load proof of payment');
       const blob = await response.blob();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -38,7 +38,10 @@ import {
   Percent,
   Search,
   ChevronDown,
-  LogOut
+  LogOut,
+  Lock,
+  FileCheck,
+  Calculator
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -93,12 +96,20 @@ const NAV = [
       { path: '/finance/aged', label: 'Aged Reports', icon: <History size={16} /> },
     ]
   },
+  {
+    type: 'group', id: 'sars', label: 'SARS Compliance', icon: <FileCheck size={18} />,
+    children: [
+      { path: '/sars', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
+      { path: '/sars/vat', label: 'VAT Reports', icon: <Calculator size={16} /> },
+    ]
+  },
   { type: 'link', path: '/reports', label: 'Reports', icon: <FileBarChart size={18} /> },
   {
     type: 'group', id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />,
     children: [
       { path: '/admin-users', label: 'Admin Users', icon: <UserCog size={16} /> },
       { path: '/audit-logs', label: 'Audit Logs', icon: <ScrollText size={16} /> },
+      { path: '/privacy', label: 'Privacy & POPIA', icon: <Lock size={16} /> },
       { path: '/notifications', label: 'Notifications', icon: <Bell size={16} /> },
     ]
   },
@@ -114,7 +125,7 @@ const NAV = [
   },
 ];
 
-const EXPANDED_KEY = 'oluhle_admin_nav_expanded';
+const EXPANDED_KEY = 'toca_admin_nav_expanded';
 
 function loadExpanded() {
   try {

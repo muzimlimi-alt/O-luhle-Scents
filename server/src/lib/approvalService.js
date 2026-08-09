@@ -1,5 +1,6 @@
 import prisma from './prisma.js'
 import { issueRefund } from './orderAdminService.js'
+import { reopenPeriod } from './periodCloseService.js'
 
 // Finance Phase 11 — gates high-value refunds behind a second admin's
 // sign-off. requireAdmin has no permission-level hierarchy (every admin is
@@ -38,6 +39,8 @@ export async function approveRequest(requestId, approvedById) {
       notes: p.notes,
       adminUserId: request.requestedById
     })
+  } else if (request.entityType === 'REOPEN_PERIOD') {
+    result = await reopenPeriod(request.payload.periodId)
   } else {
     throw Object.assign(new Error(`Unknown approval entityType: ${request.entityType}`), { status: 500 })
   }

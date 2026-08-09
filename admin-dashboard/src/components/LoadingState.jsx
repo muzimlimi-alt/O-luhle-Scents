@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Standard loading treatment: one spinner + label, announced to screen

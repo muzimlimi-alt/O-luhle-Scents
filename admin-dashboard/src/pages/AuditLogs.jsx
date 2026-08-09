@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
@@ -17,8 +17,8 @@ export function AuditLogs() {
       } catch (err) {
         console.error('Audit logs API failed:', err.message);
         setLogs([
-          { id: '1', adminUser: { name: 'Admin', email: 'admin@oluhle.com' }, action: 'Create Product', entity: 'Product', createdAt: '2026-04-03T14:30:00Z', details: { name: 'Midnight Oud' } },
-          { id: '2', adminUser: { name: 'Admin', email: 'admin@oluhle.com' }, action: 'Update Order', entity: 'Order', createdAt: '2026-04-03T15:00:00Z', details: { status: 'SHIPPED' } },
+          { id: '1', adminUser: { name: 'Admin', email: 'admin@toca.co.za' }, action: 'Create Product', entity: 'Product', createdAt: '2026-04-03T14:30:00Z', details: { name: 'Midnight Oud' } },
+          { id: '2', adminUser: { name: 'Admin', email: 'admin@toca.co.za' }, action: 'Update Order', entity: 'Order', createdAt: '2026-04-03T15:00:00Z', details: { status: 'SHIPPED' } },
         ]);
       } finally {
         setLoading(false);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
@@ -46,7 +46,7 @@ export function Reports() {
       const url = window.URL.createObjectURL(new Blob([response]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `O_luhle_Executive_Report_Month_${monthOffset}.pdf`;
+      a.download = `TOCA_Executive_Report_Month_${monthOffset}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

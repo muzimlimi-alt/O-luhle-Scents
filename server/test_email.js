@@ -13,7 +13,7 @@ async function run() {
   const unsubscribeToken = 'test-unsub-token-12345';
   
   const campaign = {
-    subject: 'O\'luhle Scents - Aromatic Test Campaign',
+    subject: 'TOCA - Aromatic Test Campaign',
     contentHtml: `
       <h2>Hello Muzi!</h2>
       <p>This is a test campaign broadcast directly from the backend system.</p>
@@ -21,7 +21,7 @@ async function run() {
         <img src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=600&q=80" alt="Luxury Perfume" style="max-width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
       </div>
       <p>The system successfully supports plain text conversions seamlessly, activating/deactivating subscribers, and natively embedding images into broadcasts.</p>
-      <p>Best regards,<br/>The O'luhle System</p>
+      <p>Best regards,<br/>The TOCA System</p>
     `,
     attachments: []
   };

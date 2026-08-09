@@ -1,10 +1,10 @@
 /**
- * O'luhle Scents — Email Service
+ * TOCA — Email Service
  *
  * Uses Nodemailer — configure your .env with:
  *   EMAIL_USER="you@gmail.com"
  *   EMAIL_PASS="your_app_password"
- *   EMAIL_FROM="O'luhle Scents <orders@yourdomain.com>"
+ *   EMAIL_FROM="TOCA <orders@yourdomain.com>"
  */
 
 import nodemailer from 'nodemailer'
@@ -45,7 +45,7 @@ async function getTransporter() {
   return transporter
 }
 
-const FROM = process.env.EMAIL_FROM || "O'luhle Scents <orders@oluhle.co.za>"
+const FROM = process.env.EMAIL_FROM || "TOCA <orders@toca.co.za>"
 
 // ── Safe send wrapper ─────────────────────────────────────────────────────────
 async function send({ to, subject, html, replyTo }) {
@@ -83,7 +83,7 @@ function emailShell(title, bodyHtml) {
     <!-- Header -->
     <div style="background:#1a1a1a;padding:32px 40px;text-align:center;">
       <div style="font-family:Georgia,serif;font-size:22px;color:#d4af37;letter-spacing:0.12em;">
-        O'luhle <em>Scents</em>
+        TOCA
       </div>
       <div style="font-size:11px;color:#999;letter-spacing:0.2em;text-transform:uppercase;margin-top:4px;">
         Extrait de Parfum
@@ -96,12 +96,12 @@ function emailShell(title, bodyHtml) {
     <!-- Footer -->
     <div style="background:#f7f3ee;padding:24px 40px;text-align:center;border-top:1px solid #e8e0d4;">
       <p style="font-size:12px;color:#999;margin:0;">
-        &copy; ${new Date().getFullYear()} O'luhle Scents &nbsp;·&nbsp;
+        &copy; ${new Date().getFullYear()} TOCA &nbsp;·&nbsp;
         <a href="tel:0761112096" style="color:#b89b6a;text-decoration:none;">076 111 2096</a>
       </p>
       <p style="font-size:11px;color:#bbb;margin:8px 0 0;">
         Questions? Reply to this email or visit
-        <a href="${process.env.SERVER_URL || 'http://localhost:3000'}" style="color:#b89b6a;">oluhle.co.za</a>
+        <a href="${process.env.SERVER_URL || 'http://localhost:3000'}" style="color:#b89b6a;">toca.co.za</a>
       </p>
     </div>
   </div>
@@ -194,60 +194,8 @@ export async function sendOrderConfirmation(orderId) {
 
   await send({
     to:      order.customer.email,
-    subject: `Your O'luhle Scents order is confirmed ✦`,
-    html:    emailShell(`Order Confirmed — O'luhle Scents`, body),
-  })
-}
-
-// ── 2. Shipping update ────────────────────────────────────────────────────────
-// Triggered when an admin updates order status to 'shipped'.
-export async function sendShippingUpdate(order) {
-  const firstName = order.shippingAddress?.firstName || 'Valued Customer'
-  const body = `
-    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
-      Your order is on its way, ${firstName}!
-    </h2>
-    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
-      Great news — your O'luhle Scents fragrance has been dispatched and is now
-      on its way to you.
-    </p>
-
-    <div style="background:#f7f3ee;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
-      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Order Reference</div>
-      <div style="font-family:monospace;font-size:14px;color:#1a1a1a;">${order.id}</div>
-    </div>
-
-    <table style="width:100%;border-collapse:collapse;">
-      <thead>
-        <tr>
-          <th style="text-align:left;font-size:11px;color:#999;letter-spacing:0.1em;text-transform:uppercase;padding-bottom:8px;">Item</th>
-          <th style="text-align:center;font-size:11px;color:#999;letter-spacing:0.1em;text-transform:uppercase;padding-bottom:8px;">Qty</th>
-          <th style="text-align:right;font-size:11px;color:#999;letter-spacing:0.1em;text-transform:uppercase;padding-bottom:8px;">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${itemRows(order.items)}
-      </tbody>
-    </table>
-
-    <div style="margin-top:32px;padding:20px 24px;background:#1a1a1a;border-radius:6px;text-align:center;">
-      <div style="color:#d4af37;font-size:24px;margin-bottom:8px;">✈</div>
-      <div style="font-size:13px;color:#ccc;">
-        Estimated arrival: ${order.shippingMethod === 'express' ? '1–2 business days' : '3–5 business days'}
-      </div>
-    </div>
-
-    <p style="font-size:13px;color:#888;margin-top:28px;line-height:1.7;">
-      Delivering to:
-      ${order.shippingAddress?.city || ''}, ${order.shippingAddress?.province || ''}.
-      If you have any questions about your delivery, reply to this email or call us at
-      <a href="tel:0761112096" style="color:#b89b6a;">076 111 2096</a>.
-    </p>`
-
-  await send({
-    to:      order.email,
-    subject: `Your O'luhle Scents order has shipped ✦`,
-    html:    emailShell(`Order Shipped — O'luhle Scents`, body),
+    subject: `Your TOCA order is confirmed ✦`,
+    html:    emailShell(`Order Confirmed — TOCA`, body),
   })
 }
 
@@ -264,14 +212,14 @@ export async function sendNewsletterConfirmation(email, unsubscribeToken) {
     </div>
 
     <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:22px;margin:0 0 8px;text-align:center;letter-spacing:0.02em;">
-      Welcome to the O'luhle Circle
+      Welcome to the TOCA Circle
     </h2>
     <p style="color:#888;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;text-align:center;margin:0 0 28px;">
       Extrait de Parfum — Exclusivity Awaits
     </p>
 
     <p style="color:#555;font-size:14px;line-height:1.8;margin:0 0 20px;">
-      Thank you for joining us. As a member of the O'luhle Circle, you'll be the first to know about
+      Thank you for joining us. As a member of the TOCA Circle, you'll be the first to know about
       new fragrance releases, curated collections, and exclusive member-only offers.
     </p>
 
@@ -298,19 +246,19 @@ export async function sendNewsletterConfirmation(email, unsubscribeToken) {
     <div style="border-top:1px solid #e8e0d4;padding-top:20px;text-align:center;">
       <p style="font-size:11px;color:#bbb;margin:0;line-height:1.7;">
         You're receiving this because you subscribed at
-        <a href="${BASE}" style="color:#b89b6a;text-decoration:none;">oluhlescents.co.za</a>.<br>
+        <a href="${BASE}" style="color:#b89b6a;text-decoration:none;">toca.co.za</a>.<br>
         Changed your mind?
         <a href="${unsubUrl}"
            style="color:#b89b6a;text-decoration:underline;font-size:11px;">
-          Unsubscribe from the O'luhle Circle
+          Unsubscribe from the TOCA Circle
         </a>
       </p>
     </div>`
 
   await send({
     to:      email,
-    subject: `Welcome to the O'luhle Circle ✦`,
-    html:    emailShell(`Welcome to the O'luhle Circle`, body),
+    subject: `Welcome to the TOCA Circle ✦`,
+    html:    emailShell(`Welcome to the TOCA Circle`, body),
   })
 }
 
@@ -318,7 +266,7 @@ export async function sendNewsletterConfirmation(email, unsubscribeToken) {
 // Sent to the business inbox whenever a visitor submits the homepage contact
 // form. replyTo is set to the customer's own address so staff can just hit
 // reply in their mail client.
-const CONTACT_INBOX = process.env.CONTACT_EMAIL || 'info@oluhlescents.co.za'
+const CONTACT_INBOX = process.env.CONTACT_EMAIL || 'info@toca.co.za'
 
 function escapeHtml(str) {
   return String(str || '').replace(/[&<>"']/g, (c) => ({
@@ -338,7 +286,7 @@ export async function sendContactMessage({ name, email, phone, subject, message 
       New enquiry from ${name}
     </h2>
     <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
-      Sent via the O'luhle Scents website contact form.
+      Sent via the TOCA website contact form.
     </p>
 
     <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
@@ -356,7 +304,7 @@ export async function sendContactMessage({ name, email, phone, subject, message 
   await send({
     to: CONTACT_INBOX,
     subject: `New contact form enquiry — ${name}`,
-    html: emailShell('New Contact Enquiry — O\'luhle Scents', body),
+    html: emailShell('New Contact Enquiry — TOCA', body),
     replyTo: email,
   })
 }
@@ -390,11 +338,11 @@ export async function sendCampaignBroadcast(email, unsubscribeToken, campaign) {
     <div style="border-top:1px solid #e8e0d4;padding-top:20px;margin-top:40px;text-align:center;">
       <p style="font-size:11px;color:#bbb;margin:0;line-height:1.7;">
         You're receiving this because you subscribed at
-        <a href="${BASE}" style="color:#b89b6a;text-decoration:none;">oluhlescents.co.za</a>.<br>
+        <a href="${BASE}" style="color:#b89b6a;text-decoration:none;">toca.co.za</a>.<br>
         Changed your mind?
         <a href="${unsubUrl}"
            style="color:#b89b6a;text-decoration:underline;font-size:11px;">
-          Unsubscribe from the O'luhle Circle
+          Unsubscribe from the TOCA Circle
         </a>
       </p>
     </div>
@@ -410,9 +358,9 @@ export async function sendCampaignBroadcast(email, unsubscribeToken, campaign) {
 }
 
 // ── Manual EFT email templates ────────────────────────────────────────────────
-// Unlike sendOrderConfirmation/sendShippingUpdate above (written for PayFast,
-// never actually wired up, and left untouched here), these ARE called live —
-// see server/src/lib/eftPaymentService.js and orders.js's manual_eft branch.
+// Unlike sendOrderConfirmation above (written for PayFast, never actually
+// wired up, and left untouched here), these ARE called live — see
+// server/src/lib/eftPaymentService.js and orders.js's manual_eft branch.
 
 async function loadOrderForEftEmail(orderId) {
   return prisma.order.findUnique({
@@ -515,8 +463,8 @@ export async function sendEftInstructions(orderId, bankDetails, amountDue = null
 
   await send({
     to: order.customer.email,
-    subject: `Complete your O'luhle Scents order — ${order.orderNumber}`,
-    html: emailShell('Complete Your Payment — O\'luhle Scents', body),
+    subject: `Complete your TOCA order — ${order.orderNumber}`,
+    html: emailShell('Complete Your Payment — TOCA', body),
   })
 }
 
@@ -537,7 +485,7 @@ export async function sendProofReceived(orderId) {
   await send({
     to: order.customer.email,
     subject: `Proof of payment received — ${order.orderNumber}`,
-    html: emailShell('Proof Received — O\'luhle Scents', body),
+    html: emailShell('Proof Received — TOCA', body),
   })
 }
 
@@ -557,7 +505,7 @@ export async function sendPaymentVerified(orderId) {
   await send({
     to: order.customer.email,
     subject: `Payment verified — ${order.orderNumber}`,
-    html: emailShell('Payment Verified — O\'luhle Scents', body),
+    html: emailShell('Payment Verified — TOCA', body),
   })
 }
 
@@ -579,7 +527,7 @@ export async function sendPaymentRejected(orderId, reason) {
   await send({
     to: order.customer.email,
     subject: `Action needed: payment not verified — ${order.orderNumber}`,
-    html: emailShell('Payment Not Verified — O\'luhle Scents', body),
+    html: emailShell('Payment Not Verified — TOCA', body),
   })
 }
 
@@ -649,8 +597,8 @@ export async function sendPaymentReminderEmail(orderId, { isEft, bankDetails, am
 
   await send({
     to: order.customer.email,
-    subject: `Reminder: complete your O'luhle Scents order — ${order.orderNumber}`,
-    html: emailShell('Payment Reminder — O\'luhle Scents', body),
+    subject: `Reminder: complete your TOCA order — ${order.orderNumber}`,
+    html: emailShell('Payment Reminder — TOCA', body),
   })
 }
 
@@ -665,7 +613,7 @@ export async function sendPasswordResetEmail(customer, token) {
       Reset your password
     </h2>
     <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
-      We received a request to reset the password on your O'luhle Scents account.
+      We received a request to reset the password on your TOCA account.
       This link expires in 1 hour. If you didn't request this, you can safely ignore this email.
     </p>
     <div style="text-align:center;margin:32px 0;">
@@ -679,8 +627,8 @@ export async function sendPasswordResetEmail(customer, token) {
 
   await send({
     to: customer.email,
-    subject: `Reset your O'luhle Scents password`,
-    html: emailShell('Reset Your Password — O\'luhle Scents', body),
+    subject: `Reset your TOCA password`,
+    html: emailShell('Reset Your Password — TOCA', body),
   })
 }
 

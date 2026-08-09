@@ -1,5 +1,5 @@
 /* ============================================================
-   O'luhle Scents Admin — Design Tokens
+   TOCA Admin — Design Tokens
    Single source of truth for color, type, spacing, and elevation.
    Consume via var(--token-name); never hardcode a hex/rgba that
    already has a token here.
@@ -14,7 +14,7 @@
 
 :root {
   /* Constant Brand Identity Tokens */
-  --color-primary: #b89b6a;      /* Oluhle Gold — backgrounds, borders, icons, accents. NOT for text on light surfaces (fails contrast) — use --color-primary-text instead. */
+  --color-primary: #b89b6a;      /* TOCA Gold — backgrounds, borders, icons, accents. NOT for text on light surfaces (fails contrast) — use --color-primary-text instead. */
   --color-primary-light: #d4bc91;
   --color-primary-dark: #8c7650;
 

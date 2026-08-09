@@ -35,6 +35,9 @@ router.post('/', requireAdmin, async (req, res, next) => {
         }
       })
       await postAssetAcquisitionJournal(tx, created)
+      await tx.auditLog.create({
+        data: { adminUserId: req.adminId, action: 'ACQUIRE_ASSET', entity: 'Asset', entityId: created.id, details: { name, purchaseCost: cost, usefulLifeMonths: life } }
+      })
       return created
     })
 
@@ -70,6 +73,9 @@ router.post('/:id/depreciate', requireAdmin, async (req, res, next) => {
         throw err
       }
       await postDepreciationJournal(tx, asset, period, monthlyAmount)
+      await tx.auditLog.create({
+        data: { adminUserId: req.adminId, action: 'DEPRECIATE_ASSET', entity: 'Asset', entityId: asset.id, details: { period, amount: monthlyAmount } }
+      })
       return entry
     })
 
@@ -96,10 +102,14 @@ router.post('/:id/dispose', requireAdmin, async (req, res, next) => {
 
     const updated = await prisma.$transaction(async (tx) => {
       await postAssetDisposalJournal(tx, asset, proceeds, accumulatedDepreciation)
-      return tx.asset.update({
+      const disposed = await tx.asset.update({
         where: { id: asset.id },
         data: { status: 'DISPOSED', disposalDate: disposalDate ? new Date(disposalDate) : new Date(), disposalProceeds: proceeds }
       })
+      await tx.auditLog.create({
+        data: { adminUserId: req.adminId, action: 'DISPOSE_ASSET', entity: 'Asset', entityId: asset.id, details: { disposalProceeds: proceeds, accumulatedDepreciation } }
+      })
+      return disposed
     })
 
     res.json(updated)

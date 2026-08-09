@@ -27,6 +27,7 @@ const ACCOUNTS = [
   // Revenue
   { code: '4000', name: 'Product Sales', type: 'REVENUE', normalBalance: 'CREDIT' },
   { code: '4010', name: 'Shipping Revenue', type: 'REVENUE', normalBalance: 'CREDIT' },
+  { code: '4800', name: 'Discounts Given', type: 'REVENUE', normalBalance: 'DEBIT' }, // contra-revenue, same pattern as 4900
   { code: '4900', name: 'Sales Returns & Allowances', type: 'REVENUE', normalBalance: 'DEBIT' },
 
   // Expenses

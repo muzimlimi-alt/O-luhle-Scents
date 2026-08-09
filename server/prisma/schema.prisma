@@ -9,26 +9,28 @@ datasource db {
 
 // ── 1. ADMIN_USERS ──────────────────────────────────────────────────────────
 model AdminUser {
-  id                  String               @id @default(uuid()) @db.Uuid
-  name                String               @db.VarChar(100)
-  email               String               @unique @db.VarChar(150)
-  passwordHash        String               @map("password_hash")
-  role                String               @default("admin") @db.VarChar(50)
-  isActive            Boolean              @default(true) @map("is_active")
-  lastLogin           DateTime?            @map("last_login")
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  sessions            AdminSession[]
-  auditLogs           AuditLog[]
-  newsletterCampaigns NewsletterCampaign[]
-  returnItems         ReturnItem[]
-  refunds             Refund[]
-  verifiedPayments    Payment[]
-  supplierPayments    SupplierPayment[]
-  expenses            Expense[]
-  assets              Asset[]
-  approvalRequestsMade    ApprovalRequest[] @relation("ApprovalRequested")
-  approvalRequestsDecided ApprovalRequest[] @relation("ApprovalDecided")
+  id                          String                @id @default(uuid()) @db.Uuid
+  name                        String                @db.VarChar(100)
+  email                       String                @unique @db.VarChar(150)
+  passwordHash                String                @map("password_hash")
+  role                        String                @default("admin") @db.VarChar(50)
+  isActive                    Boolean               @default(true) @map("is_active")
+  lastLogin                   DateTime?             @map("last_login")
+  createdAt                   DateTime              @default(now()) @map("created_at")
+  updatedAt                   DateTime              @updatedAt @map("updated_at")
+  sessions                    AdminSession[]
+  auditLogs                   AuditLog[]
+  newsletterCampaigns         NewsletterCampaign[]
+  returnItems                 ReturnItem[]
+  refunds                     Refund[]
+  verifiedPayments            Payment[]
+  supplierPayments            SupplierPayment[]
+  expenses                    Expense[]
+  assets                      Asset[]
+  approvalRequestsMade        ApprovalRequest[]     @relation("ApprovalRequested")
+  approvalRequestsDecided     ApprovalRequest[]     @relation("ApprovalDecided")
+  dataSubjectRequestsResolved DataSubjectRequest[]
+  retentionPolicyUpdates      DataRetentionPolicy[]
 
   @@map("admin_users")
 }
@@ -233,20 +235,20 @@ model ProductMedia {
 
 // ── 4. PRODUCT_VARIANTS ──────────────────────────────────────────────────────
 model ProductVariant {
-  id        String   @id @default(uuid()) @db.Uuid
-  productId String   @map("product_id") @db.Uuid
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  size      String   @db.VarChar(20)
-  price     Decimal  @db.Decimal(10, 2)
-  costPrice Decimal? @map("cost_price") @db.Decimal(10, 2)
+  id            String   @id @default(uuid()) @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size          String   @db.VarChar(20)
+  price         Decimal  @db.Decimal(10, 2)
+  costPrice     Decimal? @map("cost_price") @db.Decimal(10, 2)
   // Finance Phase 8: known-at-setup per-unit costs beyond purchase price —
   // packaging materials, label printing. Freight/courier/marketing are
   // period-level spend, not per-unit, so they're not modeled here — see
   // Expense + financeService.js allocatedOverheadPerUnit instead.
   packagingCost Decimal? @map("packaging_cost") @db.Decimal(10, 2)
   labellingCost Decimal? @map("labelling_cost") @db.Decimal(10, 2)
-  sku       String   @unique @db.VarChar(100)
-  barcode   String?  @db.VarChar(100)
+  sku           String   @unique @db.VarChar(100)
+  barcode       String?  @db.VarChar(100)
 
   // NEW: Logistical Fields
   uom              String                  @default("ml") @db.VarChar(20)
@@ -321,21 +323,28 @@ model InventoryLog {
 
 // ── 7. CUSTOMERS ─────────────────────────────────────────────────────────────
 model Customer {
-  id                      String    @id @default(uuid()) @db.Uuid
-  name                    String?   @db.VarChar(100)
-  email                   String?   @unique @db.VarChar(150)
-  phone                   String?   @db.VarChar(20)
+  id                     String               @id @default(uuid()) @db.Uuid
+  name                   String?              @db.VarChar(100)
+  email                  String?              @unique @db.VarChar(150)
+  phone                  String?              @db.VarChar(20)
   // Nullable — guest checkouts still create a Customer row with no password.
   // Registering later with the same email attaches a password to this same
   // row rather than creating a duplicate, so prior guest orders are inherited.
-  passwordHash            String?   @map("password_hash")
-  passwordResetToken      String?   @unique @map("password_reset_token")
-  passwordResetExpiresAt  DateTime? @map("password_reset_expires_at")
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
-  addresses               Address[]
-  orders                  Order[]
-  quotes                  Quote[]
+  passwordHash           String?              @map("password_hash")
+  passwordResetToken     String?              @unique @map("password_reset_token")
+  passwordResetExpiresAt DateTime?            @map("password_reset_expires_at")
+  // POPIA deletion requests anonymise rather than hard-delete: name/email/phone
+  // get overwritten with placeholder values and login is disabled, but the row
+  // (and its Orders) survives for legally-required financial record-keeping.
+  // anonymizedAt is set the moment that happens; null means the account is live.
+  anonymizedAt           DateTime?            @map("anonymized_at")
+  createdAt              DateTime             @default(now()) @map("created_at")
+  updatedAt              DateTime             @updatedAt @map("updated_at")
+  addresses              Address[]
+  orders                 Order[]
+  quotes                 Quote[]
+  consentRecords         ConsentRecord[]
+  dataSubjectRequests    DataSubjectRequest[]
 
   @@map("customers")
 }
@@ -414,8 +423,8 @@ model Order {
   // from abandonedEmailSent above, which tracks the separate manual
   // one-off recovery button and shouldn't be conflated with this repeatable
   // cadence.
-  lastReminderSentAt DateTime?              @map("last_reminder_sent_at")
-  reminderCount      Int                    @default(0) @map("reminder_count")
+  lastReminderSentAt DateTime? @map("last_reminder_sent_at")
+  reminderCount      Int       @default(0) @map("reminder_count")
 
   @@index([status, createdAt])
   @@index([paymentStatus, createdAt])
@@ -439,10 +448,10 @@ model OrderItem {
   // PIM Phase 1: frozen at line-item creation so a renamed/deleted product or
   // variant never rewrites what a historical order/invoice was actually for.
   // Nullable so pre-existing rows fall back to the live relation unchanged.
-  productNameSnapshot  String?  @map("product_name_snapshot")
-  variantLabelSnapshot String?  @map("variant_label_snapshot")
-  skuSnapshot          String?  @map("sku_snapshot")
-  costAtPurchase       Decimal? @map("cost_at_purchase") @db.Decimal(10, 2)
+  productNameSnapshot     String?  @map("product_name_snapshot")
+  variantLabelSnapshot    String?  @map("variant_label_snapshot")
+  skuSnapshot             String?  @map("sku_snapshot")
+  costAtPurchase          Decimal? @map("cost_at_purchase") @db.Decimal(10, 2)
   // Finance Phase 8: same snapshot-at-sale-time reasoning as costAtPurchase,
   // for ProductVariant.packagingCost/labellingCost.
   packagingCostAtPurchase Decimal? @map("packaging_cost_at_purchase") @db.Decimal(10, 2)
@@ -491,24 +500,24 @@ model Payment {
   // ── Manual EFT verification (only set when paymentMethod = 'manual_eft') ──
   // One Payment row per EFT order, updated in place as proof is uploaded,
   // replaced, verified, or rejected — see server/src/lib/eftPaymentService.js.
-  eftVerificationStatus String?              @map("eft_verification_status") @db.VarChar(20) // PENDING_PROOF, PROOF_UPLOADED, VERIFIED, REJECTED
-  proofOfPaymentUrl      String?             @map("proof_of_payment_url")
-  proofFileName          String?             @map("proof_file_name") @db.VarChar(255)
-  proofFileSize          Int?                @map("proof_file_size")
-  proofMimeType          String?             @map("proof_mime_type") @db.VarChar(100)
-  proofUploadedAt        DateTime?           @map("proof_uploaded_at")
-  verifiedByAdminId      String?             @map("verified_by_admin_id") @db.Uuid
-  verifiedByAdmin        AdminUser?          @relation(fields: [verifiedByAdminId], references: [id])
-  verifiedAt             DateTime?           @map("verified_at")
-  rejectionReason        String?             @map("rejection_reason")
-  statusHistory          PaymentStatusHistory[]
+  eftVerificationStatus String?                @map("eft_verification_status") @db.VarChar(20) // PENDING_PROOF, PROOF_UPLOADED, VERIFIED, REJECTED
+  proofOfPaymentUrl     String?                @map("proof_of_payment_url")
+  proofFileName         String?                @map("proof_file_name") @db.VarChar(255)
+  proofFileSize         Int?                   @map("proof_file_size")
+  proofMimeType         String?                @map("proof_mime_type") @db.VarChar(100)
+  proofUploadedAt       DateTime?              @map("proof_uploaded_at")
+  verifiedByAdminId     String?                @map("verified_by_admin_id") @db.Uuid
+  verifiedByAdmin       AdminUser?             @relation(fields: [verifiedByAdminId], references: [id])
+  verifiedAt            DateTime?              @map("verified_at")
+  rejectionReason       String?                @map("rejection_reason")
+  statusHistory         PaymentStatusHistory[]
 
   // Which BankAccount this order's EFT instructions were shown against —
   // pinned at checkout time (manualEftProvider.onOrderCreated) so it stays
   // accurate even if the admin changes the default account afterward. Never
   // set for non-EFT payment methods.
-  bankAccountId          String?             @map("bank_account_id") @db.Uuid
-  bankAccount            BankAccount?        @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  bankAccountId String?      @map("bank_account_id") @db.Uuid
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([eftVerificationStatus])
@@ -939,18 +948,18 @@ enum NormalBalance {
 }
 
 model ChartOfAccount {
-  id            String          @id @default(uuid()) @db.Uuid
-  code          String          @unique @db.VarChar(20)
-  name          String          @db.VarChar(150)
+  id            String           @id @default(uuid()) @db.Uuid
+  code          String           @unique @db.VarChar(20)
+  name          String           @db.VarChar(150)
   type          AccountType
-  normalBalance NormalBalance   @map("normal_balance")
-  parentId      String?         @map("parent_id") @db.Uuid
-  parent        ChartOfAccount? @relation("AccountTree", fields: [parentId], references: [id], onDelete: SetNull)
+  normalBalance NormalBalance    @map("normal_balance")
+  parentId      String?          @map("parent_id") @db.Uuid
+  parent        ChartOfAccount?  @relation("AccountTree", fields: [parentId], references: [id], onDelete: SetNull)
   children      ChartOfAccount[] @relation("AccountTree")
-  isActive      Boolean         @default(true) @map("is_active")
-  isSystem      Boolean         @default(false) @map("is_system")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
+  isActive      Boolean          @default(true) @map("is_active")
+  isSystem      Boolean          @default(false) @map("is_system")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
   journalLines  JournalLine[]
 
   @@index([type])
@@ -971,6 +980,7 @@ enum JournalSourceType {
   ASSET_ACQUISITION
   DEPRECIATION
   ASSET_DISPOSAL
+  PERIOD_CLOSE
 }
 
 model Journal {
@@ -995,14 +1005,14 @@ model Journal {
 
 // ── 36. JOURNAL_LINES ────────────────────────────────────────────────────────
 model JournalLine {
-  id        String         @id @default(uuid()) @db.Uuid
-  journalId String         @map("journal_id") @db.Uuid
-  journal   Journal        @relation(fields: [journalId], references: [id], onDelete: Cascade)
-  accountId String         @map("account_id") @db.Uuid
-  account   ChartOfAccount @relation(fields: [accountId], references: [id])
-  debit     Decimal        @default(0) @db.Decimal(12, 2)
-  credit    Decimal        @default(0) @db.Decimal(12, 2)
-  memo      String?
+  id                       String           @id @default(uuid()) @db.Uuid
+  journalId                String           @map("journal_id") @db.Uuid
+  journal                  Journal          @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  accountId                String           @map("account_id") @db.Uuid
+  account                  ChartOfAccount   @relation(fields: [accountId], references: [id])
+  debit                    Decimal          @default(0) @db.Decimal(12, 2)
+  credit                   Decimal          @default(0) @db.Decimal(12, 2)
+  memo                     String?
   // Finance Phase 6: reciprocal side of BankTransaction.matchedJournalLineId —
   // lets "unmatched GL lines for this bank account" be a plain
   // `where: { matchedByBankTransaction: null }` filter.
@@ -1210,17 +1220,78 @@ model ApprovalRequest {
 
 // ── 47. TESTIMONIALS — visitor-submitted, admin-moderated ───────────────────
 model Testimonial {
-  id           String    @id @default(uuid()) @db.Uuid
-  name         String    @db.VarChar(120)
-  designation  String?   @db.VarChar(120)
-  quote        String    @db.Text
-  imagePath    String?   @map("image_path")
-  status       String    @default("pending") @db.VarChar(20) // pending | approved | rejected
-  submittedBy  String    @default("visitor") @map("submitted_by") @db.VarChar(20) // visitor | admin
-  displayOrder Int       @default(0) @map("display_order")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(120)
+  designation  String?  @db.VarChar(120)
+  quote        String   @db.Text
+  imagePath    String?  @map("image_path")
+  status       String   @default("pending") @db.VarChar(20) // pending | approved | rejected
+  submittedBy  String   @default("visitor") @map("submitted_by") @db.VarChar(20) // visitor | admin
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([status])
   @@map("testimonials")
+}
+
+// ── 48. CONSENT_RECORDS — POPIA §11 consent ledger ──────────────────────────
+// Append-only: every row is one consent event, never updated in place. The
+// "current" state of a purpose for a subject is simply its most recent row
+// (see consentService.js). Either customerId or subjectEmail identifies the
+// subject — customerId once an account exists, subjectEmail for pre-account
+// moments (RFQ, newsletter-only signup, an anonymous cookie choice that later
+// gets attached to an account).
+model ConsentRecord {
+  id            String    @id @default(uuid()) @db.Uuid
+  customerId    String?   @map("customer_id") @db.Uuid
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  subjectEmail  String?   @map("subject_email") @db.VarChar(150)
+  purpose       String    @db.VarChar(40) // marketing_email | cookie_analytics | cookie_marketing | cookie_preferences | testimonial_display
+  granted       Boolean
+  method        String    @db.VarChar(40) // checkout_form | newsletter_signup | cookie_banner | testimonial_form | account_settings | admin_action
+  policyVersion Int       @default(1) @map("policy_version")
+  ipAddress     String?   @map("ip_address") @db.VarChar(64)
+  userAgent     String?   @map("user_agent")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([customerId, purpose, createdAt])
+  @@index([subjectEmail, purpose, createdAt])
+  @@map("consent_records")
+}
+
+// ── 49. DATA_SUBJECT_REQUESTS — POPIA §23-25 access/correction/deletion ────
+model DataSubjectRequest {
+  id                String     @id @default(uuid()) @db.Uuid
+  customerId        String     @map("customer_id") @db.Uuid
+  customer          Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type              String     @db.VarChar(20) // access | correction | deletion | objection | portability
+  status            String     @default("submitted") @db.VarChar(20) // submitted | in_review | approved | rejected | completed
+  details           String?    @db.Text
+  resolutionNotes   String?    @map("resolution_notes") @db.Text
+  exportFileUrl     String?    @map("export_file_url")
+  resolvedByAdminId String?    @map("resolved_by_admin_id") @db.Uuid
+  resolvedByAdmin   AdminUser? @relation(fields: [resolvedByAdminId], references: [id])
+  requestedAt       DateTime   @default(now()) @map("requested_at")
+  resolvedAt        DateTime?  @map("resolved_at")
+
+  @@index([status, requestedAt])
+  @@index([customerId])
+  @@map("data_subject_requests")
+}
+
+// ── 50. DATA_RETENTION_POLICIES — admin-configurable purge schedule ────────
+model DataRetentionPolicy {
+  id               String     @id @default(uuid()) @db.Uuid
+  category         String     @unique @db.VarChar(60) // webhook_logs | audit_logs | unsubscribed_marketing | proof_of_payment | orders_financial
+  label            String     @db.VarChar(120)
+  description      String?    @db.Text
+  retentionDays    Int        @map("retention_days")
+  autoDelete       Boolean    @default(false) @map("auto_delete")
+  updatedByAdminId String?    @map("updated_by_admin_id") @db.Uuid
+  updatedByAdmin   AdminUser? @relation(fields: [updatedByAdminId], references: [id])
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  @@map("data_retention_policies")
 }

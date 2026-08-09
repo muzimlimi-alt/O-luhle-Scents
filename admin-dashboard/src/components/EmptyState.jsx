@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Standard "nothing here yet" treatment: icon + title + description +

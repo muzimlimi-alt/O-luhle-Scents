@@ -1,5 +1,5 @@
 /**
- * O'luhle Scents — Testimonials Spotlight & Submission Form
+ * TOCA — Testimonials Spotlight & Submission Form
  * Loads approved testimonials from GET /api/testimonials and powers the
  * "Share Your Experience" form (POST /api/testimonials).
  */

@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import prisma from '../lib/prisma.js'
-import { requireAdmin } from '../middleware/auth.js'
+import { requireAdmin, requireRole } from '../middleware/auth.js'
 import nodemailer from 'nodemailer'
 import { adjustStock } from '../lib/inventoryService.js'
 import { postPurchaseReceivedJournal } from '../lib/accountingService.js'
@@ -35,16 +35,62 @@ router.get('/coupons', requireAdmin, async (req, res, next) => {
 router.post('/coupons', requireAdmin, async (req, res, next) => {
   try {
     const { code, discountType, value, expiryDate, usageLimit } = req.body
+    if (!code || !code.trim()) {
+      return res.status(400).json({ error: 'Coupon code is required' })
+    }
+    const parsedValue = parseFloat(value)
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      return res.status(400).json({ error: 'Valid discount value is required' })
+    }
+
+    const cleanCode = code.trim().toUpperCase()
     const coupon = await prisma.coupon.create({
       data: {
-        code,
-        discountType,
-        value: parseFloat(value),
+        code: cleanCode,
+        discountType: discountType || 'PERCENT',
+        value: parsedValue,
         expiryDate: expiryDate ? new Date(expiryDate) : null,
-        usageLimit: parseInt(usageLimit) || null
+        usageLimit: usageLimit ? parseInt(usageLimit) : null
       }
     })
+
+    await prisma.auditLog.create({
+      data: {
+        adminUserId: req.adminId,
+        action: 'CREATE_COUPON',
+        entity: 'Coupon',
+        entityId: coupon.id,
+        details: { code: coupon.code, discountType: coupon.discountType, value: coupon.value }
+      }
+    })
+
     res.status(201).json(coupon)
+  } catch (err) {
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: 'A coupon with that code already exists' })
+    }
+    next(err)
+  }
+})
+
+router.delete('/coupons/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const coupon = await prisma.coupon.findUnique({ where: { id: req.params.id } })
+    if (!coupon) return res.status(404).json({ error: 'Coupon not found' })
+
+    await prisma.coupon.delete({ where: { id: req.params.id } })
+
+    await prisma.auditLog.create({
+      data: {
+        adminUserId: req.adminId,
+        action: 'DELETE_COUPON',
+        entity: 'Coupon',
+        entityId: req.params.id,
+        details: { code: coupon.code }
+      }
+    })
+
+    res.json({ success: true, message: 'Coupon deleted successfully' })
   } catch (err) {
     next(err)
   }
@@ -636,7 +682,11 @@ router.get('/admin-users', requireAdmin, async (req, res, next) => {
   }
 })
 
-router.post('/admin-users', requireAdmin, async (req, res, next) => {
+// Creating/editing/deleting other staff accounts is privilege-escalation-sensitive
+// (F1 of the POPIA audit) — admin-only, unlike the rest of this file's operational
+// routes which any of the four roles can reach. Listing (GET above) stays open to
+// all roles: seeing the staff directory is low-risk and useful for e.g. an auditor.
+router.post('/admin-users', requireRole('admin'), async (req, res, next) => {
   try {
     const { name, email, role, password } = req.body
     if (!name || !email || !role || !password) {
@@ -659,7 +709,7 @@ router.post('/admin-users', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-router.patch('/admin-users/:id', requireAdmin, async (req, res, next) => {
+router.patch('/admin-users/:id', requireRole('admin'), async (req, res, next) => {
   try {
     const { name, email, role, isActive } = req.body
     const user = await prisma.adminUser.update({
@@ -675,7 +725,7 @@ router.patch('/admin-users/:id', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-router.patch('/admin-users/:id/password', requireAdmin, async (req, res, next) => {
+router.patch('/admin-users/:id/password', requireRole('admin'), async (req, res, next) => {
   try {
     const { password } = req.body
     if (!password || password.length < 8) {
@@ -696,7 +746,7 @@ router.patch('/admin-users/:id/password', requireAdmin, async (req, res, next) =
   } catch (err) { next(err) }
 })
 
-router.delete('/admin-users/:id', requireAdmin, async (req, res, next) => {
+router.delete('/admin-users/:id', requireRole('admin'), async (req, res, next) => {
   try {
     if (req.params.id === req.adminId) {
       return res.status(400).json({ error: 'You cannot delete your own administrative account' })
@@ -709,6 +759,22 @@ router.delete('/admin-users/:id', requireAdmin, async (req, res, next) => {
     })
 
     res.json({ success: true })
+  } catch (err) { next(err) }
+})
+
+// Ends every active session for this admin — the compromised-credential
+// response: the account keeps working (unlike deactivating it), but whoever
+// is currently logged in as them is signed out immediately rather than
+// staying valid until their token's natural expiry (POPIA audit finding F6).
+router.post('/admin-users/:id/revoke-sessions', requireRole('admin'), async (req, res, next) => {
+  try {
+    const { count } = await prisma.adminSession.deleteMany({ where: { adminUserId: req.params.id } })
+
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'REVOKE_ADMIN_SESSIONS', entity: 'AdminUser', entityId: req.params.id, details: { sessionsRevoked: count } }
+    })
+
+    res.json({ success: true, sessionsRevoked: count })
   } catch (err) { next(err) }
 })
 
@@ -750,17 +816,17 @@ router.post('/email/bulk', requireAdmin, async (req, res, next) => {
 
     // In production, use a queue (Bull/Redis). For now, simple loop or BCC.
     const mailOptions = {
-      from: `"O'luhle Scents" <${process.env.EMAIL_USER}>`,
+      from: `"TOCA" <${process.env.EMAIL_USER}>`,
       bcc: emails,
       subject,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #d4af37;">O'luhle Scents</h2>
+          <h2 style="color: #d4af37;">TOCA</h2>
           <div style="padding: 20px; border: 1px solid #eee; border-radius: 10px;">
             ${body.replace(/\n/g, '<br>')}
           </div>
           <p style="font-size: 12px; color: #999; margin-top: 20px; text-align: center;">
-            You are receiving this email as a registered customer of O'luhle Scents.
+            You are receiving this email as a registered customer of TOCA.
           </p>
         </div>
       `
@@ -815,12 +881,12 @@ router.post('/email/abandoned/:orderId', requireAdmin, async (req, res, next) =>
     const itemsHtml = order.items.map(i => `<li>${i.variant.product.name} (${i.variant.size}) x ${i.quantity}</li>`).join('')
 
     const mailOptions = {
-      from: `"O'luhle Scents" <${process.env.EMAIL_USER}>`,
+      from: `"TOCA" <${process.env.EMAIL_USER}>`,
       to: order.customer.email,
       subject: "Did you forget something luxury?",
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #d4af37;">O'luhle Scents</h2>
+          <h2 style="color: #d4af37;">TOCA</h2>
           <p>Hi ${order.customer.name || 'there'},</p>
           <p>We noticed you left some exquisite items in your cart. They are still reserved for you, but not for long!</p>
           <ul>${itemsHtml}</ul>

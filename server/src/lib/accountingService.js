@@ -78,7 +78,10 @@ export async function postJournal(tx, { sourceType, sourceId = null, date = new 
 
   const totalDebit = round2(normalized.reduce((sum, l) => sum + l.debit, 0))
   const totalCredit = round2(normalized.reduce((sum, l) => sum + l.credit, 0))
-  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+  // Both sides are already round2()'d, so float noise here is ~1e-10 at
+  // worst — nowhere near a full cent. A gap of exactly 0.01 is a genuine
+  // 1-cent imbalance, not rounding slop, so it should be rejected too.
+  if (Math.abs(totalDebit - totalCredit) >= 0.01) {
     throw Object.assign(
       new Error(`Journal does not balance: debits ${totalDebit} != credits ${totalCredit} (${description})`),
       { status: 500 }
@@ -129,13 +132,30 @@ export async function postSaleRecognitionJournal(tx, order) {
   const totalAmount = round2(order.totalAmount)
   const shippingCost = round2(order.shippingCost || 0)
   const taxAmount = round2(order.taxAmount || 0)
-  // subtotal net of any coupon discount — totalAmount = subtotal - discount + tax + shipping
-  // (see routes/orders.js), so this already excludes the discount without a
-  // separate contra-revenue line.
+  const discountAmount = round2(order.discountAmount || 0)
+  // totalAmount = subtotal - discount + tax + shipping (see routes/orders.js),
+  // so this is net-of-discount goods revenue either way. SARS Compliance
+  // Phase F: rather than credit 4000 with this already-netted figure (which
+  // makes a coupon invisible in the ledger — the sale just looks smaller),
+  // credit the full pre-discount subtotal to 4000 and debit the discount to
+  // 4800 Discounts Given (contra-revenue, same pattern as 4900 Sales
+  // Returns) — same net effect on revenue/profit, but the discount now has
+  // its own line in the GL and Income Statement instead of disappearing.
   const goodsAmount = round2(totalAmount - shippingCost - taxAmount)
+  const grossGoodsAmount = round2(goodsAmount + discountAmount)
 
-  const saleLines = [{ accountCode: '1100', debit: totalAmount, credit: 0, memo: `Order ${order.orderNumber}` }]
-  if (goodsAmount > 0.001) saleLines.push({ accountCode: '4000', debit: 0, credit: goodsAmount, memo: `Order ${order.orderNumber}` })
+  // Guarded like every other line here (a 100%-off coupon is a real,
+  // reachable case — couponService.js clamps a discount to the subtotal,
+  // not to some nonzero minimum — and with free shipping/no tax that makes
+  // totalAmount exactly 0). An order with nothing owed has no receivable to
+  // record; without this guard postJournal rejected the whole sale with
+  // "has no amount" the moment payment was confirmed. 4000's full gross
+  // credit and 4800's full discount debit still balance each other exactly
+  // with no AR line at all, so the journal still posts correctly.
+  const saleLines = []
+  if (totalAmount > 0.001) saleLines.push({ accountCode: '1100', debit: totalAmount, credit: 0, memo: `Order ${order.orderNumber}` })
+  if (grossGoodsAmount > 0.001) saleLines.push({ accountCode: '4000', debit: 0, credit: grossGoodsAmount, memo: `Order ${order.orderNumber}` })
+  if (discountAmount > 0.001) saleLines.push({ accountCode: '4800', debit: discountAmount, credit: 0, memo: `Coupon discount — Order ${order.orderNumber}` })
   if (shippingCost > 0.001) saleLines.push({ accountCode: '4010', debit: 0, credit: shippingCost, memo: `Order ${order.orderNumber}` })
   if (taxAmount > 0.001) saleLines.push({ accountCode: '2100', debit: 0, credit: taxAmount, memo: `Order ${order.orderNumber}` })
 

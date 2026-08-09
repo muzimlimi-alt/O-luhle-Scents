@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Drawer } from './Drawer';
 import { StatusBadge } from './StatusBadge';
 import { FormField } from './FormField';
@@ -102,7 +102,7 @@ export function OrderDetailsDrawer({ orderId, onClose, onChanged }) {
 
   const handleDownloadInvoice = async (invoiceId, invoiceNumber) => {
     try {
-      const token = localStorage.getItem('oluhle_admin_token');
+      const token = localStorage.getItem('toca_admin_token');
       const response = await fetch(`http://localhost:3000/api/admin/ops/invoices/${invoiceId}/pdf`, {
         headers: { Authorization: `Bearer ${token}` }
       });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PreferencesContext, PREF_KEY } from './PreferencesContext';
 
 const DEFAULT_PREFS = {
@@ -10,7 +10,7 @@ const DEFAULT_PREFS = {
 };
 
 /**
- * Global preference orchestration for the O'luhle Scents administrative suite.
+ * Global preference orchestration for the TOCA administrative suite.
  * ensures absolute synchronization between localized UI settings and the PostgreSQL fulfillment engine.
  */
 export function PreferencesProvider({ children }) {

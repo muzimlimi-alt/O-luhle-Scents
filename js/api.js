@@ -1,5 +1,5 @@
 /* ============================================================
-   O'luhle Scents — API Client
+   TOCA — API Client
    Single source of truth for all backend communication.
    ============================================================ */
 
@@ -11,28 +11,24 @@ const API_BASE = window.API_BASE || window.location.origin
 // ── Auth token helpers ────────────────────────────────────────────────────────
 
 export function getToken() {
-  return localStorage.getItem('oluhle_token') || null
+  return localStorage.getItem('toca_token') || null
 }
 
 export function setToken(token) {
-  localStorage.setItem('oluhle_token', token)
+  localStorage.setItem('toca_token', token)
 }
 
 export function clearToken() {
-  localStorage.removeItem('oluhle_token')
-  localStorage.removeItem('oluhle_user')
+  localStorage.removeItem('toca_token')
+  localStorage.removeItem('toca_user')
 }
 
 export function getUser() {
-  try { return JSON.parse(localStorage.getItem('oluhle_user')) } catch { return null }
+  try { return JSON.parse(localStorage.getItem('toca_user')) } catch { return null }
 }
 
 export function setUser(user) {
-  localStorage.setItem('oluhle_user', JSON.stringify(user))
-}
-
-export function isAdmin() {
-  return !!getToken() && getUser()?.role === 'ADMIN'
+  localStorage.setItem('toca_user', JSON.stringify(user))
 }
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
@@ -96,7 +92,7 @@ export async function apiFetch(path, options = {}) {
 }
 
 function dispatchMessage(type, title, message) {
-  window.dispatchEvent(new CustomEvent('oluhle_message', {
+  window.dispatchEvent(new CustomEvent('toca_message', {
     detail: { type, title, message }
   }))
 }
@@ -139,10 +135,6 @@ export function getOrder(id) {
   return apiFetch(`/api/orders/${id}`)
 }
 
-export function initiatePayment(orderId) {
-  return apiFetch(`/api/orders/${orderId}/pay`, { method: 'POST' })
-}
-
 export function getShippingEstimate(country, postalCode, subtotal) {
   const qs = new URLSearchParams({ country, postalCode, subtotal }).toString()
   return apiFetch(`/api/orders/shipping/estimate?${qs}`)
@@ -179,25 +171,14 @@ export function uploadEftProof(orderId, file) {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-export async function login(email, password) {
-  const data = await apiFetch('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  })
-  setToken(data.token)
-  setUser(data.user)
-  return data
-}
-
 export function logout() {
   clearToken()
 }
 
 // ── Customer account ──────────────────────────────────────────────────────────
-// Separate from login()/adminGetOrders() above (those hit /api/auth, the
-// admin login) — these hit the new /api/customers/* routes. Both sets of
-// functions share the same generic getToken/setToken/getUser/setUser
-// storage helpers, since a browser only ever holds one active session.
+// These hit the /api/customers/* routes. All these functions share the same
+// generic getToken/setToken/getUser/setUser storage helpers, since a browser
+// only ever holds one active session.
 
 export async function registerCustomer({ name, email, password, phone }) {
   const data = await apiFetch('/api/customers/register', {
@@ -266,60 +247,26 @@ export function uploadMyOrderProof(orderId, file) {
   return apiFetch(`/api/customers/me/orders/${orderId}/proof`, { method: 'POST', body: form })
 }
 
-// ── Admin ─────────────────────────────────────────────────────────────────────
+// ── Privacy Centre (POPIA) ──────────────────────────────────────────────────
 
-export function adminGetOrders() {
-  return apiFetch('/api/orders')
+export function getMyConsent() {
+  return apiFetch('/api/privacy/consent')
 }
 
-export function adminUpdateOrderStatus(id, status) {
-  return apiFetch(`/api/orders/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
-  })
+export function setMyConsent(purpose, granted) {
+  return apiFetch('/api/privacy/consent', { method: 'POST', body: JSON.stringify({ purpose, granted }) })
 }
 
-export function adminCreateProduct(data) {
-  const options = { method: 'POST', body: data }
-  if (!(data instanceof FormData)) {
-    options.body = JSON.stringify(data)
-  }
-  return apiFetch('/api/products', options)
+export function exportMyData() {
+  return apiFetch('/api/privacy/export')
 }
 
-export function adminUpdateProduct(id, data) {
-  const options = { method: 'PATCH', body: data }
-  if (!(data instanceof FormData)) {
-    options.body = JSON.stringify(data)
-  }
-  return apiFetch(`/api/products/${id}`, options)
+export function getMyDataRequests() {
+  return apiFetch('/api/privacy/requests')
 }
 
-export function adminDeleteProduct(id) {
-  return apiFetch(`/api/products/${id}`, { method: 'DELETE' })
-}
-
-export function adminUpdateStock(id, stockQty) {
-  return apiFetch(`/api/products/${id}/stock`, {
-    method: 'PATCH',
-    body: JSON.stringify({ stockQty }),
-  })
-}
-
-export function adminGetAnalytics(period = 30) {
-  return apiFetch(`/api/admin/analytics?period=${period}`)
-}
-
-export function adminGetMetrics() {
-  return apiFetch('/api/admin/metrics')
-}
-
-export function adminGetLowStock(threshold = 5) {
-  return apiFetch(`/api/products/low-stock?threshold=${threshold}`)
-}
-
-export function adminGetSales(period = 30) {
-  return apiFetch(`/api/admin/sales?period=${period}`)
+export function createMyDataRequest(type, details, confirm) {
+  return apiFetch('/api/privacy/requests', { method: 'POST', body: JSON.stringify({ type, details, confirm }) })
 }
 
 // ── Tracking ──────────────────────────────────────────────────────────────────

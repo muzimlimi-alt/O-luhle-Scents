@@ -1,5 +1,5 @@
 /**
- * O'luhle Scents — Newsletter Subscription Handler
+ * TOCA — Newsletter Subscription Handler
  * Connects the homepage form to POST /api/newsletter/subscribe
  */
 (function () {
