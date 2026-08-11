@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { NavLink, useLocation } from 'react-router-dom';
+=======
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 import {
   LayoutDashboard,
   Layers,
@@ -36,8 +40,14 @@ import {
   Layout,
   Sliders,
   Percent,
+<<<<<<< HEAD
   ChevronRight,
   ChevronsLeft,
+=======
+  Search,
+  ChevronDown,
+  LogOut,
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
   Lock,
   FileCheck,
   Calculator
@@ -119,6 +129,7 @@ const NAV = [
     ],
   },
   {
+<<<<<<< HEAD
     section: 'Workspace',
     items: [
       {
@@ -148,6 +159,56 @@ const ALL_GROUPS = NAV.flatMap((s) => s.items).filter((i) => i.type === 'group')
 
 const EXPANDED_KEY = 'toca_admin_nav_expanded';
 export const RAIL_KEY = 'toca_admin_nav_rail';
+=======
+    type: 'group', id: 'customers', label: 'Customers', icon: <Users size={18} />,
+    children: [
+      { path: '/customers', label: 'Customers', icon: <Users size={16} /> },
+      { path: '/newsletters', label: 'Newsletters', icon: <Mail size={16} /> },
+      { path: '/testimonials', label: 'Testimonials', icon: <Quote size={16} /> },
+    ]
+  },
+  {
+    type: 'group', id: 'finance', label: 'Finance', icon: <Landmark size={18} />,
+    children: [
+      { path: '/finance/ledger', label: 'General Ledger', icon: <BookOpen size={16} /> },
+      { path: '/finance/journals', label: 'Journals', icon: <ReceiptText size={16} /> },
+      { path: '/finance/statements', label: 'Financial Statements', icon: <PieChart size={16} /> },
+      { path: '/finance/banking', label: 'Banking', icon: <Banknote size={16} /> },
+      { path: '/finance/expenses', label: 'Expenses', icon: <Receipt size={16} /> },
+      { path: '/finance/aged', label: 'Aged Reports', icon: <History size={16} /> },
+    ]
+  },
+  {
+    type: 'group', id: 'sars', label: 'SARS Compliance', icon: <FileCheck size={18} />,
+    children: [
+      { path: '/sars', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
+      { path: '/sars/vat', label: 'VAT Reports', icon: <Calculator size={16} /> },
+    ]
+  },
+  { type: 'link', path: '/reports', label: 'Reports', icon: <FileBarChart size={18} /> },
+  {
+    type: 'group', id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />,
+    children: [
+      { path: '/admin-users', label: 'Admin Users', icon: <UserCog size={16} /> },
+      { path: '/audit-logs', label: 'Audit Logs', icon: <ScrollText size={16} /> },
+      { path: '/privacy', label: 'Privacy & POPIA', icon: <Lock size={16} /> },
+      { path: '/notifications', label: 'Notifications', icon: <Bell size={16} /> },
+    ]
+  },
+  {
+    type: 'group', id: 'configuration', label: 'Configuration', icon: <Settings size={18} />,
+    children: [
+      { path: '/settings', label: 'Settings', icon: <Cog size={16} /> },
+      { path: '/content', label: 'Site Content', icon: <Layout size={16} /> },
+      { path: '/preferences', label: 'Preferences', icon: <Sliders size={16} /> },
+      { path: '/shipping-methods', label: 'Shipping Methods', icon: <Truck size={16} /> },
+      { path: '/tax-rates', label: 'Tax Rates', icon: <Percent size={16} /> },
+    ]
+  },
+];
+
+const EXPANDED_KEY = 'toca_admin_nav_expanded';
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 
 function loadExpanded() {
   try {

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
 import { adminOpsApi, metricsApi } from '../services/api';
+=======
+import { adminOpsApi } from '../services/api';
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 import { Drawer } from '../components/Drawer';
 import { DataTable } from '../components/DataTable';
 import { StatusBadge } from '../components/StatusBadge';

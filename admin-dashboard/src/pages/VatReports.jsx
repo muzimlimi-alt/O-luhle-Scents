@@ -196,6 +196,7 @@ export function VatReports() {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
+<<<<<<< HEAD
         .stmt-tabs { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-5); flex-wrap: wrap; }
         .stmt-tab {
           display: flex; align-items: center; gap: var(--sp-2); padding: 10px var(--sp-4);
@@ -221,6 +222,28 @@ export function VatReports() {
         @media (max-width: 480px) {
           .stmt-tab { flex: 1 1 calc(50% - var(--sp-2)); justify-content: center; }
           .aging-filters { gap: var(--sp-2); }
+=======
+        .stmt-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .stmt-tab {
+          display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+          background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
+          color: var(--color-text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: var(--transition);
+        }
+        .stmt-tab:hover { color: var(--color-primary); border-color: var(--color-primary); }
+        .stmt-tab--active { color: var(--color-primary); border-color: var(--color-primary); background: rgba(184, 155, 106, 0.08); }
+
+        .aging-filters { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 0.8rem; color: var(--color-text-muted); flex-wrap: wrap; }
+        .aging-filters .admin-input { width: auto; }
+        .vat-stat-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px; }
+        .inv-stat-grid { display: grid; gap: 16px; }
+        .inv-stat { padding: 14px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; display: flex; flex-direction: column; gap: 6px; }
+        .inv-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
+        .inv-stat-value { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .settings-info-box {
+          display: flex; align-items: center; gap: 8px;
+          background: rgba(184,155,106,0.08); border: 1px solid rgba(184,155,106,0.2);
+          padding: 12px; border-radius: 4px; font-size: 0.8rem; color: var(--color-text-muted);
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
         }
       `}} />
     </div>

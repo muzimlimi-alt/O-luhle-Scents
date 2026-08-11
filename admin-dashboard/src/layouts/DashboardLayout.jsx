@@ -1,9 +1,17 @@
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Sidebar, RAIL_KEY } from '../components/Sidebar';
 import { Drawer } from '../components/Drawer';
 import { AppearancePanel } from '../components/AppearancePanel';
 import { Search, Menu, Palette, ChevronDown, Bell, CircleHelp, Sliders, UsersRound, LogOut } from 'lucide-react';
+=======
+import { useState, useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { Sidebar } from '../components/Sidebar';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { Search, User, Menu } from 'lucide-react';
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 import { useAuth } from '../context/AuthContext';
 import { useAppearance } from '../context/AppearanceContext';
 import '../styles/design-tokens.css';
@@ -112,6 +120,7 @@ export function DashboardLayout() {
           <button type="button" className="icon-btn" aria-label="Help and documentation">
             <CircleHelp size={17} />
           </button>
+<<<<<<< HEAD
 
           <div className="acct-wrap" ref={acctMenuRef}>
             <button
@@ -158,6 +167,21 @@ export function DashboardLayout() {
                 <button type="button" role="menuitem" className="menu-item" onClick={handleSignOut}>
                   <LogOut size={15} aria-hidden="true" /> Sign out
                 </button>
+=======
+          <div className="navbar__logo">TOCA</div>
+        </div>
+        <div className="header-actions-classic">
+           <div className="search-bar-classic">
+              <Search size={16} />
+              <input type="text" placeholder="Global search..." />
+           </div>
+
+           <ThemeToggle />
+           <div className="user-profile-classic">
+              <div className="user-info-text">
+                 <p className="user-name">{user?.name || 'Administrator'}</p>
+                 <p className="user-email">{user?.email || 'admin@toca.co.za'}</p>
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
               </div>
             )}
           </div>

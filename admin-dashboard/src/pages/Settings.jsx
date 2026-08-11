@@ -11,8 +11,12 @@ import {
   Truck,
   RefreshCw,
   Bell,
+<<<<<<< HEAD
   Percent,
   Store
+=======
+  Percent
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { FormField } from '../components/FormField';
@@ -108,8 +112,13 @@ export function Settings() {
             <FormField label="Trading Name">
               <input type="text" value={val('company_trading_name')} onChange={e => handleChange('company_trading_name', e.target.value, 'tax')} placeholder="TOCA" />
             </FormField>
+<<<<<<< HEAD
             <FormField label="VAT Number" hint="10-digit SARS VAT number — only enter once registration is confirmed.">
               <input type="text" value={val('vat_registration_number')} onChange={e => handleChange('vat_registration_number', e.target.value, 'tax')} placeholder="e.g. 4123456789" />
+=======
+            <FormField label="Support Email">
+              <input type="email" value={val('business_email')} onChange={e => handleChange('business_email', e.target.value)} placeholder="info@toca.co.za" />
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
             </FormField>
             <FormField label="Currency" hint="TOCA prices in South African rand only — multi-currency isn't supported yet, so this isn't editable.">
               <select disabled value="ZAR" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
@@ -132,7 +141,11 @@ export function Settings() {
 
         <div className="card settings-card">
           <div className="settings-card-header">
+<<<<<<< HEAD
             <Percent size={20} color="var(--y-base)" />
+=======
+            <Percent size={20} color="var(--color-primary)" />
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
             <h3>Tax &amp; SARS Compliance</h3>
           </div>
           <div className="settings-card-body">
@@ -151,12 +164,29 @@ export function Settings() {
               </span>
             </div>
 
+<<<<<<< HEAD
             <FormField label="Registered Company Name" hint="Legal entity name as registered with CIPC — used on tax invoices once compliant invoicing is enabled. Trading name and VAT number are set on the Store Details card above.">
               <input type="text" value={val('company_legal_name')} onChange={e => handleChange('company_legal_name', e.target.value, 'tax')} placeholder="e.g. TOCA (Pty) Ltd" />
             </FormField>
             <FormField label="Company Registration Number" hint="CIPC registration number.">
               <input type="text" value={val('company_registration_number')} onChange={e => handleChange('company_registration_number', e.target.value, 'tax')} placeholder="e.g. 2024/123456/07" />
             </FormField>
+=======
+            <FormField label="Registered Company Name" hint="Legal entity name as registered with CIPC — used on tax invoices once compliant invoicing is enabled.">
+              <input type="text" value={val('company_legal_name')} onChange={e => handleChange('company_legal_name', e.target.value, 'tax')} placeholder="e.g. TOCA (Pty) Ltd" />
+            </FormField>
+            <FormField label="Trading Name" hint="Leave blank if the same as the registered company name.">
+              <input type="text" value={val('company_trading_name')} onChange={e => handleChange('company_trading_name', e.target.value, 'tax')} placeholder="TOCA" />
+            </FormField>
+            <div className="settings-row">
+              <FormField label="Company Registration Number" hint="CIPC registration number.">
+                <input type="text" value={val('company_registration_number')} onChange={e => handleChange('company_registration_number', e.target.value, 'tax')} placeholder="e.g. 2024/123456/07" />
+              </FormField>
+              <FormField label="VAT Registration Number" hint="10-digit SARS VAT number — only enter once registration is confirmed.">
+                <input type="text" value={val('vat_registration_number')} onChange={e => handleChange('vat_registration_number', e.target.value, 'tax')} placeholder="e.g. 4123456789" />
+              </FormField>
+            </div>
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
             <FormField label="Income Tax Reference Number">
               <input type="text" value={val('income_tax_reference_number')} onChange={e => handleChange('income_tax_reference_number', e.target.value, 'tax')} placeholder="SARS income tax reference number" />
             </FormField>
@@ -194,7 +224,11 @@ export function Settings() {
 
         <div className="card settings-card">
           <div className="settings-card-header">
+<<<<<<< HEAD
             <Server size={20} color="var(--y-base)" />
+=======
+            <Server size={20} color="var(--color-primary)" />
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
             <h3>Email Fulfillment (SMTP)</h3>
           </div>
           <div className="settings-card-body">
@@ -362,7 +396,11 @@ export function Settings() {
           margin-top: 8px;
         }
         .settings-info-box--warn {
+<<<<<<< HEAD
           background: rgba(192,57,43,0.08); border-color: rgba(192,57,43,0.25); color: var(--error-text, #c0392b);
+=======
+          background: rgba(192,57,43,0.08); border-color: rgba(192,57,43,0.25); color: var(--color-error-text, #c0392b);
+>>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
         }
 
         @media (max-width: 460px) {
