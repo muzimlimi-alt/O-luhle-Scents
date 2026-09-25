@@ -1,0 +1,24 @@
+2026-09-23 21:12:54.558 SAST [22732] LOG:  starting PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35223, 64-bit
+2026-09-23 21:12:54.929 SAST [22732] LOG:  listening on IPv6 address "::1", port 5437
+2026-09-23 21:12:54.929 SAST [22732] LOG:  listening on IPv4 address "127.0.0.1", port 5437
+2026-09-23 21:12:55.239 SAST [31216] LOG:  database system was interrupted; last known up at 2026-08-11 09:44:38 SAST
+2026-09-23 21:13:05.257 SAST [31216] LOG:  syncing data directory (fsync), elapsed time: 10.01 s, current path: ./base/5/2660
+2026-09-23 21:13:07.626 SAST [31216] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-09-23 21:13:07.672 SAST [31216] LOG:  redo starts at 0/F237698
+2026-09-23 21:13:07.672 SAST [31216] LOG:  invalid record length at 0/F2377D8: expected at least 24, got 0
+2026-09-23 21:13:07.673 SAST [31216] LOG:  redo done at 0/F2377A0 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2026-09-23 21:13:07.701 SAST [29476] LOG:  checkpoint starting: end-of-recovery immediate wait
+2026-09-23 21:13:07.829 SAST [29476] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.014 s, sync=0.017 s, total=0.140 s; sync files=2, longest=0.009 s, average=0.009 s; distance=0 kB, estimate=0 kB; lsn=0/F2377D8, redo lsn=0/F2377D8
+2026-09-23 21:13:07.850 SAST [22732] LOG:  database system is ready to accept connections
+2026-09-23 21:23:07.890 SAST [29476] LOG:  checkpoint starting: time
+2026-09-23 21:23:08.473 SAST [29476] LOG:  checkpoint complete: wrote 5 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.553 s, sync=0.014 s, total=0.583 s; sync files=6, longest=0.007 s, average=0.003 s; distance=8 kB, estimate=8 kB; lsn=0/F239BB0, redo lsn=0/F239B58
+2026-09-23 21:33:07.535 SAST [29476] LOG:  checkpoint starting: time
+2026-09-23 21:33:08.090 SAST [29476] LOG:  checkpoint complete: wrote 5 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.524 s, sync=0.009 s, total=0.555 s; sync files=6, longest=0.002 s, average=0.002 s; distance=9 kB, estimate=9 kB; lsn=0/F23C208, redo lsn=0/F23C1B0
+2026-09-23 23:33:07.604 SAST [29476] LOG:  checkpoint starting: time
+2026-09-23 23:33:08.810 SAST [29476] LOG:  checkpoint complete: wrote 10 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.133 s, sync=0.046 s, total=1.211 s; sync files=11, longest=0.007 s, average=0.005 s; distance=14 kB, estimate=14 kB; lsn=0/F23FCA8, redo lsn=0/F23FC50
+2026-09-23 23:33:24.037 SAST [23864] ERROR:  duplicate key value violates unique constraint "categories_name_key"
+2026-09-23 23:33:24.037 SAST [23864] DETAIL:  Key (name)=(Bath Salts) already exists.
+2026-09-23 23:33:24.037 SAST [23864] STATEMENT:  INSERT INTO "public"."categories" ("id","name","slug","description","image","display_order","is_active","parent_id","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING "public"."categories"."id", "public"."categories"."name", "public"."categories"."slug", "public"."categories"."description", "public"."categories"."image", "public"."categories"."display_order", "public"."categories"."is_active", "public"."categories"."parent_id", "public"."categories"."created_at", "public"."categories"."updated_at"
+2026-09-23 23:38:07.826 SAST [29476] LOG:  checkpoint starting: time
+2026-09-23 23:38:08.081 SAST [29476] LOG:  checkpoint complete: wrote 2 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.218 s, sync=0.009 s, total=0.255 s; sync files=3, longest=0.004 s, average=0.003 s; distance=3 kB, estimate=13 kB; lsn=0/F240908, redo lsn=0/F2408B0
+2026-09-24 09:22:20.192 SAST [22732] LOG:  could not reserve shared memory region (addr=0000029F6E420000) for child 00000000000016D0: error code 487
