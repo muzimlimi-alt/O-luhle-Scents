@@ -4,6 +4,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import configStore from './configStore.js'
 import { matchesFileSignature } from './fileSignature.js'
+import { storedUploadName } from './uploadNames.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // Sibling to the existing invoices/ and images/ directories — never served
@@ -19,11 +20,7 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const timestamp = Date.now()
-    const originalName = file.originalname.replace(/\s+/g, '_')
-    cb(null, `${timestamp}_${originalName}`)
-  }
+  filename: (req, file, cb) => cb(null, storedUploadName(file.originalname))
 })
 
 // multer's own fileFilter only trusts the client-reported mimetype/extension,

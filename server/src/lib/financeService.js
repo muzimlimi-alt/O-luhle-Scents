@@ -142,3 +142,134 @@ export async function getFinanceSummary(period = '30d') {
     topProducts
   }
 }
+
+// Revenue aggregated by Category — sibling of getFinanceSummary with the
+// grouping done on the current category (not a snapshot — OrderItem never
+// captured categoryId at sale time; see PIM Phase 1 snapshot rationale on
+// OrderItem.productNameSnapshot). A product that's been reclassified since
+// the sale will attribute its historical revenue to its NEW category. That
+// matches what admins expect when they look at a "Perfumes revenue" chart:
+// the current taxonomy, not a frozen one. Products with no category (deleted
+// or never-assigned) land in an "Uncategorised" bucket rather than being
+// dropped silently.
+export async function getRevenueByCategory(period = '30d') {
+  const days = PERIOD_DAYS[period]
+  const since = days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null
+
+  const orders = await prisma.order.findMany({
+    where: {
+      status: { in: REVENUE_STATUSES },
+      ...(since ? { createdAt: { gte: since } } : {})
+    },
+    select: {
+      id: true,
+      items: {
+        select: {
+          quantity: true,
+          priceAtPurchase: true,
+          costAtPurchase: true,
+          variantId: true,
+          variant: {
+            select: {
+              product: {
+                select: {
+                  id: true,
+                  category: { select: { id: true, slug: true, name: true } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  const UNCATEGORISED = { id: null, slug: 'uncategorised', name: 'Uncategorised' }
+  const buckets = new Map()
+  let totalRevenue = 0
+  let totalCogs = 0
+  let totalUnits = 0
+  // Items whose variant has been fully deleted (hard delete via Prisma's
+  // onDelete semantics) — rare but possible for ancient data; we can't
+  // place those anywhere real, so they get their own bucket.
+  const orphanBucket = { id: '__orphan', slug: '__orphan', name: 'Deleted products' }
+
+  for (const order of orders) {
+    for (const item of order.items) {
+      const qty = item.quantity
+      const lineRevenue = Number(item.priceAtPurchase) * qty
+      const lineCost = item.costAtPurchase != null ? Number(item.costAtPurchase) * qty : null
+
+      totalRevenue += lineRevenue
+      if (lineCost != null) totalCogs += lineCost
+      totalUnits += qty
+
+      let bucketKey
+      let bucketMeta
+      if (!item.variant?.product) {
+        bucketKey = orphanBucket.slug
+        bucketMeta = orphanBucket
+      } else if (item.variant.product.category) {
+        const c = item.variant.product.category
+        bucketKey = c.slug
+        bucketMeta = { id: c.id, slug: c.slug, name: c.name }
+      } else {
+        bucketKey = UNCATEGORISED.slug
+        bucketMeta = UNCATEGORISED
+      }
+
+      let bucket = buckets.get(bucketKey)
+      if (!bucket) {
+        bucket = {
+          categoryId: bucketMeta.id,
+          slug: bucketMeta.slug,
+          name: bucketMeta.name,
+          revenue: 0,
+          cogs: 0,
+          hasCostData: false,
+          unitsSold: 0,
+          productIds: new Set(),
+          orderIds: new Set(),
+        }
+        buckets.set(bucketKey, bucket)
+      }
+      bucket.revenue += lineRevenue
+      if (lineCost != null) {
+        bucket.cogs += lineCost
+        bucket.hasCostData = true
+      }
+      bucket.unitsSold += qty
+      if (item.variant?.product?.id) bucket.productIds.add(item.variant.product.id)
+      bucket.orderIds.add(order.id)
+    }
+  }
+
+  const categories = [...buckets.values()]
+    .map((b) => {
+      const grossProfit = b.hasCostData ? b.revenue - b.cogs : null
+      return {
+        categoryId: b.categoryId,
+        slug: b.slug,
+        name: b.name,
+        revenue: b.revenue,
+        unitsSold: b.unitsSold,
+        productCount: b.productIds.size,
+        orderCount: b.orderIds.size,
+        cogs: b.hasCostData ? b.cogs : null,
+        grossProfit,
+        marginPercent: grossProfit != null && b.revenue > 0 ? (grossProfit / b.revenue) * 100 : null,
+        revenueShare: totalRevenue > 0 ? (b.revenue / totalRevenue) * 100 : 0,
+      }
+    })
+    .sort((a, b) => b.revenue - a.revenue)
+
+  return {
+    period,
+    since,
+    totalRevenue,
+    totalCogs,
+    totalUnitsSold: totalUnits,
+    categoryCount: categories.length,
+    categories,
+  }
+}

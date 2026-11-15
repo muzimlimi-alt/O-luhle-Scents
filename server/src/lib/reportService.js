@@ -41,6 +41,54 @@ export async function generateMonthlyPerformanceReport(monthOffset = 1) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
 
+    // 2b. Revenue by Category — walks the same orders already in memory
+    // (not a second DB round trip). Grouping is by current category, same
+    // rationale as financeService.getRevenueByCategory — history moves with
+    // the taxonomy. Products without a category share an "Uncategorised"
+    // bucket, deleted-variant orphans get their own bucket.
+    const categoryRevenue = {}
+    orders.forEach(o => {
+      o.items.forEach(item => {
+        const lineRevenue = Number(item.priceAtPurchase) * item.quantity
+        let bucketName = 'Uncategorised'
+        if (!item.variant?.product) bucketName = 'Deleted products'
+        else if (item.variant.product.categoryId) {
+          // product.category wasn't included above — but we have categoryId.
+          // Resolve lazily below so we don't spam an N+1 if there are many.
+          bucketName = `__cat__${item.variant.product.categoryId}`
+        }
+        if (!categoryRevenue[bucketName]) {
+          categoryRevenue[bucketName] = { revenue: 0, units: 0 }
+        }
+        categoryRevenue[bucketName].revenue += lineRevenue
+        categoryRevenue[bucketName].units += item.quantity
+      })
+    })
+    // Resolve the __cat__ placeholders to real names in one batched query.
+    const catIds = Object.keys(categoryRevenue)
+      .filter(k => k.startsWith('__cat__'))
+      .map(k => k.slice(7))
+    if (catIds.length > 0) {
+      const cats = await prisma.category.findMany({
+        where: { id: { in: catIds } },
+        select: { id: true, name: true }
+      })
+      const nameById = Object.fromEntries(cats.map(c => [c.id, c.name]))
+      for (const id of catIds) {
+        const name = nameById[id] || 'Uncategorised'
+        const bucket = categoryRevenue[`__cat__${id}`]
+        if (categoryRevenue[name]) {
+          categoryRevenue[name].revenue += bucket.revenue
+          categoryRevenue[name].units += bucket.units
+        } else {
+          categoryRevenue[name] = bucket
+        }
+        delete categoryRevenue[`__cat__${id}`]
+      }
+    }
+    const categoryRevenueSorted = Object.entries(categoryRevenue)
+      .sort((a, b) => b[1].revenue - a[1].revenue)
+
     // 3. Customer Acquisition
     const newCustomers = await prisma.customer.count({
       where: { createdAt: { gte: startOfMonth, lte: endOfMonth } }
@@ -87,6 +135,26 @@ export async function generateMonthlyPerformanceReport(monthOffset = 1) {
       doc.text(`${qty} Units Sold`, 480, y, { align: 'right' })
       y += 20
     })
+
+    // --- Revenue by Category ---
+    if (categoryRevenueSorted.length > 0) {
+      const catHeadY = y + 30
+      doc.fillColor('#000').fontSize(12).font('Helvetica-Bold').text('REVENUE BY CATEGORY', 50, catHeadY)
+      doc.rect(50, catHeadY + 5, 500, 1).fill('#eee')
+
+      let catY = catHeadY + 25
+      categoryRevenueSorted.forEach(([name, { revenue, units }]) => {
+        const share = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0
+        doc.fillColor('#444').font('Helvetica').fontSize(10)
+        doc.text(`${name}`, 50, catY)
+        doc.text(`${units} units  ·  R${revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}  ·  ${share.toFixed(1)}%`, 250, catY, { align: 'right' })
+        // Thin horizontal bar beneath the row, visual weight proportional to share.
+        doc.rect(50, catY + 14, 500 * (share / 100), 2).fill('#d4af37')
+        doc.fillColor('#444')
+        catY += 24
+      })
+      y = catY
+    }
 
     // --- Insights ---
     let insightY = y + 30

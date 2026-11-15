@@ -205,7 +205,6 @@ export function ComplianceDashboard() {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-<<<<<<< HEAD
         .compliance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: var(--sp-6); margin-top: var(--sp-6); }
         .readiness-list { display: flex; flex-direction: column; gap: 10px; }
         .compliance-links { margin-top: var(--sp-6); }
@@ -231,28 +230,6 @@ export function ComplianceDashboard() {
           .compliance-grid { grid-template-columns: 1fr; gap: var(--sp-4); }
           .deadline-row { flex-wrap: wrap; gap: var(--sp-2); }
         }
-=======
-        .compliance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-top: 24px; }
-        .readiness-list { display: flex; flex-direction: column; gap: 10px; }
-        .compliance-links { margin-top: 24px; }
-        .compliance-links-grid { display: flex; flex-wrap: wrap; gap: 12px; }
-        .compliance-link {
-          display: flex; align-items: center; gap: 8px; padding: 10px 14px;
-          background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px;
-          color: var(--color-text); font-size: 0.85rem; text-decoration: none; transition: var(--transition);
-        }
-        .compliance-link:hover { color: var(--color-primary); border-color: var(--color-primary); }
-        .settings-info-box {
-          display: flex; align-items: center; gap: 8px;
-          background: rgba(184,155,106,0.08); border: 1px solid rgba(184,155,106,0.2);
-          padding: 12px; border-radius: 4px; font-size: 0.8rem; color: var(--color-text-muted);
-        }
-        .deadline-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-        .deadline-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; }
-        .deadline-date { display: block; font-size: 0.75rem; color: var(--color-text-muted); margin-top: 2px; }
-        .deadline-form { display: flex; gap: 8px; flex-wrap: wrap; }
-        .deadline-form .admin-input { flex: 1; min-width: 140px; }
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
       `}} />
     </div>
   );

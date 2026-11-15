@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import prisma from '../lib/prisma.js'
-import { requireAdmin } from '../middleware/auth.js'
+import { requirePerm } from '../middleware/auth.js'
 import { generateUniqueCategorySlug } from '../lib/slug.js'
 
 const router = Router()
@@ -26,7 +26,7 @@ router.get('/', async (req, res, next) => {
 })
 
 // ─── POST /api/categories (admin) ─────────────────────────────────────────────
-router.post('/', requireAdmin, async (req, res, next) => {
+router.post('/', requirePerm('categories', 'write'), async (req, res, next) => {
   try {
     const { name, description, image, parentId, displayOrder } = req.body
     if (!name?.trim()) return res.status(400).json({ error: 'Category name is required' })
@@ -50,7 +50,7 @@ router.post('/', requireAdmin, async (req, res, next) => {
 })
 
 // ─── PATCH /api/categories/:id (admin) ────────────────────────────────────────
-router.patch('/:id', requireAdmin, async (req, res, next) => {
+router.patch('/:id', requirePerm('categories', 'write'), async (req, res, next) => {
   try {
     const { name, description, image, parentId, displayOrder, isActive } = req.body
 
@@ -77,7 +77,7 @@ router.patch('/:id', requireAdmin, async (req, res, next) => {
 })
 
 // ─── DELETE /api/categories/:id (admin) — soft: archive, don't orphan products ─
-router.delete('/:id', requireAdmin, async (req, res, next) => {
+router.delete('/:id', requirePerm('categories', 'delete'), async (req, res, next) => {
   try {
     const [productCount, childCount] = await Promise.all([
       prisma.product.count({ where: { categoryId: req.params.id } }),

@@ -33,7 +33,9 @@ import contactRoutes from './routes/contact.js'
 import testimonialsRoutes from './routes/testimonials.js'
 import privacyRoutes from './routes/privacy.js'
 import adminPrivacyRoutes from './routes/admin_privacy.js'
-import { requireRole } from './middleware/auth.js'
+import collectionsRoutes from './routes/admin_collections.js'
+import adminCatalogueRoutes from './routes/admin_catalogue.js'
+import { requireRole, requireAdmin } from './middleware/auth.js'
 
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -114,6 +116,15 @@ app.use('/api/admin/sars', requireRole('admin', 'auditor'), adminSarsRoutes)
 app.use('/api/admin/analytics', analyticsRoutes)
 
 app.use('/api/categories', categoryRoutes)
+// Collections: public GET for storefront landing pages (filter is inside
+// the router — unauthed only sees isActive=true), admin-gated inside the
+// router for mutations.
+app.use('/api/collections', collectionsRoutes)
+// Catalogue imports: fine-grained permissions on each route via requirePerm
+// — admin and shop_manager handle extraction/review/import, staff can view,
+// auditor is read-only. Mount gate is the broad "any valid admin role" check
+// so non-admin tokens never reach the per-route permission matrix.
+app.use('/api/admin/catalogue', requireAdmin, adminCatalogueRoutes)
 app.use('/api/webhooks', webhookRoutes)
 app.use('/api/tracking', trackingRoutes)
 app.use('/api/quotes', quoteRoutes)
@@ -155,6 +166,7 @@ app.use('/css', express.static(path.join(rootDir, 'css')))
 app.use('/js', express.static(path.join(rootDir, 'js')))
 app.use('/images', express.static(path.join(rootDir, 'images')))
 app.use('/images/newsletter', express.static(path.join(rootDir, 'images/newsletter')))
+app.use('/images/collections', express.static(path.join(rootDir, 'images/collections')))
 app.use('/assets', express.static(path.join(rootDir, 'assets')))
 app.use('/extra', express.static(path.join(rootDir, 'extra')))
 

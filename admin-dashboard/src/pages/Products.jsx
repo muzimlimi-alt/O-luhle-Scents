@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-<<<<<<< HEAD
 import { DateTime } from 'luxon';
 import { productsApi, categoriesApi, testimonialsApi } from '../services/api';
-=======
-import { productsApi, categoriesApi } from '../services/api';
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 import {
   Plus, Search, Edit2, Trash2, Package,
   ImageIcon, Tag, Truck,
@@ -16,6 +12,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { useMessaging } from '../context/MessagingContext';
+import { useAuth } from '../context/AuthContext';
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
 
@@ -53,6 +50,9 @@ function priceRange(product) {
 
 export function Products() {
   const { showMessage } = useMessaging();
+  const { hasPermission } = useAuth();
+  const canWrite = hasPermission('products', 'write');
+  const canDelete = hasPermission('products', 'delete');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -209,7 +209,6 @@ export function Products() {
 
   return (
     <div className="products-page">
-<<<<<<< HEAD
       <div className="page-head">
         <div>
           <ol className="crumbs"><li>Commerce</li><li aria-current="page">Products</li></ol>
@@ -218,35 +217,13 @@ export function Products() {
             {totalProducts} product{totalProducts === 1 ? '' : 's'} across {topLevelCategories.length} categor{topLevelCategories.length === 1 ? 'y' : 'ies'}
             {draftCount > 0 && <> · {draftCount} draft{draftCount === 1 ? '' : 's'} awaiting copy</>}
           </p>
-=======
-      <PageHeader
-        icon={<Package size={22} />}
-        title="Products"
-        subtitle="Curating the finest artisanal fragrances in the TOCA collection."
-        actions={(
-          <button onClick={handleCreate} className="btn btn--primary">
-            <Plus size={18} /> Create Product
-          </button>
-        )}
-      />
-
-      {/* DISCOVERY BAR */}
-      <div className="atelier-discovery">
-        <div className="search-glass-wrapper">
-          <Search size={18} className="glass-icon" />
-          <input
-            type="text"
-            placeholder="Search by name, brand, or SKU..."
-            className="search-glass-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
         </div>
         <div className="head-actions">
-          <button type="button" className="btn-primary btn-sm" onClick={handleCreate}>
-            <Plus size={14} /> New product
-          </button>
+          {canWrite && (
+            <button type="button" className="btn-primary btn-sm" onClick={handleCreate}>
+              <Plus size={14} /> New product
+            </button>
+          )}
         </div>
       </div>
 
@@ -376,8 +353,8 @@ export function Products() {
                         </td>
                         <td>
                           <div className="row-actions">
-                            <button type="button" className="icon-mini" aria-label={`Edit ${product.name}`} onClick={() => handleEdit(product)}><Edit2 size={13} /></button>
-                            <button type="button" className="icon-mini" aria-label={`Delete ${product.name}`} onClick={() => handleDelete(product.id)}><Trash2 size={13} /></button>
+                            {canWrite && <button type="button" className="icon-mini" aria-label={`Edit ${product.name}`} onClick={() => handleEdit(product)}><Edit2 size={13} /></button>}
+                            {canDelete && <button type="button" className="icon-mini" aria-label={`Delete ${product.name}`} onClick={() => handleDelete(product.id)}><Trash2 size={13} /></button>}
                           </div>
                         </td>
                       </tr>
@@ -398,8 +375,8 @@ export function Products() {
                       label={product.status === 'ACTIVE' ? 'Live' : product.status === 'DRAFT' ? 'Draft' : 'Archived'}
                     />
                     <div className="card-actions">
-                      <button onClick={() => handleEdit(product)} className="icon-btn" title="Edit"><Edit2 size={14} /></button>
-                      <button onClick={() => handleDelete(product.id)} className="icon-btn danger" title="Delete"><Trash2 size={14} /></button>
+                      {canWrite && <button onClick={() => handleEdit(product)} className="icon-btn" title="Edit"><Edit2 size={14} /></button>}
+                      {canDelete && <button onClick={() => handleDelete(product.id)} className="icon-btn danger" title="Delete"><Trash2 size={14} /></button>}
                     </div>
                   </div>
 

@@ -6,12 +6,16 @@ import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { FormField } from '../components/FormField';
 import { useMessaging } from '../context/MessagingContext';
+import { useAuth } from '../context/AuthContext';
 import { FolderTree, Plus, Edit2, Archive, CornerDownRight } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', description: '', parentId: '', displayOrder: '0' };
 
 export function Categories() {
   const { showMessage } = useMessaging();
+  const { hasPermission } = useAuth();
+  const canWrite = hasPermission('categories', 'write');
+  const canDelete = hasPermission('categories', 'delete');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -120,11 +124,11 @@ export function Categories() {
         icon={<FolderTree size={22} />}
         title="Categories"
         subtitle="Organize the catalog into a browsable hierarchy."
-        actions={(
+        actions={canWrite ? (
           <button className="btn btn--primary" onClick={openCreate}>
             <Plus size={16} /> New Category
           </button>
-        )}
+        ) : null}
       />
 
       <div className="card">
@@ -134,8 +138,8 @@ export function Categories() {
           loading={loading}
           actions={(row) => (
             <>
-              <button className="icon-btn" title="Edit" onClick={() => openEdit(row)}><Edit2 size={16} /></button>
-              <button className="icon-btn" title="Archive" onClick={() => handleArchive(row)}><Archive size={16} /></button>
+              {canWrite && <button className="icon-btn" title="Edit" onClick={() => openEdit(row)}><Edit2 size={16} /></button>}
+              {canDelete && <button className="icon-btn" title="Archive" onClick={() => handleArchive(row)}><Archive size={16} /></button>}
             </>
           )}
         />

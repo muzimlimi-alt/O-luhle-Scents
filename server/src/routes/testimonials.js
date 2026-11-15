@@ -7,6 +7,7 @@ import prisma from '../lib/prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
 import { matchesFileSignature } from '../lib/fileSignature.js'
 import { testimonialLimiter } from '../middleware/rateLimit.js'
+import { storedUploadName } from '../lib/uploadNames.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const uploadDir = path.join(__dirname, '../../../images/testimonials')
@@ -16,7 +17,7 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`)
+  filename: (req, file, cb) => cb(null, storedUploadName(file.originalname))
 })
 
 const upload = multer({

@@ -53,7 +53,10 @@
         <div class="nav-links">
           <a href="index.html">Home</a>
           <a href="shop.html" class="active">Shop</a>
-          <a href="shop.html?cat=premium">Collections</a>
+          <a href="shop.html?cat=perfume">Perfumes</a>
+          <a href="shop.html?cat=candles">Candles</a>
+          <a href="shop.html?cat=bath-salts">Bath Salts</a>
+          <a href="guide.html">Guide</a>
           <a href="index.html#about">About</a>
         </div>
       </div>
@@ -73,8 +76,10 @@
   <div class="mobile-menu">
     <a href="index.html">Home</a>
     <a href="shop.html">Shop All</a>
-    <a href="shop.html?cat=premium">Premium</a>
-    <a href="shop.html?cat=signature">Signature</a>
+    <a href="shop.html?cat=perfume">Perfumes</a>
+    <a href="shop.html?cat=candles">Scented Candles</a>
+    <a href="shop.html?cat=bath-salts">Bath Salts</a>
+    <a href="guide.html">Guide</a>
     <a href="cart.html">Cart</a>
   </div>
 
@@ -133,7 +138,7 @@
             <summary style="outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--color-gold-dark); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500;">
               <span>Product Specifications</span> <span style="font-size: 1.2rem; font-weight: 300;">+</span>
             </summary>
-            <div style="display: grid; grid-template-columns: 100px 1fr; gap: 10px; font-size: 0.85rem; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border-light); color: var(--color-text-light);">
+            <div id="product-specs" style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 16px; font-size: 0.85rem; line-height: 1.6; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border-light); color: var(--color-text-light);">
               <div style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Class:</div> <div id="meta-type" style="margin-bottom: 4px;"><span></span></div>
               <div style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Concentration:</div> <div id="meta-concentration" style="margin-bottom: 4px;"><span></span> oil</div>
               <div style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Longevity:</div> <div id="meta-longevity" style="margin-bottom: 4px;"><span></span></div>
@@ -184,7 +189,7 @@
       <div class="footer__grid">
         <div class="footer__brand">
           <div class="footer__brand-name">TOCA</div>
-          <p>Luxury fragrances from Officina Del Toca. Extrait de parfum crafted for those who appreciate the finer things.</p>
+          <p data-content="footer_note">Luxury fragrances from Officina Del Toca. Extrait de parfum crafted for those who appreciate the finer things.</p>
           <div class="footer__social">
             <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
             <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
@@ -193,10 +198,10 @@
         <div>
           <h4>Shop</h4>
           <div class="footer__links">
-            <a href="shop.html">All Fragrances</a><br>
-            <a href="shop.html?cat=premium">Premium Collection</a><br>
-            <a href="shop.html?cat=signature">Signature Collection</a><br>
-            <a href="shop.html?cat=essentials">Essentials</a><br>
+            <a href="shop.html">Shop All</a><br>
+            <a href="shop.html?cat=perfume">Perfumes</a><br>
+            <a href="shop.html?cat=candles">Scented Candles</a><br>
+            <a href="shop.html?cat=bath-salts">Scented Bath Salts</a><br>
           </div>
         </div>
         <div>
@@ -233,7 +238,7 @@
   <div class="cart-overlay"></div>
   <div class="cart-panel">
     <div class="cart-panel__header">
-      <h3>Your Cart</h3>
+      <h3>Your Selection</h3>
       <button class="cart-panel__close" aria-label="Close cart">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -257,5 +262,6 @@
   <script src="js/footer.js"></script>
   <script src="js/cookie-consent.js"></script>
   <script src="js/product-detail.js" type="module"></script>
+  <script src="js/header.js"></script>
 </body>
 </html>

@@ -1,5 +1,44 @@
 import { getProduct, validateCart } from './api.js';
 
+const FAMILY_TYPE = { PERFUME: 'Extrait de Parfum', CANDLE: 'Scented Candle', BATH_SALT: 'Bath Salts', HOME_FRAGRANCE: 'Home Fragrance', GIFT_SET: 'Gift Set', ACCESSORY: 'Accessory' };
+
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+function productImage(product) {
+    if (product.primaryImage) return `images/products/${product.primaryImage}`;
+    return typeof getPlaceholderImage === 'function' ? getPlaceholderImage(product.name, product.family) : '';
+}
+
+// Rows depend on the product family: perfumes show concentration/longevity,
+// candles and bath salts show their attribute values instead.
+function renderSpecs(product, typeLabel) {
+    const container = document.getElementById('product-specs');
+    if (!container) return;
+    const present = (v) => v != null && String(v).trim() !== '' && v !== 'N/A';
+    const rows = [['Type', typeLabel]];
+    if (product.family === 'PERFUME' || !product.family) {
+        if (present(product.oilConcentration)) rows.push(['Concentration', `${product.oilConcentration} oil`]);
+        if (present(product.longevity)) rows.push(['Longevity', product.longevity]);
+    }
+    if (present(product.scentFamily)) rows.push(['Scent family', product.scentFamily]);
+    if (present(product.characteristic)) rows.push(['Character', product.characteristic]);
+    [...(product.attributeValues || [])]
+        .sort((a, b) => (a.definition?.displayOrder ?? 0) - (b.definition?.displayOrder ?? 0))
+        .forEach((a) => {
+            if (!a.definition || !present(a.value)) return;
+            const unit = a.definition.unit ? ` ${a.definition.unit}` : '';
+            rows.push([a.definition.label, `${a.value}${unit}`]);
+        });
+    if (present(product.ingredients)) rows.push(['Ingredients', product.ingredients]);
+    if (present(product.usageInstructions)) rows.push(['How to use', product.usageInstructions]);
+    if (present(product.careInstructions)) rows.push(['Care', product.careInstructions]);
+    if (present(product.safetyWarnings)) rows.push(['Safety', product.safetyWarnings]);
+
+    container.innerHTML = rows.map(([label, value]) => `
+        <div style="color: var(--color-gold); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; padding-top: 2px;">${esc(label)}</div>
+        <div>${esc(value)}</div>`).join('');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
@@ -21,11 +60,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         qtyInput: document.querySelector('.qty-input'),
         addBtn: document.querySelector('.btn-add-cart'),
         relatedGrid: document.getElementById('related-products'),
-        // New sensory elements
-        metaType: document.querySelector('#meta-type span'),
-        metaConc: document.querySelector('#meta-concentration span'),
-        metaLong: document.querySelector('#meta-longevity span'),
-        metaFamily: document.querySelector('#meta-family span'),
         noteTop: document.querySelector('#note-top p'),
         noteHeart: document.querySelector('#note-heart p'),
         noteBase: document.querySelector('#note-base p'),
@@ -52,10 +86,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderProduct(product) {
         injectSEO(product);
         elements.name.textContent = product.name;
-        elements.brand.textContent = product.brand ? `${product.brand} · ${product.type || 'Extrait de Parfum'}` : (product.type || 'Extrait de Parfum');
+        const typeLabel = product.type || FAMILY_TYPE[product.family] || 'Extrait de Parfum';
+        elements.brand.textContent = product.brand ? `${product.brand} · ${typeLabel}` : typeLabel;
         elements.desc.textContent = product.description;
         elements.breadcrumb.textContent = product.name;
-        elements.image.src = `images/products/${product.primaryImage || 'placeholder.jpg'}`;
+        elements.image.src = productImage(product);
         elements.image.alt = product.name;
 
         // Insert product badge if it exists
@@ -66,20 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : '';
         }
 
-        // Render new sensory details
-        if (elements.metaType) elements.metaType.textContent = product.type || 'Extrait de Parfum';
-        if (elements.metaConc) elements.metaConc.textContent = product.oilConcentration || 'N/A';
-        if (elements.metaLong) elements.metaLong.textContent = product.longevity || 'N/A';
-        
-        const familyLabel = document.getElementById('meta-family-label');
-        if (elements.metaFamily && product.scentFamily) {
-            if (familyLabel) familyLabel.style.display = 'block';
-            elements.metaFamily.parentElement.style.display = 'block';
-            elements.metaFamily.textContent = product.scentFamily;
-        } else if (elements.metaFamily) {
-            if (familyLabel) familyLabel.style.display = 'none';
-            elements.metaFamily.parentElement.style.display = 'none';
-        }
+        renderSpecs(product, typeLabel);
 
         // Render Scent Pyramid (Safe JSON Parsing)
         const parseNotes = (notesData) => {
@@ -310,7 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.relatedGrid.innerHTML = related.map(p => `
             <div class="product-card reveal">
                 <a href="product-detail.html?id=${p.id}" class="product-card__image">
-                    <img src="images/products/${p.primaryImage || 'placeholder.jpg'}" alt="${p.name}">
+                    <img src="${productImage(p)}" alt="${p.name}">
                 </a>
                 <div class="product-card__info">
                     <h3 class="product-card__name"><a href="product-detail.html?id=${p.id}">${p.name}</a></h3>

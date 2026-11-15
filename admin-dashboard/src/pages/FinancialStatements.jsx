@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { DateTime } from 'luxon';
@@ -24,17 +23,6 @@ import { getChartColors } from '../utils/chartTheme';
 import { TrendingUp, Scale, Waves, Lock, Unlock, Wallet, Percent, RotateCcw, FileSearch, Download } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-=======
-import { useState, useEffect, useCallback } from 'react';
-import { financeApi, approvalsApi } from '../services/api';
-import { PageHeader } from '../components/PageHeader';
-import { DataTable } from '../components/DataTable';
-import { LoadingState } from '../components/LoadingState';
-import { StatusBadge } from '../components/StatusBadge';
-import { useMessaging } from '../context/MessagingContext';
-import { useAuth } from '../context/AuthContext';
-import { PieChart, TrendingUp, Scale, Waves, Lock, Unlock } from 'lucide-react';
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 
 const fmt = (n) => `R${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const COGS_ACCOUNT_CODE = '5000'; // "Cost of Goods Sold" — server/src/scripts/seed_chart_of_accounts.js
@@ -374,7 +362,6 @@ function FiscalPeriodsTab() {
   );
 }
 
-<<<<<<< HEAD
 const PERIOD_OPTIONS = [
   { months: 3, label: 'Last 3 months' },
   { months: 6, label: 'Last 6 months' },
@@ -583,8 +570,6 @@ function FinanceOverview() {
   );
 }
 
-=======
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 export function FinancialStatements() {
   const [activeTab, setActiveTab] = useState('income');
 
@@ -738,21 +723,12 @@ export function FinancialStatements() {
         .report-row-title { font-size: 0.85rem; }
         .report-row-value { font-size: 0.85rem; font-weight: 700; }
 
-<<<<<<< HEAD
         .periods-intro { font-size: 0.85rem; color: var(--text-muted); margin: 0 0 20px; max-width: 70ch; }
         .periods-approvals { background: rgba(var(--y-rgb),0.08); border: 1px solid rgba(var(--y-rgb),0.2); border-radius: var(--r); padding: 14px 16px; margin-bottom: 20px; }
         .periods-approvals h3 { margin: 0 0 10px; font-size: 0.85rem; }
         .periods-approval-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; font-size: 0.82rem; flex-wrap: wrap; }
         .periods-approval-actions { display: flex; gap: 8px; }
         .periods-approval-hint { color: var(--text-muted); font-size: 0.78rem; font-style: italic; }
-=======
-        .periods-intro { font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 20px; max-width: 70ch; }
-        .periods-approvals { background: rgba(184,155,106,0.08); border: 1px solid rgba(184,155,106,0.2); border-radius: 4px; padding: 14px 16px; margin-bottom: 20px; }
-        .periods-approvals h3 { margin: 0 0 10px; font-size: 0.85rem; }
-        .periods-approval-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; font-size: 0.82rem; flex-wrap: wrap; }
-        .periods-approval-actions { display: flex; gap: 8px; }
-        .periods-approval-hint { color: var(--color-text-muted); font-size: 0.78rem; font-style: italic; }
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
       `}} />
     </div>
   );

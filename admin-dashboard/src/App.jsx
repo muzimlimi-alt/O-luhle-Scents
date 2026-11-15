@@ -3,6 +3,8 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Products } from './pages/Products';
 import { Categories } from './pages/Categories';
+import { Collections } from './pages/Collections';
+import { CatalogueImports } from './pages/CatalogueImports';
 import { AttributeDefinitions } from './pages/AttributeDefinitions';
 import { Inventory } from './pages/Inventory';
 import { Orders } from './pages/Orders';
@@ -89,6 +91,8 @@ function App() {
               <Route path="analytics" element={<Navigate to="/" replace />} />
               <Route path="products" element={<Products />} />
               <Route path="categories" element={<Categories />} />
+              <Route path="collections" element={<Collections />} />
+              <Route path="catalogue-imports" element={<CatalogueImports />} />
               <Route path="attributes" element={<AttributeDefinitions />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="orders" element={<Orders />} />

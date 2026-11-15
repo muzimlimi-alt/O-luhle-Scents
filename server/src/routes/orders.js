@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
+import { asciiFilename } from '../lib/uploadNames.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
 import { sendNewsletterConfirmation } from '../utils/email.js'
 import { recordConsent } from '../lib/consentService.js'
@@ -349,7 +350,7 @@ router.post('/:id/proof', uploadProofMiddleware, async (req, res, next) => {
   try {
     const updated = await uploadProof(req.params.id, {
       filePath: req.file.path,
-      fileName: req.file.originalname,
+      fileName: asciiFilename(req.file.originalname),
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       actorType: 'customer',

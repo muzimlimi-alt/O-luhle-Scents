@@ -32,12 +32,12 @@ const CONTENT_DEFAULTS = [
   // Collections
   ['collections_label', 'Our Collections'],
   ['collections_heading', 'Find Your Signature'],
-  ['collection_1_name', 'Premium'],
-  ['collection_1_price_hint', 'From R2,000'],
-  ['collection_2_name', 'Signature'],
-  ['collection_2_price_hint', 'From R1,500'],
-  ['collection_3_name', 'Essentials'],
-  ['collection_3_price_hint', 'From R1,000'],
+  ['collection_1_name', 'Perfume'],
+  ['collection_1_price_hint', 'From R600'],
+  ['collection_2_name', 'Scented Candles'],
+  ['collection_2_price_hint', 'From R350'],
+  ['collection_3_name', 'Scented Bath Salts'],
+  ['collection_3_price_hint', 'A new TOCA ritual'],
 
   // Featured
   ['featured_heading', 'Featured Fragrances'],

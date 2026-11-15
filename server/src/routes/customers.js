@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import fs from 'fs'
 import prisma from '../lib/prisma.js'
+import { asciiFilename } from '../lib/uploadNames.js'
 import { requireCustomer } from '../middleware/auth.js'
 import { loginLimiter } from '../middleware/rateLimit.js'
 import { sendPasswordResetEmail } from '../utils/email.js'
@@ -212,7 +213,7 @@ router.post('/me/orders/:id/proof', requireCustomer, uploadProofMiddleware, asyn
 
     const updated = await uploadProof(req.params.id, {
       filePath: req.file.path,
-      fileName: req.file.originalname,
+      fileName: asciiFilename(req.file.originalname),
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       actorType: 'customer',

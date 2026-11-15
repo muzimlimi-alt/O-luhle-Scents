@@ -65,20 +65,29 @@ router.post('/logout', requireAuth, async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-// GET /api/auth/me — verify session
+// GET /api/auth/me — verify session, returns identity + the flattened
+// permission catalogue for the user's role so the admin UI can grey out
+// buttons the server would reject anyway. See lib/permissions.js.
 router.get('/me', async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization
     if (!authHeader) return res.status(401).json({ error: 'No authorization header' })
-    
+
     const token = authHeader.split(' ')[1]
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    
+
     const admin = await prisma.adminUser.findUnique({ where: { id: decoded.id } })
     if (!admin || !admin.isActive) return res.status(401).json({ error: 'Account deactivated' })
 
-    res.json({ id: admin.id, email: admin.email, name: admin.name, role: admin.role })
-  } catch (err) { 
+    const { permissionsForRole } = await import('../lib/permissions.js')
+    res.json({
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role,
+      permissions: permissionsForRole(admin.role),
+    })
+  } catch (err) {
     res.status(401).json({ error: 'Session expired' })
   }
 })

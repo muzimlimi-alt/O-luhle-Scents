@@ -22,19 +22,17 @@
    ============================================================ */
 
 :root {
-<<<<<<< HEAD
   /* ── Canonical tokens — Obsidian · Gold (house default) ── */
   --bg-page: #0a0a0a;
   --bg-section: #111111;
   --bg-surface: #1a1a1a;
   --bg-elevated: #242424;
   --bg-glass: rgba(20, 20, 20, .7);
-=======
+
   /* Constant Brand Identity Tokens */
   --color-primary: #b89b6a;      /* TOCA Gold — backgrounds, borders, icons, accents. NOT for text on light surfaces (fails contrast) — use --color-primary-text instead. */
   --color-primary-light: #d4bc91;
   --color-primary-dark: #8c7650;
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 
   --y-rgb: 212, 175, 55;
   --y-base: #D4AF37;

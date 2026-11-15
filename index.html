@@ -69,7 +69,7 @@
   <div class="page-loader"><div class="loader-spinner"></div></div>
 
   <!-- Announcement Bar -->
-  <div class="announcement-bar js-announcement-bar" data-content="announcement_message" style="position:fixed;top:0;left:0;right:0;z-index:1001;transition:transform 0.35s ease;">
+  <div class="announcement-bar announcement-bar--fixed js-announcement-bar">
     Free delivery on orders over R1 500 &nbsp;·&nbsp; Nationwide shipping
   </div>
 
@@ -83,7 +83,9 @@
         <div class="nav-links">
           <a href="index.html" class="active">Home</a>
           <a href="shop.html">Shop</a>
-          <a href="shop.html?cat=premium">Collections</a>
+          <a href="shop.html?cat=perfume">Perfumes</a>
+          <a href="shop.html?cat=candles">Candles</a>
+          <a href="shop.html?cat=bath-salts">Bath Salts</a>
           <a href="guide.html">Guide</a>
           <a href="#about">About</a>
         </div>
@@ -114,8 +116,9 @@
   <div class="mobile-menu">
     <a href="index.html">Home</a>
     <a href="shop.html">Shop All</a>
-    <a href="shop.html?cat=premium">Premium Collection</a>
-    <a href="shop.html?cat=signature">Signature Collection</a>
+    <a href="shop.html?cat=perfume">Perfumes</a>
+    <a href="shop.html?cat=candles">Scented Candles</a>
+    <a href="shop.html?cat=bath-salts">Bath Salts</a>
     <a href="guide.html">Guide</a>
     <a href="quotes.html">Professional</a>
     <a href="track.html">Track Order</a>
@@ -141,8 +144,8 @@
       <h1 class="hero__title"><span data-content="hero_title">The Art of</span> <em data-content="hero_title_em">Scent</em></h1>
       <p class="hero__subtitle" data-content="hero_subtitle">Discover extrait de parfum crafted with rare ingredients and timeless artistry. Each fragrance tells a story worth wearing.</p>
       <div class="hero__cta">
-        <a href="shop.html" class="btn btn--primary btn--lg" data-content="hero_cta_primary_label" data-content-href="hero_cta_primary_href">Explore Collection</a>
-        <a href="#featured" class="btn btn--outline btn--lg" data-content="hero_cta_secondary_label" data-content-href="hero_cta_secondary_href">Bestsellers</a>
+        <a href="shop.html" class="btn btn--primary btn--lg" data-content="hero_cta_primary_label" data-content-href="hero_cta_primary_href">Explore the Collection</a>
+        <a href="#featured" class="btn btn--outline btn--lg" data-content="hero_cta_secondary_label" data-content-href="hero_cta_secondary_href">New Arrivals</a>
       </div>
     </div>
     <div class="hero__scroll">
@@ -195,31 +198,31 @@
         <h2 data-content="collections_heading">Find Your Signature</h2>
       </div>
       <div class="categories__grid">
-        <a href="shop.html?cat=premium" class="category-card reveal">
+        <a href="shop.html?cat=perfume" class="category-card reveal">
           <div class="category-card__bg" style="background:linear-gradient(135deg, #2d2520, #1a1612);"></div>
           <img class="category-card__photo" data-collection-photo="1" alt="" loading="lazy" decoding="async">
           <div class="category-card__overlay"></div>
           <div class="category-card__content">
-            <h3 data-content="collection_1_name">Premium</h3>
-            <span><span data-content="collection_1_price_hint">From R2,000</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+            <h3 data-content="collection_1_name">Perfume</h3>
+            <span><span data-content="collection_1_price_hint">From R600</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
           </div>
         </a>
-        <a href="shop.html?cat=signature" class="category-card reveal reveal-delay-1">
-          <div class="category-card__bg" style="background:linear-gradient(135deg, #3d352c, #2a231c);"></div>
+        <a href="shop.html?cat=candles" class="category-card reveal reveal-delay-1">
+          <div class="category-card__bg" style="background:linear-gradient(135deg, #4a2a2a, #2d1818);"></div>
           <img class="category-card__photo" data-collection-photo="2" alt="" loading="lazy" decoding="async">
           <div class="category-card__overlay"></div>
           <div class="category-card__content">
-            <h3 data-content="collection_2_name">Signature</h3>
-            <span><span data-content="collection_2_price_hint">From R1,500</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+            <h3 data-content="collection_2_name">Scented Candles</h3>
+            <span><span data-content="collection_2_price_hint">From R350</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
           </div>
         </a>
-        <a href="shop.html?cat=essentials" class="category-card reveal reveal-delay-2">
-          <div class="category-card__bg" style="background:linear-gradient(135deg, #4a3f34, #332b22);"></div>
+        <a href="shop.html?cat=bath-salts" class="category-card reveal reveal-delay-2" role="group" aria-label="Shop Scented Bath Salts">
+          <div class="category-card__bg" style="background:linear-gradient(135deg, #3d3242, #241c2a);"></div>
           <img class="category-card__photo" data-collection-photo="3" alt="" loading="lazy" decoding="async">
           <div class="category-card__overlay"></div>
           <div class="category-card__content">
-            <h3 data-content="collection_3_name">Essentials</h3>
-            <span><span data-content="collection_3_price_hint">From R1,000</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+            <h3 data-content="collection_3_name">Scented Bath Salts</h3>
+            <span><span data-content="collection_3_price_hint">From R280</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
           </div>
         </a>
       </div>
@@ -230,8 +233,8 @@
   <section class="section" id="featured" style="background:var(--color-surface);">
     <div class="container">
       <div class="text-center reveal" style="margin-bottom:48px;">
-        <p class="section-label">Curated for You</p>
-        <h2 data-content="featured_heading">Featured Fragrances</h2>
+        <p class="section-label">New to TOCA</p>
+        <h2 data-content="featured_heading">Recently Discovered</h2>
       </div>
       <div class="products-grid" id="featured-products"></div>
       <div class="text-center mt-md reveal">
@@ -485,10 +488,10 @@
         <div class="reveal reveal-delay-1">
           <h4>Shop</h4>
           <div class="footer__links">
-            <a href="shop.html" aria-label="Shop all fragrances">All Fragrances</a><br>
-            <a href="shop.html?cat=premium" aria-label="Shop premium collection">Premium Collection</a><br>
-            <a href="shop.html?cat=signature" aria-label="Shop signature collection">Signature Collection</a><br>
-            <a href="shop.html?cat=essentials" aria-label="Shop essentials collection">Essentials</a><br>
+            <a href="shop.html" aria-label="Shop everything">Shop All</a><br>
+            <a href="shop.html?cat=perfume" aria-label="Shop perfumes">Perfumes</a><br>
+            <a href="shop.html?cat=candles" aria-label="Shop scented candles">Scented Candles</a><br>
+            <a href="shop.html?cat=bath-salts" aria-label="Shop scented bath salts">Scented Bath Salts</a><br>
           </div>
         </div>
         <div class="reveal reveal-delay-2">
@@ -528,7 +531,7 @@
   <div class="cart-overlay"></div>
   <div class="cart-panel">
     <div class="cart-panel__header">
-      <h3>Your Cart</h3>
+      <h3>Your Selection</h3>
       <button class="cart-panel__close" aria-label="Close cart">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -556,6 +559,7 @@
   <script src="js/contact.js"></script>
   <script src="js/testimonials.js" type="module"></script>
   <script src="js/content.js"></script>
+  <script src="js/header.js"></script>
 </body>
 </html>
 

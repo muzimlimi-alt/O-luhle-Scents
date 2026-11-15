@@ -65,6 +65,7 @@ enum ProductFamily {
   HOME_FRAGRANCE
   ACCESSORY
   GIFT_SET
+  BATH_SALT
 }
 
 model Product {
@@ -114,6 +115,7 @@ model Product {
   attributeValues      ProductAttributeValue[]
   alternativeSuppliers ProductSupplier[]
   media                ProductMedia[]
+  collections          ProductCollection[]
 
   supplier  Supplier?        @relation(fields: [supplierId], references: [id])
   createdAt DateTime         @default(now()) @map("created_at")
@@ -125,6 +127,40 @@ model Product {
   @@index([brandId])
   @@index([family])
   @@map("products")
+}
+
+// ── COLLECTIONS ──────────────────────────────────────────────────────────────
+// Semantic grouping separate from Category. Category = what KIND of product
+// (Perfume, Candle, Bath Salt). Collection = merchandising grouping within or
+// across categories (Premium, Signature, Essentials, Flame & Bloom, Gourmet).
+// The legacy free-text Product.collection column is retained for backward
+// compatibility until the backfill script has migrated every row.
+model Collection {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique @db.VarChar(120)
+  slug         String   @unique @db.VarChar(140)
+  description  String?
+  image        String?
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  products ProductCollection[]
+
+  @@map("collections")
+}
+
+model ProductCollection {
+  productId    String     @map("product_id") @db.Uuid
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collectionId String     @map("collection_id") @db.Uuid
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@id([productId, collectionId])
+  @@index([collectionId])
+  @@map("product_collections")
 }
 
 // ── 3b. BRANDS ───────────────────────────────────────────────────────────────
@@ -1278,6 +1314,106 @@ model DataSubjectRequest {
   @@index([status, requestedAt])
   @@index([customerId])
   @@map("data_subject_requests")
+}
+
+// ── 51. CATALOGUE_SOURCES / IMPORTS / EXTRACTED_PRODUCTS ────────────────────
+// Catalogue import staging pipeline. A PDF (or future CSV/manual) is uploaded
+// as a CatalogueImport belonging to a CatalogueSource; extraction produces
+// ExtractedProduct rows that an admin reviews, edits and approves before they
+// become live Product rows. Products are never auto-published from extraction.
+enum CatalogueImportStatus {
+  UPLOADED
+  PROCESSING
+  EXTRACTED
+  AWAITING_REVIEW
+  APPROVED
+  IMPORTED
+  REJECTED
+  FAILED
+}
+
+enum ExtractedProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IMPORTED
+}
+
+model CatalogueSource {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(200)
+  description String?
+  sourceType  String   @default("pdf") @map("source_type") @db.VarChar(20) // pdf | csv | manual
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  imports CatalogueImport[]
+
+  @@map("catalogue_sources")
+}
+
+model CatalogueImport {
+  id                String                @id @default(uuid()) @db.Uuid
+  sourceId          String                @map("source_id") @db.Uuid
+  source            CatalogueSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  originalFilename  String                @map("original_filename") @db.VarChar(255)
+  storageKey        String                @map("storage_key") @db.VarChar(500)
+  status            CatalogueImportStatus @default(UPLOADED)
+  errorMessage      String?               @map("error_message")
+  uploadedByAdminId String?               @map("uploaded_by_admin_id") @db.Uuid
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  processedAt       DateTime?             @map("processed_at")
+  importedAt        DateTime?             @map("imported_at")
+
+  extractedProducts ExtractedProduct[]
+
+  @@index([status])
+  @@index([sourceId])
+  @@map("catalogue_imports")
+}
+
+model ExtractedProduct {
+  id            String          @id @default(uuid()) @db.Uuid
+  importId      String          @map("import_id") @db.Uuid
+  import        CatalogueImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  pageReference String?         @map("page_reference") @db.VarChar(50)
+
+  // Extracted data — editable in the review UI
+  name                  String         @db.VarChar(200)
+  description           String?
+  family                ProductFamily?
+  suggestedCategoryId   String?        @map("suggested_category_id") @db.Uuid
+  suggestedCollectionId String?        @map("suggested_collection_id") @db.Uuid
+  priceHint             Decimal?       @map("price_hint") @db.Decimal(10, 2)
+  // Variants, attributes and image references captured as JSON blobs — the
+  // review UI normalises them into real Variant/AttributeValue rows at
+  // import time. Keeping them as JSON here avoids premature schema churn
+  // while admins are still correcting extractions.
+  variantsJson          Json?          @map("variants_json")
+  attributesJson        Json?          @map("attributes_json")
+  imagesJson            Json?          @map("images_json")
+
+  // Dedupe fingerprint — SHA-256 of normalised name + family + source.
+  // Prevents re-importing the same product from a repeated catalogue upload.
+  dedupeHash String? @map("dedupe_hash") @db.VarChar(64)
+
+  status            ExtractedProductStatus @default(PENDING)
+  reviewedByAdminId String?                @map("reviewed_by_admin_id") @db.Uuid
+  reviewedAt        DateTime?              @map("reviewed_at")
+  rejectReason      String?                @map("reject_reason")
+
+  // Set once an approved ExtractedProduct has been materialised into Product.
+  importedProductId String?   @map("imported_product_id") @db.Uuid
+  importedAt        DateTime? @map("imported_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([importId, status])
+  @@index([status])
+  @@index([dedupeHash])
+  @@map("extracted_products")
 }
 
 // ── 50. DATA_RETENTION_POLICIES — admin-configurable purge schedule ────────

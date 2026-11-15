@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
+import { asciiFilename } from '../lib/uploadNames.js'
 import { sendNewsletterConfirmation } from '../utils/email.js'
 import { requireAdmin } from '../middleware/auth.js'
 import { newsletterLimiter } from '../middleware/rateLimit.js'
@@ -385,7 +386,7 @@ router.post('/campaigns/upload', requireAdmin, upload.single('file'), (req, res)
   
   // Store the local path and original filename so Nodemailer can use it
   res.json({
-    filename: req.file.originalname,
+    filename: asciiFilename(req.file.originalname),
     path: req.file.path,
     mimetype: req.file.mimetype,
     size: req.file.size

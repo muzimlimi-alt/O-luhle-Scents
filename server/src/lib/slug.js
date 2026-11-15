@@ -33,3 +33,14 @@ export async function generateUniqueCategorySlug(name, excludeId = null) {
     slug = `${base}-${suffix++}`
   }
 }
+
+export async function generateUniqueCollectionSlug(name, excludeId = null) {
+  const base = slugify(name) || 'collection'
+  let slug = base
+  let suffix = 2
+  while (true) {
+    const existing = await prisma.collection.findUnique({ where: { slug } })
+    if (!existing || existing.id === excludeId) return slug
+    slug = `${base}-${suffix++}`
+  }
+}

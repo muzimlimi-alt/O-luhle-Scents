@@ -10,7 +10,7 @@ import nodemailer from 'nodemailer'
 import { adjustStock } from '../lib/inventoryService.js'
 import { postPurchaseReceivedJournal } from '../lib/accountingService.js'
 import { processReturn, RETURN_CONDITIONS } from '../lib/returnsService.js'
-import { getFinanceSummary } from '../lib/financeService.js'
+import { getFinanceSummary, getRevenueByCategory } from '../lib/financeService.js'
 import { createAdminOrder, recordPayment, issueRefund } from '../lib/orderAdminService.js'
 import { createExchange } from '../lib/exchangeService.js'
 import { validateCoupon } from '../lib/couponService.js'
@@ -1094,6 +1094,19 @@ router.get('/reports/finance-summary', requireAdmin, async (req, res, next) => {
     const period = FINANCE_PERIODS.includes(req.query.period) ? req.query.period : '30d'
     const summary = await getFinanceSummary(period)
     res.json(summary)
+  } catch (err) { next(err) }
+})
+
+// GET /admin/ops/reports/revenue-by-category — same period vocab as the
+// finance summary. Returns one bucket per Category sorted by revenue
+// descending, plus an Uncategorised bucket when products have no category.
+// Grouping is by CURRENT category assignment, not a snapshot — see the
+// explanation in financeService.js.
+router.get('/reports/revenue-by-category', requireAdmin, async (req, res, next) => {
+  try {
+    const period = FINANCE_PERIODS.includes(req.query.period) ? req.query.period : '30d'
+    const result = await getRevenueByCategory(period)
+    res.json(result)
   } catch (err) { next(err) }
 })
 

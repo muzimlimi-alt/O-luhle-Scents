@@ -4,14 +4,47 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import prisma from '../lib/prisma.js'
-import { requireAdmin } from '../middleware/auth.js'
+import { requirePerm } from '../middleware/auth.js'
 import { convertPrice } from '../lib/currencyService.js'
 import { adjustStock } from '../lib/inventoryService.js'
 import { generateUniqueProductSlug } from '../lib/slug.js'
 import { syncProductMedia } from '../lib/mediaService.js'
+import { storedUploadName } from '../lib/uploadNames.js'
 
 const PRODUCT_STATUSES = ['ACTIVE', 'DRAFT', 'ARCHIVED']
-const PRODUCT_FAMILIES = ['PERFUME', 'CANDLE', 'HOME_FRAGRANCE', 'ACCESSORY', 'GIFT_SET']
+
+// Storefront price filter buckets (ZAR). Upper bounds are exclusive so a
+// R999 product never lands in two adjacent buckets.
+const PRICE_BUCKETS = [
+  { id: '0-500', min: 0, max: 500 },
+  { id: '500-1000', min: 500, max: 1000 },
+  { id: '1000-2000', min: 1000, max: 2000 },
+  { id: '2000-', min: 2000, max: null },
+]
+const inBucket = (price, b) => price >= b.min && (b.max == null || price < b.max)
+const listParam = (raw) => String(raw || '').split(',').map((v) => v.trim()).filter((v) => v && v !== 'all')
+
+// Storefront search: every word must match somewhere (name, copy, scent
+// family, notes, type, tags, collection or category), so "rose oud" and
+// "oud rose" both find Sublime Rose Oud.
+function buildSearchWhere(raw) {
+  const words = String(raw || '').trim().slice(0, 100).split(/\s+/).filter(Boolean).slice(0, 5)
+  if (!words.length) return null
+  return words.map((word) => {
+    const c = { contains: word, mode: 'insensitive' }
+    return {
+      OR: [
+        { name: c }, { description: c }, { shortDescription: c }, { brand: c }, { type: c },
+        { scentFamily: c }, { topNotes: c }, { heartNotes: c }, { baseNotes: c },
+        { tags: { has: word.toLowerCase() } },
+        { attributeValues: { some: { value: c } } },
+        { collections: { some: { collection: { name: c } } } },
+        { category: { name: c } },
+      ],
+    }
+  })
+}
+const PRODUCT_FAMILIES = ['PERFUME', 'CANDLE', 'HOME_FRAGRANCE', 'ACCESSORY', 'GIFT_SET', 'BATH_SALT']
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const uploadDir = path.join(__dirname, '../../../images/products')
@@ -22,11 +55,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const timestamp = Date.now()
-    const originalName = file.originalname.replace(/\s+/g, '_')
-    cb(null, `${timestamp}_${originalName}`)
-  }
+  filename: (req, file, cb) => cb(null, storedUploadName(file.originalname))
 })
 
 const upload = multer({
@@ -46,21 +75,25 @@ const router = Router()
 // GET /api/products
 router.get('/', async (req, res, next) => {
   try {
-    const { 
-      category, 
-      search, 
-      sort, 
+    const {
+      category,
+      collection,
+      family,
+      scentFamily,
+      search,
+      sort,
       status,
-      minPrice, 
-      maxPrice, 
-      tags, 
+      minPrice,
+      maxPrice,
+      priceRanges,
+      tags,
       currency = 'ZAR',
       page = 1,
       limit = 10
     } = req.query
 
-    const pageNum = parseInt(page)
-    const limitNum = parseInt(limit)
+    const pageNum = Math.max(parseInt(page) || 1, 1)
+    const limitNum = Math.min(Math.max(parseInt(limit) || 10, 1), 200)
     const skip = (pageNum - 1) * limitNum
 
     // Admins (Bearer token present) see all products by default; storefront only sees active
@@ -91,14 +124,65 @@ router.get('/', async (req, res, next) => {
       }
     }
 
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { brand: { contains: search, mode: 'insensitive' } },
-        { tags: { has: search } }
-      ]
+    // Collection filter — many-to-many via ProductCollection. Accepts one
+    // slug/UUID or a comma-separated list (any match).
+    const collectionList = listParam(collection)
+    if (collectionList.length) {
+      where.collections = {
+        some: {
+          collection: {
+            OR: collectionList.map((c) => (c.length > 20 ? { id: c } : { slug: { equals: c, mode: 'insensitive' } })),
+          },
+        },
+      }
     }
+
+    // Family filter — perfume / candle / bath_salt / etc. Applied as a
+    // direct enum match. Kept separate from category so a candles-only
+    // feed can still cut across multiple candle sub-categories later.
+    if (family && family !== 'all') {
+      const upperFamily = family.toUpperCase()
+      if (PRODUCT_FAMILIES.includes(upperFamily)) {
+        where.family = upperFamily
+      }
+    }
+
+    // Scent family — stored as free text on Product.scentFamily (e.g.
+    // "Floral · Oriental"). Contains-match so a filter for "Floral" matches
+    // products with "Floral · Oriental" too; two-faceted scents are the
+    // norm in this catalogue so an exact match would under-return.
+    const scentList = listParam(scentFamily)
+    if (scentList.length) {
+      where.AND = [...(where.AND || []), { OR: scentList.map((s) => ({ scentFamily: { contains: s, mode: 'insensitive' } })) }]
+    }
+
+    // Generic attribute filters — any query param prefixed `attr_` is
+    // resolved against ProductAttributeValue for that definition's key.
+    // Multiple attributes AND together (a product must satisfy every
+    // selected facet); multiple values for the same key is treated as OR
+    // via a comma-separated value list, same convention as `tags`.
+    const attrFilters = []
+    for (const [param, raw] of Object.entries(req.query)) {
+      if (!param.startsWith('attr_')) continue
+      if (!raw || raw === 'all') continue
+      const key = param.slice(5)
+      const values = String(raw).split(',').map((v) => v.trim()).filter(Boolean)
+      if (values.length === 0) continue
+      attrFilters.push({
+        attributeValues: {
+          some: {
+            definition: { key },
+            value: values.length === 1 ? values[0] : { in: values },
+          },
+        },
+      })
+    }
+    if (attrFilters.length > 0) {
+      where.AND = [...(where.AND || []), ...attrFilters]
+    }
+
+    const searchFilter = buildSearchWhere(search)
+    if (searchFilter) where.AND = [...(where.AND || []), ...searchFilter]
 
     if (tags) {
       // tags is now a String[] column (PIM) — hasEvery matches the original
@@ -107,7 +191,14 @@ router.get('/', async (req, res, next) => {
       where.tags = { hasEvery: tagList }
     }
 
-    if (minPrice || maxPrice) {
+    // Price buckets ("0-500,2000-"): a product matches if any size falls in
+    // any selected bucket. Takes precedence over minPrice/maxPrice.
+    const buckets = listParam(priceRanges).map((id) => PRICE_BUCKETS.find((b) => b.id === id)).filter(Boolean)
+    if (buckets.length) {
+      where.variants = {
+        some: { OR: buckets.map((b) => ({ price: { gte: b.min, ...(b.max != null ? { lt: b.max } : {}) } })) },
+      }
+    } else if (minPrice || maxPrice) {
       where.variants = {
         some: {
           price: {
@@ -121,16 +212,34 @@ router.get('/', async (req, res, next) => {
     // Extended Sorting
     let orderBy = { createdAt: 'desc' }
     if (sort === 'oldest') orderBy = { createdAt: 'asc' }
-    if (sort === 'name-asc') orderBy = { name: 'asc' }
+    if (sort === 'name-asc' || sort === 'name') orderBy = { name: 'asc' }
     if (sort === 'name-desc') orderBy = { name: 'desc' }
-    
-    // Note: Prisma does not support easy direct sorting by related variant counts/prices in findMany
-    // We maintain basic sort logic for these for now. 
-    if (sort === 'price-low') orderBy = { createdAt: 'desc' } // Placeholder for complex aggregate sort
+
+    // Price sort is a two-stage query: we need each product's cheapest
+    // variant price as the sort key, and Prisma findMany doesn't order on
+    // related aggregates directly. Resolve the id order first via a raw-ish
+    // groupBy, then hydrate with the usual include. Still only two DB round
+    // trips, same shape of response as the default order path.
+    const isPriceSort = sort === 'price-low' || sort === 'price-high'
+    let orderedIds = null
+    if (isPriceSort) {
+      const matchingProducts = await prisma.product.findMany({
+        where,
+        select: { id: true, variants: { select: { price: true } } },
+      })
+      const withMinPrice = matchingProducts
+        .map((p) => {
+          const prices = p.variants.map((v) => Number(v.price)).filter((n) => Number.isFinite(n))
+          return { id: p.id, minPrice: prices.length ? Math.min(...prices) : null }
+        })
+        .filter((p) => p.minPrice !== null)
+      withMinPrice.sort((a, b) => sort === 'price-low' ? a.minPrice - b.minPrice : b.minPrice - a.minPrice)
+      orderedIds = withMinPrice.slice(skip, skip + limitNum).map((p) => p.id)
+    }
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
-        where,
+        where: orderedIds ? { id: { in: orderedIds } } : where,
         include: {
           category: true,
           supplier: true,
@@ -139,12 +248,21 @@ router.get('/', async (req, res, next) => {
           attributeValues: { include: { definition: true } },
           media: { include: { media: true }, orderBy: { sortOrder: 'asc' } }
         },
-        orderBy,
-        skip,
-        take: limitNum
+        orderBy: orderedIds ? undefined : orderBy,
+        skip: orderedIds ? 0 : skip,
+        take: orderedIds ? undefined : limitNum
       }),
       prisma.product.count({ where })
     ])
+
+    // Prisma doesn't preserve the id-list order on `in` queries, so we
+    // reorder the hydrated rows to match the price-sorted id sequence.
+    if (orderedIds) {
+      const byId = Object.fromEntries(products.map((p) => [p.id, p]))
+      const reordered = orderedIds.map((id) => byId[id]).filter(Boolean)
+      products.length = 0
+      products.push(...reordered)
+    }
 
     // On-the-fly currency conversion
     const formattedProducts = await Promise.all(products.map(async (p) => {
@@ -165,12 +283,145 @@ router.get('/', async (req, res, next) => {
       limit: limitNum,
       products: formattedProducts 
     })
-  } catch (err) {
-    console.error('API GET ERROR TRACE:', err);
-    res.status(500).json({ error: 'Internal server error', msg: err.message, stack: err.stack });
-  }
+  } catch (err) { next(err) }
 })
 
+
+// GET /api/products/facets?category=slug
+//
+// Returns the filter facets that make sense for a given category context —
+// which collections it uses, which scent families, which tiers, and the
+// min/max price range of what's currently in stock. Storefront consumes
+// this to render family-appropriate filter rows without the frontend
+// needing to know perfume-vs-candle-vs-bath-salt specifics.
+//
+// A tiny materialised view would be faster long-term; for a catalogue
+// this size (tens of products, not thousands) a per-request aggregate is
+// perfectly fine and always returns live data.
+router.get('/facets', async (req, res, next) => {
+  try {
+    const { category, search } = req.query
+
+    const where = { status: 'ACTIVE' }
+    if (category && category !== 'all') {
+      if (category.length > 20) {
+        where.categoryId = category
+      } else {
+        where.category = { slug: { equals: category, mode: 'insensitive' } }
+      }
+    }
+    const searchFilter = buildSearchWhere(search)
+    if (searchFilter) where.AND = searchFilter
+
+    const products = await prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        family: true,
+        scentFamily: true,
+        collections: { select: { collection: { select: { slug: true, name: true } } } },
+        variants: { select: { price: true } },
+        // Pull every ProductAttributeValue a product carries, along with its
+        // definition — we group by definition below to produce the generic
+        // attribute facet rows (wax type, vessel, burn time, etc.).
+        attributeValues: {
+          select: {
+            value: true,
+            definition: {
+              select: { key: true, label: true, family: true, dataType: true, isFilterable: true, displayOrder: true, unit: true },
+            },
+          },
+        },
+      },
+    })
+
+    // Collections: unique by slug, preserving the first name we saw. The
+    // order doesn't need to match displayOrder here — the storefront fetches
+    // the full collection list separately anyway, this payload just lists
+    // the ones the current category actually populates.
+    const collectionsBySlug = new Map()
+    for (const p of products) {
+      for (const link of p.collections) {
+        if (!collectionsBySlug.has(link.collection.slug)) {
+          collectionsBySlug.set(link.collection.slug, link.collection.name)
+        }
+      }
+    }
+
+    // Scent families appear as compound values ("Floral · Oriental"); split
+    // on the middle-dot so the facet UI shows each atomic family as its
+    // own filter chip.
+    const scentFamilySet = new Set()
+    for (const p of products) {
+      if (!p.scentFamily) continue
+      p.scentFamily
+        .split(/[·,/]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((s) => scentFamilySet.add(s))
+    }
+
+    // Price range: min of the cheapest variant, max of the most expensive.
+    let min = Infinity
+    let max = 0
+    for (const p of products) {
+      for (const v of p.variants) {
+        const price = Number(v.price)
+        if (!Number.isFinite(price)) continue
+        if (price < min) min = price
+        if (price > max) max = price
+      }
+    }
+    if (min === Infinity) min = 0
+
+    const priceBuckets = PRICE_BUCKETS
+      .map((b) => ({ id: b.id, min: b.min, max: b.max, count: products.filter((p) => p.variants.some((v) => inBucket(Number(v.price), b))).length }))
+      .filter((b) => b.count > 0)
+
+    // What families are represented — lets the storefront decide whether to
+    // show scent-family chips at all (perfumes only, really).
+    const families = [...new Set(products.map((p) => p.family).filter(Boolean))]
+
+    // Generic attribute facets. One row per filterable AttributeDefinition
+    // that at least one product in this category actually has a value for.
+    // Skipping defs with no values keeps the UI clean — a "Wax Type" row
+    // with nothing to pick is just noise under the Perfumes category.
+    const attrByKey = new Map()
+    for (const p of products) {
+      for (const av of p.attributeValues) {
+        const def = av.definition
+        if (!def?.isFilterable) continue
+        if (!attrByKey.has(def.key)) {
+          attrByKey.set(def.key, {
+            key: def.key,
+            label: def.label,
+            family: def.family,
+            dataType: def.dataType,
+            unit: def.unit || null,
+            displayOrder: def.displayOrder || 0,
+            values: new Set(),
+          })
+        }
+        if (av.value) attrByKey.get(def.key).values.add(av.value)
+      }
+    }
+    const attributes = [...attrByKey.values()]
+      .filter((a) => a.values.size > 0)
+      .map((a) => ({ ...a, values: [...a.values].sort() }))
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.label.localeCompare(b.label))
+
+    res.json({
+      category: category || null,
+      productCount: products.length,
+      families,
+      collections: [...collectionsBySlug.entries()].map(([slug, name]) => ({ slug, name })),
+      scentFamilies: [...scentFamilySet].sort(),
+      attributes,
+      priceRange: { min, max },
+      priceBuckets,
+    })
+  } catch (err) { next(err) }
+})
 
 // GET /api/products/:id
 router.get('/:id', async (req, res, next) => {
@@ -228,7 +479,7 @@ router.get('/:id', async (req, res, next) => {
 })
 
 // GET /api/products/low-stock
-router.get('/low-stock', requireAdmin, async (req, res, next) => {
+router.get('/low-stock', requirePerm('products', 'read'), async (req, res, next) => {
   try {
     const threshold = parseInt(req.query.threshold) || 5
     const lowStock = await prisma.inventory.findMany({
@@ -240,7 +491,7 @@ router.get('/low-stock', requireAdmin, async (req, res, next) => {
 })
 
 // POST /api/products (admin only)
-router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next) => {
+router.post('/', requirePerm('products', 'write'), upload.array('images', 10), async (req, res, next) => {
   try {
     const {
       name, brand, description, categoryId, variants, supplierId,
@@ -420,7 +671,7 @@ router.post('/', requireAdmin, upload.array('images', 10), async (req, res, next
 })
 
 // PATCH /api/products/:id
-router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, next) => {
+router.patch('/:id', requirePerm('products', 'write'), upload.array('images', 10), async (req, res, next) => {
   try {
     console.log('[PATCH /api/products/:id] Payload:', { id: req.params.id, body: req.body, files: req.files?.length });
     const {
@@ -673,7 +924,7 @@ router.patch('/:id', requireAdmin, upload.array('images', 10), async (req, res, 
 
 
 // DELETE /api/products/:id (soft delete)
-router.delete('/:id', requireAdmin, async (req, res, next) => {
+router.delete('/:id', requirePerm('products', 'delete'), async (req, res, next) => {
   try {
     const product = await prisma.product.update({
       where: { id: req.params.id },

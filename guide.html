@@ -995,7 +995,9 @@
         <div class="nav-links">
           <a href="index.html">Home</a>
           <a href="shop.html">Shop</a>
-          <a href="shop.html?cat=premium">Collections</a>
+          <a href="shop.html?cat=perfume">Perfumes</a>
+          <a href="shop.html?cat=candles">Candles</a>
+          <a href="shop.html?cat=bath-salts">Bath Salts</a>
           <a href="guide.html" class="active">Guide</a>
           <a href="index.html #about">About</a>
          <!-- <a href="quotes.html">Request A Quote</a>
@@ -1018,6 +1020,9 @@
   <div class="mobile-menu">
     <a href="index.html">Home</a>
     <a href="shop.html">Shop</a>
+    <a href="shop.html?cat=perfume">Perfumes</a>
+    <a href="shop.html?cat=candles">Scented Candles</a>
+    <a href="shop.html?cat=bath-salts">Bath Salts</a>
     <a href="guide.html">Guide</a>
     <a href="quotes.html">Quote</a>
     <a href="track.html">Track Order</a>
@@ -1745,7 +1750,7 @@
   <div class="cart-overlay"></div>
   <div class="cart-panel">
     <div class="cart-panel__header">
-      <h3>Your Cart</h3>
+      <h3>Your Selection</h3>
       <button class="cart-panel__close" aria-label="Close cart">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -1815,5 +1820,6 @@
       document.querySelector('.header')?.classList.toggle('scrolled', window.scrollY > 20);
     }, { passive: true });
   </script>
+  <script src="js/header.js"></script>
 </body>
 </html>

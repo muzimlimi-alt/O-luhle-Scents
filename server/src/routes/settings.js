@@ -7,6 +7,7 @@ import sanitizeHtml from 'sanitize-html'
 import prisma from '../lib/prisma.js'
 import { requireRole } from '../middleware/auth.js'
 import configStore from '../lib/configStore.js'
+import { storedUploadName } from '../lib/uploadNames.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const uploadDir = path.join(__dirname, '../../../images/site')
@@ -17,11 +18,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const timestamp = Date.now()
-    const originalName = file.originalname.replace(/\s+/g, '_')
-    cb(null, `${timestamp}_${originalName}`)
-  }
+  filename: (req, file, cb) => cb(null, storedUploadName(file.originalname))
 })
 
 // Hero background media can be a still image or a short video — both land
@@ -118,6 +115,7 @@ router.post('/', requireRole('admin'), async (req, res, next) => {
         // Audit Log for every change
         await tx.auditLog.create({
           data: {
+            adminUserId: req.adminId || null,
             action: 'UPDATE_SETTING',
             entity: 'GlobalSetting',
             entityId: null,

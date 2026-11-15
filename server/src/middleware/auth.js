@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import prisma from '../lib/prisma.js'
+import { hasPermission } from '../lib/permissions.js'
 
 export function requireAuth(req, res, next) {
   const header = req.headers.authorization
@@ -75,6 +76,38 @@ export function requireRole(...roles) {
       }
       if (role === 'auditor' && req.method !== 'GET') {
         return res.status(403).json({ error: 'Auditor accounts have read-only access' })
+      }
+      req.adminId = req.user.id
+      next()
+    })
+  }
+}
+
+// Fine-grained permission gate — delegates the role → allowed-actions
+// decision to lib/permissions.js. Same guarantees as requireAdmin otherwise:
+// one of the valid admin roles, a live session row, and the auditor-is-GET
+// -only rule applied centrally so we don't have to remember it per route.
+//
+// Prefer this over bare requireAdmin for any route added from here on; the
+// permission key reads like a policy, which is both easier to audit and
+// safer to extend (missing-from-the-matrix defaults to deny).
+export function requirePerm(resource, action) {
+  return (req, res, next) => {
+    requireAuth(req, res, async () => {
+      const role = req.user.role?.toLowerCase()
+      if (!VALID_ADMIN_ROLES.includes(role)) {
+        return res.status(403).json({ error: 'Admin access required' })
+      }
+      if (!(await hasLiveSession(req.token))) {
+        return res.status(401).json({ error: 'Session has been signed out. Please log in again.' })
+      }
+      if (role === 'auditor' && req.method !== 'GET') {
+        return res.status(403).json({ error: 'Auditor accounts have read-only access' })
+      }
+      if (!hasPermission(role, resource, action)) {
+        return res.status(403).json({
+          error: `Your role (${role}) is not permitted to ${action} ${resource}.`,
+        })
       }
       req.adminId = req.user.id
       next()

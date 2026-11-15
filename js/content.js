@@ -84,13 +84,7 @@
 
       hydrateHeroMedia(c.hero_media_url);
       hydrateCollectionImages(c);
-
-      const bar = document.querySelector('.js-announcement-bar');
-      if (bar) {
-        const active = c.announcement_active === 'true';
-        const hasMessage = !!c.announcement_message;
-        bar.hidden = !(active && hasMessage);
-      }
+      // The announcement bar is handled by js/header.js on every page.
     } catch (err) {
       console.warn('[content] using static copy', err);
     }

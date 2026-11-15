@@ -4,7 +4,7 @@ import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingState } from '../components/LoadingState';
 import { useMessaging } from '../context/MessagingContext';
-import { FileBarChart, Download, Calendar, Loader2, Boxes, AlertTriangle, Ban, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
+import { FileBarChart, Download, Calendar, Loader2, Boxes, AlertTriangle, Ban, TrendingDown, Wallet, PiggyBank, Layers } from 'lucide-react';
 
 const FINANCE_PERIODS = [
   { value: '7d', label: 'Last 7 Days' },
@@ -23,6 +23,8 @@ export function Reports() {
   const [financePeriod, setFinancePeriod] = useState('30d');
   const [finance, setFinance] = useState(null);
   const [financeLoading, setFinanceLoading] = useState(true);
+  const [categoryRevenue, setCategoryRevenue] = useState(null);
+  const [categoryRevenueLoading, setCategoryRevenueLoading] = useState(true);
 
   useEffect(() => {
     adminOpsApi.reports.inventorySummary()
@@ -37,6 +39,14 @@ export function Reports() {
       .then(setFinance)
       .catch(err => console.warn('Finance summary failed:', err.message))
       .finally(() => setFinanceLoading(false));
+  }, [financePeriod]);
+
+  useEffect(() => {
+    setCategoryRevenueLoading(true);
+    adminOpsApi.reports.revenueByCategory(financePeriod)
+      .then(setCategoryRevenue)
+      .catch(err => console.warn('Category revenue failed:', err.message))
+      .finally(() => setCategoryRevenueLoading(false));
   }, [financePeriod]);
 
   const handleGenerate = async () => {
@@ -135,6 +145,63 @@ export function Reports() {
           </>
         ) : (
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Finance summary unavailable.</p>
+        )}
+      </div>
+
+      <div className="card" style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <Layers size={22} color="var(--color-primary)" />
+          <h3 style={{ margin: 0 }}>Revenue by Category</h3>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
+            Grouped by each product's current category assignment.
+          </span>
+        </div>
+        {categoryRevenueLoading ? (
+          <LoadingState label="Aggregating by category..." />
+        ) : categoryRevenue && categoryRevenue.categories?.length > 0 ? (
+          <>
+            <div className="category-revenue-bars">
+              {categoryRevenue.categories.map((cat) => (
+                <div key={cat.slug} className="category-revenue-row">
+                  <div className="category-revenue-head">
+                    <span className="category-revenue-name">{cat.name}</span>
+                    <span className="category-revenue-value">
+                      R{cat.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      <span className="category-revenue-share"> · {cat.revenueShare.toFixed(1)}%</span>
+                    </span>
+                  </div>
+                  <div className="category-revenue-bar">
+                    <div
+                      className="category-revenue-bar-fill"
+                      style={{ width: `${Math.max(2, cat.revenueShare)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <DataTable
+              columns={[
+                { key: 'name', label: 'Category' },
+                { key: 'productCount', label: 'Products' },
+                { key: 'orderCount', label: 'Orders' },
+                { key: 'unitsSold', label: 'Units' },
+                { key: 'revenue', label: 'Revenue', render: (v) => `R${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+                { key: 'cogs', label: 'COGS', render: (v) => v != null ? `R${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—' },
+                { key: 'grossProfit', label: 'Gross Profit', render: (v) => v != null ? `R${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—' },
+                { key: 'marginPercent', label: 'Margin', render: (v) => v != null ? `${v.toFixed(1)}%` : '—' },
+                { key: 'revenueShare', label: 'Share', render: (v) => `${v.toFixed(1)}%` },
+              ]}
+              data={categoryRevenue.categories}
+            />
+            <p className="finance-coverage-note finance-coverage-note--info" style={{ marginTop: '12px' }}>
+              Revenue is attributed by each product's current category. Products reclassified after the sale show up under the new category.
+            </p>
+          </>
+        ) : (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            No revenue in this period yet.
+          </p>
         )}
       </div>
 
@@ -276,10 +343,23 @@ export function Reports() {
         .report-row-subtitle { display: block; font-size: 0.7rem; color: var(--text-muted); }
         .report-row-value { font-size: 0.8rem; font-weight: 700; color: var(--y-base); white-space: nowrap; margin-left: var(--sp-3); }
 
+        .category-revenue-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: var(--sp-4); }
+        .category-revenue-row { display: flex; flex-direction: column; gap: 6px; }
+        .category-revenue-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+        .category-revenue-name { font-size: 0.85rem; font-weight: 500; }
+        .category-revenue-value { font-size: 0.8rem; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--y-base); white-space: nowrap; }
+        .category-revenue-share { font-weight: 400; color: var(--text-muted); font-size: 0.72rem; }
+        .category-revenue-bar { height: 8px; background: var(--bg-section); border-radius: 4px; overflow: hidden; }
+        .category-revenue-bar-fill {
+          height: 100%; background: linear-gradient(90deg, var(--y-base), var(--color-primary, var(--y-base)));
+          border-radius: 4px; transition: width 240ms ease;
+        }
+
         @media (max-width: 480px) {
           .inv-stat-grid { grid-template-columns: 1fr; }
           .finance-stat-grid { grid-template-columns: 1fr; }
           .report-row { flex-wrap: wrap; gap: var(--sp-1); }
+          .category-revenue-head { flex-wrap: wrap; }
         }
       `}} />
     </div>

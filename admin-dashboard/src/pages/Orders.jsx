@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { DateTime } from 'luxon';
-=======
-import { useState, useEffect, useCallback } from 'react';
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 import { ordersApi, adminOpsApi, productsApi } from '../services/api';
 import { Drawer } from '../components/Drawer';
 import { DataTable } from '../components/DataTable';

@@ -44,12 +44,23 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Thin wrapper over the user.permissions array returned by /api/auth/me
+  // (server/src/lib/permissions.js). Admin accounts always return true as
+  // a safety net for permission keys the matrix hasn't learned about yet,
+  // so the UI never silently hides something an admin can actually do.
+  const hasPermission = (resource, action) => {
+    if (!user) return false;
+    if (user.role?.toLowerCase() === 'admin') return true;
+    return Array.isArray(user.permissions) && user.permissions.includes(`${resource}:${action}`);
+  };
+
   const value = {
     user,
     loading,
     login,
     logout,
-    checkAuth
+    checkAuth,
+    hasPermission,
   };
 
   return (

@@ -1,12 +1,7 @@
-<<<<<<< HEAD
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DateTime } from 'luxon';
 import { metricsApi, ordersApi, testimonialsApi } from '../services/api';
-=======
-import { useEffect, useState } from 'react';
-import { metricsApi, ordersApi } from '../services/api';
->>>>>>> cc1345d8f96b760d66ac13c97afed99b99705239
 import { DataTable } from '../components/DataTable';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';

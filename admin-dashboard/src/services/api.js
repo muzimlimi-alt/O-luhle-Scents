@@ -102,6 +102,64 @@ export const categoriesApi = {
   delete: (id) => api.delete(`/categories/${id}`),
 };
 
+export const collectionsApi = {
+  list: () => api.get('/collections'),
+  create: (data) => api.post('/collections', data),
+  update: (id, data) => api.patch(`/collections/${id}`, data),
+  delete: (id) => api.delete(`/collections/${id}`),
+  listProducts: (slugOrId) => api.get(`/collections/${slugOrId}/products`),
+  linkProducts: (id, productIds) => api.post(`/collections/${id}/products`, { productIds }),
+  unlinkProduct: (id, productId) => api.delete(`/collections/${id}/products/${productId}`),
+  uploadImage: (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post(`/collections/${id}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  removeImage: (id) => api.delete(`/collections/${id}/image`),
+};
+
+// Catalogue import pipeline — Sources -> Imports -> ExtractedProducts.
+// See server/src/routes/admin_catalogue.js for state-machine rules.
+export const catalogueApi = {
+  listSources: () => api.get('/admin/catalogue/sources'),
+  createSource: (data) => api.post('/admin/catalogue/sources', data),
+  updateSource: (id, data) => api.patch(`/admin/catalogue/sources/${id}`, data),
+  deleteSource: (id) => api.delete(`/admin/catalogue/sources/${id}`),
+
+  listImports: (params) => api.get('/admin/catalogue/imports', { params }),
+  uploadImport: (sourceId, file) => {
+    const formData = new FormData();
+    formData.append('sourceId', sourceId);
+    formData.append('file', file);
+    return api.post('/admin/catalogue/imports', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  processImport: (id, familyHint) =>
+    api.post(`/admin/catalogue/imports/${id}/process`, { familyHint }),
+  deleteImport: (id) => api.delete(`/admin/catalogue/imports/${id}`),
+  importAll: (id) => api.post(`/admin/catalogue/imports/${id}/import-all`),
+
+  listExtracted: (importId) => api.get(`/admin/catalogue/imports/${importId}/extracted`),
+  updateExtracted: (id, data) => api.patch(`/admin/catalogue/extracted/${id}`, data),
+  approveExtracted: (id) => api.post(`/admin/catalogue/extracted/${id}/approve`),
+  rejectExtracted: (id, reason) => api.post(`/admin/catalogue/extracted/${id}/reject`, { reason }),
+  importExtracted: (id) => api.post(`/admin/catalogue/extracted/${id}/import`),
+  // Image endpoints — uploads land in images/products/ so a successful
+  // import auto-attaches them to the live Product record with no extra step.
+  uploadExtractedImage: (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post(`/admin/catalogue/extracted/${id}/images`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  removeExtractedImage: (id, filename) =>
+    api.delete(`/admin/catalogue/extracted/${id}/images/${encodeURIComponent(filename)}`),
+};
+
 export const ordersApi = {
   list: (params) => api.get('/orders', { params }),
   updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
@@ -220,6 +278,7 @@ export const adminOpsApi = {
     generate: (month = 1) => api.get('/admin/ops/reports/generate', { params: { month }, responseType: 'blob' }),
     inventorySummary: () => api.get('/admin/ops/reports/inventory-summary'),
     financeSummary: (period = '30d') => api.get('/admin/ops/reports/finance-summary', { params: { period } }),
+    revenueByCategory: (period = '30d') => api.get('/admin/ops/reports/revenue-by-category', { params: { period } }),
   },
   returns: {
     list: () => api.get('/admin/ops/returns'),
