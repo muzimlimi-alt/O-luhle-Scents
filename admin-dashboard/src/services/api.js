@@ -97,6 +97,21 @@ export const productsApi = {
   setPairings: (id, productIds) => api.put(`/products/${id}/pairings`, { productIds }),
 };
 
+export const campaignsApi = {
+  list: () => api.get('/campaigns'),
+  create: (data) => api.post('/campaigns', data),
+  update: (id, data) => api.patch(`/campaigns/${id}`, data),
+  delete: (id) => api.delete(`/campaigns/${id}`),
+  uploadImage: (id, file, slot = 'desktop') => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post(`/campaigns/${id}/image?slot=${slot}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  removeImage: (id, slot = 'desktop') => api.delete(`/campaigns/${id}/image?slot=${slot}`),
+};
+
 export const categoriesApi = {
   list: () => api.get('/categories'),
   create: (data) => api.post('/categories', data),

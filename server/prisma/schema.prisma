@@ -1454,3 +1454,25 @@ model DataRetentionPolicy {
 
   @@map("data_retention_policies")
 }
+
+// ── 51. HOMEPAGE_CAMPAIGNS — scheduled hero overrides ──────────────────────
+model HomepageCampaign {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String    @db.VarChar(120)
+  eyebrow       String?   @db.VarChar(60)
+  heading       String    @db.VarChar(200)
+  subheading    String?   @db.VarChar(300)
+  ctaLabel      String?   @map("cta_label") @db.VarChar(60)
+  ctaHref       String?   @map("cta_href") @db.VarChar(300)
+  desktopImage  String?   @map("desktop_image") @db.VarChar(300)
+  mobileImage   String?   @map("mobile_image") @db.VarChar(300)
+  startsAt      DateTime  @map("starts_at")
+  endsAt        DateTime? @map("ends_at")
+  isActive      Boolean   @default(false) @map("is_active")
+  priority      Int       @default(0)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive, startsAt, endsAt])
+  @@map("homepage_campaigns")
+}

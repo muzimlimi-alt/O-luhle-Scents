@@ -60,29 +60,96 @@
     }
   }
 
+  // Campaign hero override — when an active campaign (or an admin preview)
+  // exists, replace the hero copy, CTA and background image. The hero's
+  // default content stays in the HTML so a missing campaign degrades cleanly.
+  async function loadCampaign() {
+    try {
+      // Admin preview: ?campaignPreview=<id> with a valid admin token
+      var previewId = new URLSearchParams(window.location.search).get('campaignPreview');
+      var url, headers = {};
+      if (previewId) {
+        var token;
+        try { token = localStorage.getItem('toca_admin_token'); } catch (e) { /* private mode */ }
+        if (!token) return null; // can't preview without auth
+        url = '/api/campaigns/preview/' + encodeURIComponent(previewId);
+        headers['Authorization'] = 'Bearer ' + token;
+      } else {
+        url = '/api/campaigns/active';
+      }
+      var res = await fetch(url, { headers: headers });
+      if (!res.ok) return null;
+      var campaign = await res.json();
+      if (!campaign) return null;
+
+      // Apply campaign to hero
+      var tagline = document.querySelector('.hero__tagline');
+      var title = document.querySelector('.hero__title');
+      var subtitle = document.querySelector('.hero__subtitle');
+      var primaryCta = document.querySelector('.hero__cta .btn--primary');
+      var secondaryCta = document.querySelector('.hero__cta .btn--outline');
+
+      if (campaign.eyebrow && tagline) tagline.textContent = campaign.eyebrow;
+      if (campaign.heading && title) {
+        title.textContent = campaign.heading;
+        title.innerHTML = title.textContent; // strip the <em> structure
+      }
+      if (campaign.subheading && subtitle) subtitle.textContent = campaign.subheading;
+      if (campaign.ctaLabel && primaryCta) {
+        primaryCta.textContent = campaign.ctaLabel;
+        if (campaign.ctaHref) primaryCta.setAttribute('href', campaign.ctaHref);
+      }
+      // Hide the secondary CTA during a campaign
+      if (secondaryCta) secondaryCta.style.display = 'none';
+
+      // Campaign hero image — pick mobile or desktop based on viewport
+      var isMobile = window.matchMedia('(max-width: 768px)').matches;
+      var imageUrl = (isMobile && campaign.mobileImage) || campaign.desktopImage;
+      if (imageUrl) {
+        hydrateHeroMedia(imageUrl);
+      }
+
+      return campaign;
+    } catch (err) {
+      console.warn('[content] campaign load failed', err);
+      return null;
+    }
+  }
+
   async function loadContent() {
     try {
-      const res = await fetch('/api/admin/settings/public');
+      // Load campaign and settings in parallel
+      var campaignPromise = loadCampaign();
+
+      var res = await fetch('/api/admin/settings/public');
       if (!res.ok) return;
-      const c = await res.json();
+      var c = await res.json();
 
       document.querySelectorAll('[data-content]').forEach(function (el) {
-        const v = c[el.dataset.content];
+        var v = c[el.dataset.content];
         if (v == null || v === '') return;
         el.textContent = v;
       });
 
       document.querySelectorAll('[data-content-html]').forEach(function (el) {
-        const v = c[el.dataset.contentHtml];
+        var v = c[el.dataset.contentHtml];
         if (v) el.innerHTML = v; // server-sanitised fields only
       });
 
       document.querySelectorAll('[data-content-href]').forEach(function (el) {
-        const v = c[el.dataset.contentHref];
+        var v = c[el.dataset.contentHref];
         if (v) el.setAttribute('href', v);
       });
 
-      hydrateHeroMedia(c.hero_media_url);
+      // Campaign overrides the hero if one is active — await it after
+      // settings so campaign copy wins over data-content defaults.
+      var campaign = await campaignPromise;
+
+      // Only apply default hero media if no campaign provided its own
+      if (!campaign || (!campaign.desktopImage && !campaign.mobileImage)) {
+        hydrateHeroMedia(c.hero_media_url);
+      }
+
       hydrateCollectionImages(c);
       // The announcement bar is handled by js/header.js on every page.
     } catch (err) {

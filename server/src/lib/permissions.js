@@ -49,6 +49,7 @@ export const PERMISSIONS = Object.freeze({
     'catalogue:import', 'catalogue:source:write', 'catalogue:source:delete',
     'products:read', 'products:write', 'products:delete',
     'categories:read', 'categories:write', 'categories:delete',
+    'campaigns:read', 'campaigns:write', 'campaigns:delete',
   ]),
 
   // Shop manager runs the catalogue — add collections, upload catalogues,
@@ -65,6 +66,7 @@ export const PERMISSIONS = Object.freeze({
     // since products.js already soft-handles the inventory/order fallout.
     'products:read', 'products:write', 'products:delete',
     'categories:read', 'categories:write', 'categories:delete',
+    'campaigns:read', 'campaigns:write', 'campaigns:delete',
   ]),
 
   // Staff can look at the catalogue admin but not reshape it. Primarily
@@ -76,6 +78,7 @@ export const PERMISSIONS = Object.freeze({
     'catalogue:read',
     'products:read',
     'categories:read',
+    'campaigns:read',
   ]),
 
   // Auditor is handled centrally: read-only on every admin endpoint via
@@ -87,6 +90,7 @@ export const PERMISSIONS = Object.freeze({
     'catalogue:read',
     'products:read',
     'categories:read',
+    'campaigns:read',
   ]),
 })
 

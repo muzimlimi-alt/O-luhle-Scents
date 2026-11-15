@@ -35,6 +35,7 @@ import privacyRoutes from './routes/privacy.js'
 import adminPrivacyRoutes from './routes/admin_privacy.js'
 import collectionsRoutes from './routes/admin_collections.js'
 import adminCatalogueRoutes from './routes/admin_catalogue.js'
+import campaignRoutes from './routes/campaigns.js'
 import { requireRole, requireAdmin } from './middleware/auth.js'
 
 import { errorHandler } from './middleware/errorHandler.js'
@@ -142,6 +143,9 @@ app.use('/api/contact', contactRoutes)
 app.use('/api/testimonials', testimonialsRoutes)
 app.use('/api/privacy', privacyRoutes)
 app.use('/api/admin/privacy', adminPrivacyRoutes)
+// Campaigns: public GET /active for the storefront hero, admin CRUD gated
+// per-route via requirePerm('campaigns', ...).
+app.use('/api/campaigns', campaignRoutes)
 
 
 
@@ -167,6 +171,7 @@ app.use('/js', express.static(path.join(rootDir, 'js')))
 app.use('/images', express.static(path.join(rootDir, 'images')))
 app.use('/images/newsletter', express.static(path.join(rootDir, 'images/newsletter')))
 app.use('/images/collections', express.static(path.join(rootDir, 'images/collections')))
+app.use('/images/campaigns', express.static(path.join(rootDir, 'images/campaigns')))
 app.use('/assets', express.static(path.join(rootDir, 'assets')))
 app.use('/extra', express.static(path.join(rootDir, 'extra')))
 

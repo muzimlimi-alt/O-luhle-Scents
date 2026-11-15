@@ -40,7 +40,8 @@ import {
   ChevronsLeft,
   Lock,
   FileCheck,
-  Calculator
+  Calculator,
+  Megaphone
 } from 'lucide-react';
 
 // Single source of truth for the sidebar, grouped into the same four
@@ -137,6 +138,7 @@ const NAV = [
         children: [
           { path: '/settings', label: 'Settings', icon: <Cog size={16} /> },
           { path: '/content', label: 'Site Content', icon: <Layout size={16} /> },
+          { path: '/campaigns', label: 'Campaigns', icon: <Megaphone size={16} /> },
           { path: '/preferences', label: 'Preferences', icon: <Sliders size={16} /> },
           { path: '/shipping-methods', label: 'Shipping Methods', icon: <Truck size={16} /> },
           { path: '/tax-rates', label: 'Tax Rates', icon: <Percent size={16} /> },
