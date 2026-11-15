@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         productData = await getProduct(productId);
         renderProduct(productData);
         renderRelated(productData.related);
+        renderPairings(productId, currency);
         
         // Trigger reveal animations for the newly rendered content
         if (typeof window.initScrollReveal === 'function') {
@@ -326,6 +327,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             elements.addBtn.disabled = false;
         }
     };
+
+    // "Complete the Scent Experience": curated and same-scent-family products
+    // from other categories. Cards come from app.js's renderProducts, so they
+    // show sizes, sold-out state and add to the same cart.
+    async function renderPairings(id, cur) {
+        const section = document.getElementById('scent-experience');
+        if (!section || typeof window.renderProducts !== 'function') return;
+        try {
+            const res = await fetch(`/api/products/${encodeURIComponent(id)}/pairings?currency=${encodeURIComponent(cur)}`);
+            if (!res.ok) return;
+            const { products = [] } = await res.json();
+            if (!products.length) return;
+            window.renderProducts('pairing-products', products);
+            section.hidden = false;
+        } catch (err) {
+            console.warn('[product] pairings unavailable', err);
+        }
+    }
 
     function renderRelated(related) {
         if (!related || related.length === 0) return;

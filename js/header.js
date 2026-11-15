@@ -33,6 +33,8 @@
     const icons = document.querySelector('.nav-icons');
     if (!icons || icons.querySelector('.js-open-search')) return;
     const cart = icons.querySelector('.js-open-cart, a[href="cart.html"]');
+    // Checkout's focused "Secure Checkout" header has no cart link; keep it free of distractions.
+    if (!cart) return;
 
     const search = document.createElement('button');
     search.type = 'button';

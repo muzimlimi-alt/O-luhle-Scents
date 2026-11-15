@@ -86,7 +86,7 @@ function emailShell(title, bodyHtml) {
         TOCA
       </div>
       <div style="font-size:11px;color:#999;letter-spacing:0.2em;text-transform:uppercase;margin-top:4px;">
-        Extrait de Parfum
+        Officina Del Toca
       </div>
     </div>
     <!-- Body -->
@@ -197,6 +197,82 @@ export async function sendOrderConfirmation(orderId) {
     subject: `Your TOCA order is confirmed ✦`,
     html:    emailShell(`Order Confirmed — TOCA`, body),
   })
+}
+
+// ── 2. Dispatch and delivery updates ──────────────────────────────────────────
+// Sent when an order moves to shipped / delivered (see routes/orders.js).
+// The build* functions only render, so the copy can be previewed without sending.
+const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]))
+const siteUrl = () => (process.env.SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
+
+export function buildOrderDispatchedEmail(order) {
+  const firstName = escHtml(order.customer?.name?.split(' ')[0] || 'there')
+  const trackHref = order.trackingNumber ? `${siteUrl()}/track.html?number=${encodeURIComponent(order.trackingNumber)}` : null
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Your order is on its way, ${firstName}
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Order <strong>${escHtml(order.orderNumber)}</strong> has been carefully packed and handed to our courier.
+    </p>
+    ${order.trackingNumber ? `
+    <div style="background:#f7f3ee;border-radius:6px;padding:20px 24px;margin-bottom:24px;">
+      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">${escHtml(order.courierName || 'Courier')} tracking number</div>
+      <div style="font-family:monospace;font-size:15px;color:#1a1a1a;">${escHtml(order.trackingNumber)}</div>
+    </div>
+    <p style="margin:0 0 28px;">
+      <a href="${trackHref}" style="display:inline-block;background:#1a1a1a;color:#fff;text-decoration:none;padding:12px 28px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;">Track your order</a>
+    </p>` : ''}
+    <table style="width:100%;border-collapse:collapse;">
+      <tbody>${itemRows(order.items)}</tbody>
+    </table>
+    <p style="font-size:13px;color:#888;margin-top:28px;line-height:1.7;">
+      Delivery usually takes 3–5 business days. We'll let you know when it arrives.
+    </p>`
+  return { subject: `Your TOCA order is on its way — ${order.orderNumber}`, html: emailShell('Order Dispatched — TOCA', body) }
+}
+
+export function buildOrderDeliveredEmail(order) {
+  const firstName = escHtml(order.customer?.name?.split(' ')[0] || 'there')
+  const seen = new Set()
+  const careItems = (order.items || [])
+    .map((item) => item.variant?.product)
+    .filter((p) => p && p.careInstructions && !seen.has(p.id) && seen.add(p.id))
+  const care = careItems.length ? `
+    <div style="margin-top:28px;padding:20px 24px;border:1px solid #e8e0d4;border-radius:6px;">
+      <div style="font-size:12px;color:#999;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">Caring for your selection</div>
+      ${careItems.map((p) => `
+        <p style="font-size:14px;line-height:1.7;color:#444;margin:0 0 12px;">
+          <strong style="font-family:Georgia,serif;">${escHtml(p.name)}</strong><br>
+          ${escHtml(p.careInstructions)}${p.usageInstructions ? `<br><span style="color:#888;">${escHtml(p.usageInstructions)}</span>` : ''}
+        </p>`).join('')}
+    </div>` : ''
+  const body = `
+    <h2 style="font-family:Georgia,serif;color:#1a1a1a;font-size:20px;margin:0 0 8px;">
+      Your TOCA experience begins here
+    </h2>
+    <p style="color:#666;font-size:14px;line-height:1.7;margin:0 0 8px;">
+      Hello ${firstName}, order <strong>${escHtml(order.orderNumber)}</strong> has been delivered. We hope it brings you joy.
+    </p>
+    ${care}
+    <p style="margin:28px 0 0;">
+      <a href="${siteUrl()}/shop.html" style="display:inline-block;background:#1a1a1a;color:#fff;text-decoration:none;padding:12px 28px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;">Discover more</a>
+    </p>`
+  return { subject: `Delivered — your TOCA order ${order.orderNumber}`, html: emailShell('Order Delivered — TOCA', body) }
+}
+
+export async function sendOrderDispatched(orderId) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+  const { subject, html } = buildOrderDispatchedEmail(order)
+  await send({ to: order.customer.email, subject, html })
+}
+
+export async function sendOrderDelivered(orderId) {
+  const order = await loadOrderForEftEmail(orderId)
+  if (!order?.customer?.email) return
+  const { subject, html } = buildOrderDeliveredEmail(order)
+  await send({ to: order.customer.email, subject, html })
 }
 
 // ── 3. Newsletter subscription confirmation ───────────────────────────────────

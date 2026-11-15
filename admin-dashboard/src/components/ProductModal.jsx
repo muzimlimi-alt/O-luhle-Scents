@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import {
   X, Plus, Trash2, GripVertical, AlertCircle, Loader2,
   Sparkles, Camera, ImagePlus,
-  Package, Info, Layout, Boxes, Truck
+  Package, Info, Layout, Boxes, Truck, Star
 } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
-import { adminOpsApi } from '../services/api';
+import { adminOpsApi, productsApi } from '../services/api';
 import { Drawer } from './Drawer';
 import { FormField } from './FormField';
 import { useMessaging } from '../context/MessagingContext';
@@ -16,7 +16,42 @@ const PRODUCT_FAMILIES = [
   { value: 'HOME_FRAGRANCE', label: 'Home Fragrance' },
   { value: 'ACCESSORY', label: 'Accessory' },
   { value: 'GIFT_SET', label: 'Gift Set' },
+  { value: 'BATH_SALT', label: 'Bath Salts' },
 ];
+
+// Default product type per family (perfumes pick theirs from the type list).
+const FAMILY_TYPES = {
+  CANDLE: 'Scented Candle',
+  BATH_SALT: 'Bath Salts',
+  HOME_FRAGRANCE: 'Home Fragrance',
+  ACCESSORY: 'Accessory',
+  GIFT_SET: 'Gift Set',
+};
+const PERFUME_TYPES = ['Extrait de Parfum', 'Parfum', 'Eau de Parfum', 'Eau de Toilette', 'Eau de Cologne', 'Eau Fraîche', 'Eau de Senteur', 'Splash & Aftershave'];
+
+// Kept in step with TYPE_PROFILES / SCENT_CHARACTERISTICS in server/src/routes/products.js.
+const TYPE_PROFILES = {
+  'Extrait de Parfum': ['20–40%', '10–24 hours'],
+  'Parfum': ['20–40%', '10–24 hours'],
+  'Eau de Parfum': ['15–20%', '6–10 hours'],
+  'Eau de Toilette': ['5–15%', '3–6 hours'],
+  'Eau de Cologne': ['2–4%', '1–2 hours'],
+  'Eau Fraîche': ['1–3%', '1–2 hours'],
+  'Eau de Senteur': ['', 'Short, depends on solvents'],
+  'Splash & Aftershave': ['', '1–3 hours'],
+};
+const SCENT_FAMILIES = ['Aquatic', 'Chypre', 'Citrus', 'Floral', 'Fresh', 'Fruity', 'Gourmand', 'Herbal', 'Oriental', 'Woody'];
+const SCENT_CHARACTERISTICS = {
+  Floral: 'Sweet, Soft, Feminine',
+  Citrus: 'Fresh, Bright, Uplifting',
+  Fresh: 'Fresh, Bright, Uplifting',
+  Fruity: 'Sweet, Juicy, Fun',
+  Woody: 'Warm, Masculine, Deep',
+  Oriental: 'Warm, Exotic, Sensual',
+  Aquatic: 'Clean, Fresh, Airy',
+  Herbal: 'Fresh, Herbal, Clean',
+  Chypre: 'Complex, Structured, Timeless',
+};
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '');
 
@@ -30,13 +65,15 @@ const EMPTY_FORM = {
   family: 'PERFUME',
   cardBadge: '',
   type: 'Extrait de Parfum',
-  oilConcentration: '±20–40%',
-  longevity: '±10–24 hours',
-  scentFamily: 'Woody',
-  characteristic: 'Warm, Masculine, Deep',
+  oilConcentration: '20–40%',
+  longevity: '10–24 hours',
+  scentFamily: '',
+  characteristic: '',
   topNotes: [],
   heartNotes: [],
-  baseNotes: []
+  baseNotes: [],
+  isFeatured: false,
+  featuredOrder: '0'
 };
 
 const AROMATIC_NOTES = [
@@ -89,6 +126,35 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
   const [altSuppliers, setAltSuppliers] = useState([]);
   const [newAltSupplier, setNewAltSupplier] = useState({ supplierId: '', supplierSku: '', leadTimeDays: '', minOrderQty: '' });
 
+  // Merchandising: curated "Complete the Scent Experience" pairings
+  const [pairingIds, setPairingIds] = useState([]);
+  const [pairingsDirty, setPairingsDirty] = useState(false);
+  const [catalogue, setCatalogue] = useState([]);
+  const [pairingSearch, setPairingSearch] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setPairingSearch('');
+    setPairingsDirty(false);
+    if (product?.id) {
+      productsApi.getCuratedPairings(product.id)
+        .then(r => setPairingIds(r.productIds || []))
+        .catch(() => setPairingIds([]));
+    } else {
+      setPairingIds([]);
+    }
+    productsApi.list({ limit: 200 })
+      .then(r => setCatalogue(r.products || []))
+      .catch(() => setCatalogue([]));
+  }, [isOpen, product]);
+
+  const togglePairing = (id) => {
+    setPairingIds(prev => prev.includes(id)
+      ? prev.filter(x => x !== id)
+      : prev.length >= 12 ? prev : [...prev, id]);
+    setPairingsDirty(true);
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -102,14 +168,16 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
         status: product.status || 'ACTIVE',
         family: product.family || 'PERFUME',
         cardBadge: product.cardBadge || '',
-        type: product.type || 'Extrait de Parfum',
+        type: product.type || FAMILY_TYPES[product.family] || 'Extrait de Parfum',
         oilConcentration: product.oilConcentration || '',
         longevity: product.longevity || '',
-        scentFamily: product.scentFamily || 'Woody',
+        scentFamily: product.scentFamily || '',
         characteristic: product.characteristic || '',
         topNotes: safeParseNotes(product.topNotes),
         heartNotes: safeParseNotes(product.heartNotes),
-        baseNotes: safeParseNotes(product.baseNotes)
+        baseNotes: safeParseNotes(product.baseNotes),
+        isFeatured: !!product.isFeatured,
+        featuredOrder: String(product.featuredOrder ?? 0)
       });
 
       // Media library records (alt text) are keyed by filename so they can be
@@ -294,37 +362,24 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
       
-      // Auto-population Rules
+      // Auto-population Rules (preview only; the server applies the same rules)
       if (field === 'type') {
-        if (value === "Extrait de Parfum" || value === "Parfum") {
-          updated.oilConcentration = "±20–40%"; updated.longevity = "±10–24 hours";
-        } else if (value === "Eau de Parfum") {
-          updated.oilConcentration = "±15–20%"; updated.longevity = "±6–10 hours";
-        } else if (value === "Eau de Toilette") {
-          updated.oilConcentration = "±5–15%"; updated.longevity = "±3–6 hours";
-        } else if (value === "Eau de Cologne" || value === "Eau Fraîche") {
-          updated.oilConcentration = value === "Eau de Cologne" ? "±2–4%" : "±1–3%";
-          updated.longevity = "±1–2 hours";
-        } else if (value === "Eau de Senteur") {
-          updated.longevity = "Short, depends on solvents";
-        } else if (value === "Splash & Aftershave") {
-          updated.longevity = "±1–3 hours";
-        } else {
-          updated.oilConcentration = "Varies";
-        }
+        const [oil, longevity] = TYPE_PROFILES[value] || ['', ''];
+        updated.oilConcentration = oil;
+        updated.longevity = longevity;
       }
 
       if (field === 'scentFamily') {
-        const charMap = {
-          "Floral": "Sweet, Soft, Feminine",
-          "Citrus": "Fresh, Bright, Uplifting",
-          "Fruity": "Sweet, Juicy, Fun",
-          "Woody": "Warm, Masculine, Deep",
-          "Oriental": "Warm, Exotic, Sensual",
-          "Aquatic": "Clean, Fresh, Airy; not too sweet or heavy",
-          "Herbal": "Fresh, Herbal, Clean"
-        };
-        updated.characteristic = charMap[value] || "N/A";
+        updated.characteristic = SCENT_CHARACTERISTICS[value] || '';
+      }
+
+      // Switching family keeps the product type sensible (a candle isn't an Extrait).
+      if (field === 'family') {
+        if (value === 'PERFUME') {
+          if (!PERFUME_TYPES.includes(updated.type)) updated.type = 'Extrait de Parfum';
+        } else {
+          updated.type = FAMILY_TYPES[value] || updated.type;
+        }
       }
 
       return updated;
@@ -364,6 +419,9 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
       data.append('attributes', JSON.stringify(attributeValues));
 
       await onSave(data, product?.id);
+      if (product?.id && pairingsDirty) {
+        await productsApi.setPairings(product.id, pairingIds);
+      }
       onClose();
     } catch (err) {
       setError(err.message || 'Failed to preserve product artistry');
@@ -418,6 +476,12 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
               onClick={() => setActiveTab('inventory')}
             >
               <Package size={16} /> Variations & Stock
+            </button>
+            <button
+              className={`elite-nav-item ${activeTab === 'merchandising' ? 'active' : ''}`}
+              onClick={() => setActiveTab('merchandising')}
+            >
+              <Star size={16} /> Merchandising
             </button>
           </nav>
 
@@ -572,7 +636,7 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
                     <FormField label="Product Type">
                       <select value={formData.type} onChange={e => set('type', e.target.value)}>
-                        {["Extrait de Parfum", "Parfum", "Eau de Parfum", "Eau de Toilette", "Eau de Cologne", "Eau Fraîche", "Eau de Senteur", "Splash & Aftershave"].map(t => (
+                        {PERFUME_TYPES.map(t => (
                           <option key={t} value={t}>{t}</option>
                         ))}
                       </select>
@@ -605,7 +669,8 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
 
                     <FormField label="Scent Family">
                       <select value={formData.scentFamily} onChange={e => set('scentFamily', e.target.value)}>
-                        {["Aquatic", "Floral", "Woody", "Oriental", "Citrus", "Fruity", "Herbal"].map(f => (
+                        <option value="">None</option>
+                        {SCENT_FAMILIES.map(f => (
                           <option key={f} value={f}>{f}</option>
                         ))}
                       </select>
@@ -686,6 +751,15 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                         </select>
                       </FormField>
 
+                      <FormField label="Scent Family" hint="Links this product to perfumes and bath salts of the same family in “Complete the Scent Experience”.">
+                        <select value={formData.scentFamily} onChange={e => set('scentFamily', e.target.value)}>
+                          <option value="">None</option>
+                          {SCENT_FAMILIES.map(f => (
+                            <option key={f} value={f}>{f}</option>
+                          ))}
+                        </select>
+                      </FormField>
+
                       {attributeDefs.filter(d => !d.appliesToVariant).map(def => (
                         <FormField label={`${def.label}${def.unit ? ` (${def.unit})` : ''}`} key={def.id}>
                           {def.dataType === 'ENUM' ? (
@@ -717,6 +791,80 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
                       )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeTab === 'merchandising' && (
+                <div className="elite-fade-in section-merchandising">
+                  <div className="elite-grid">
+                    <div className="elite-section-divider span-full" style={{ marginTop: 0 }}>
+                      <Star size={14} /> <span>The TOCA Favourites</span>
+                    </div>
+                    <div className="span-full">
+                      <label className="merch-toggle">
+                        <input
+                          type="checkbox"
+                          checked={formData.isFeatured}
+                          onChange={e => set('isFeatured', e.target.checked)}
+                        />
+                        <span>Feature this product on the homepage and at the top of the shop</span>
+                      </label>
+                    </div>
+                    <FormField label="Featured position" hint="Lower numbers appear first among featured products.">
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.featuredOrder}
+                        disabled={!formData.isFeatured}
+                        onChange={e => set('featuredOrder', e.target.value)}
+                      />
+                    </FormField>
+
+                    <div className="elite-section-divider span-full">
+                      <Sparkles size={14} /> <span>Complete the Scent Experience</span>
+                    </div>
+                    {isEdit ? (
+                      <div className="span-full">
+                        <p className="merch-hint">
+                          Choose products to recommend with this one — they appear on both products' pages.
+                          After your picks, products in other categories with the same scent family are suggested automatically.
+                        </p>
+                        <input
+                          type="search"
+                          className="merch-search"
+                          placeholder="Filter by name, category or scent family…"
+                          value={pairingSearch}
+                          onChange={e => setPairingSearch(e.target.value)}
+                        />
+                        <div className="merch-pairing-list">
+                          {catalogue
+                            .filter(p => p.id !== product.id)
+                            .filter(p => {
+                              const q = pairingSearch.trim().toLowerCase();
+                              if (!q) return true;
+                              return [p.name, p.category?.name, p.scentFamily].some(v => (v || '').toLowerCase().includes(q));
+                            })
+                            .sort((a, b) => Number(pairingIds.includes(b.id)) - Number(pairingIds.includes(a.id))
+                              || (a.category?.name || '').localeCompare(b.category?.name || '')
+                              || a.name.localeCompare(b.name))
+                            .map(p => (
+                              <label key={p.id} className={`merch-pairing ${pairingIds.includes(p.id) ? 'selected' : ''}`}>
+                                <input type="checkbox" checked={pairingIds.includes(p.id)} onChange={() => togglePairing(p.id)} />
+                                <span className="merch-pairing__name">{p.name}</span>
+                                <span className="merch-pairing__meta">
+                                  {p.category?.name || 'Uncategorised'}
+                                  {p.scentFamily ? ` · ${p.scentFamily}` : ''}
+                                  {p.status !== 'ACTIVE' ? ` · ${p.status.toLowerCase()}` : ''}
+                                </span>
+                              </label>
+                            ))}
+                        </div>
+                        <p className="merch-hint">{pairingIds.length} selected (up to 12; the first 4 show on the site)</p>
+                      </div>
+                    ) : (
+                      <p className="merch-hint span-full">Save the product first, then return here to choose pairings.</p>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -971,6 +1119,22 @@ const ProductModal = ({ isOpen, onClose, product = null, categories = [], suppli
             display: flex; align-items: center; gap: var(--sp-3);
             margin: var(--sp-6) 0 var(--sp-4); padding: 0 4px;
           }
+          .merch-toggle { display: flex; align-items: center; gap: 10px; font-size: .9rem; cursor: pointer; }
+          .merch-toggle input { width: 16px; height: 16px; accent-color: var(--y-base); }
+          .merch-hint { font-size: .8rem; color: var(--color-text-muted); margin: 0 0 10px; line-height: 1.5; }
+          .merch-search { width: 100%; margin-bottom: 10px; }
+          .merch-pairing-list {
+            max-height: 320px; overflow-y: auto; border: 1px solid var(--color-border);
+            border-radius: 6px; padding: 4px;
+          }
+          .merch-pairing {
+            display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 10px;
+            padding: 8px 10px; border-radius: 4px; cursor: pointer; font-size: .85rem;
+          }
+          .merch-pairing:hover { background: rgba(var(--y-rgb), 0.06); }
+          .merch-pairing.selected { background: rgba(var(--y-rgb), 0.12); }
+          .merch-pairing input { accent-color: var(--y-base); }
+          .merch-pairing__meta { font-size: .72rem; color: var(--color-text-muted); white-space: nowrap; }
           .elite-section-divider span {
             font-size: .68rem; font-weight: 400; color: var(--y-base);
             text-transform: uppercase; letter-spacing: .18em;

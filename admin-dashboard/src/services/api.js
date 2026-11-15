@@ -93,6 +93,8 @@ export const productsApi = {
     headers: { 'Content-Type': 'multipart/form-data' } 
   }),
   delete: (id) => api.delete(`/products/${id}`),
+  getCuratedPairings: (id) => api.get(`/products/${id}/pairings/curated`),
+  setPairings: (id, productIds) => api.put(`/products/${id}/pairings`, { productIds }),
 };
 
 export const categoriesApi = {
@@ -100,6 +102,14 @@ export const categoriesApi = {
   create: (data) => api.post('/categories', data),
   update: (id, data) => api.patch(`/categories/${id}`, data),
   delete: (id) => api.delete(`/categories/${id}`),
+  uploadImage: (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post(`/categories/${id}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  removeImage: (id) => api.delete(`/categories/${id}/image`),
 };
 
 export const collectionsApi = {

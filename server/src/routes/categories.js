@@ -1,15 +1,37 @@
 import { Router } from 'express'
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 import prisma from '../lib/prisma.js'
-import { requirePerm } from '../middleware/auth.js'
+import { requirePerm, getAdminFromRequest } from '../middleware/auth.js'
 import { generateUniqueCategorySlug } from '../lib/slug.js'
+import { storedUploadName } from '../lib/uploadNames.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const categoryImageDir = path.join(__dirname, '../../../images/categories')
+if (!fs.existsSync(categoryImageDir)) fs.mkdirSync(categoryImageDir, { recursive: true })
+
+// Category banner images, shown behind the shop page title for that category.
+const imageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, categoryImageDir),
+    filename: (req, file, cb) => cb(null, storedUploadName(file.originalname)),
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /^image\/(jpe?g|png|webp)$/i.test(file.mimetype) && /\.(jpe?g|png|webp)$/i.test(file.originalname)
+    cb(ok ? null : Object.assign(new Error('Only JPG, PNG or WebP images are allowed'), { status: 400 }), ok)
+  },
+})
 
 const router = Router()
 
 // ─── GET /api/categories ──────────────────────────────────────────────────────
-// Storefront sees only active categories; admin (Bearer token present) sees all.
+// Storefront sees only active categories; signed-in admins see all.
 router.get('/', async (req, res, next) => {
   try {
-    const isAdmin = !!req.headers.authorization
+    const isAdmin = !!(await getAdminFromRequest(req))
     const categories = await prisma.category.findMany({
       where: isAdmin ? {} : { isActive: true },
       orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
@@ -74,6 +96,29 @@ router.patch('/:id', requirePerm('categories', 'write'), async (req, res, next) 
     if (err.code === 'P2002') return res.status(400).json({ error: 'A category with that name already exists' })
     next(err)
   }
+})
+
+// ─── POST /api/categories/:id/image (admin) — upload the banner image ─────────
+router.post('/:id/image', requirePerm('categories', 'write'), imageUpload.single('image'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Image file is required' })
+    const category = await prisma.category.update({ where: { id: req.params.id }, data: { image: req.file.filename } })
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'CATEGORY_IMAGE_UPLOAD', entity: 'Category', entityId: category.id, details: { filename: req.file.filename, size: req.file.size } },
+    })
+    res.json(category)
+  } catch (err) { next(err) }
+})
+
+// ─── DELETE /api/categories/:id/image (admin) ─────────────────────────────────
+router.delete('/:id/image', requirePerm('categories', 'write'), async (req, res, next) => {
+  try {
+    const category = await prisma.category.update({ where: { id: req.params.id }, data: { image: null } })
+    await prisma.auditLog.create({
+      data: { adminUserId: req.adminId, action: 'CATEGORY_IMAGE_REMOVE', entity: 'Category', entityId: category.id },
+    })
+    res.json(category)
+  } catch (err) { next(err) }
 })
 
 // ─── DELETE /api/categories/:id (admin) — soft: archive, don't orphan products ─

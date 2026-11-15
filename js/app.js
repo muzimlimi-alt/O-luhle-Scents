@@ -398,11 +398,19 @@ async function updateShopBanner() {
   try {
     if (shopState.cat !== 'all') {
       const cat = (await getShopCategories()).find((c) => c.slug === shopState.cat);
-      if (cat) { heading = cat.name; description = cat.description || ''; }
+      if (cat) {
+        heading = cat.name;
+        description = cat.description || '';
+        if (cat.image) heroImage = `/images/categories/${encodeURIComponent(cat.image)}`;
+      }
     }
     if (shopState.collection.length === 1) {
       const col = (await getShopCollections()).find((c) => c.slug === shopState.collection[0]);
-      if (col) { heading = col.name; description = col.description || description; heroImage = col.image; }
+      if (col) {
+        heading = col.name;
+        description = col.description || description;
+        if (col.image) heroImage = `/images/collections/${encodeURIComponent(col.image)}`;
+      }
     }
     if (shopState.q) {
       const scope = heading === SHOP_DEFAULT_TITLE ? '' : ` in ${heading}`;
@@ -422,7 +430,7 @@ async function updateShopBanner() {
   }
   if (banner) {
     banner.classList.toggle('page-banner--hero', !!heroImage);
-    banner.style.backgroundImage = heroImage ? `url('/images/collections/${encodeURIComponent(heroImage)}')` : '';
+    banner.style.backgroundImage = heroImage ? `url('${heroImage}')` : '';
   }
   document.title = heading === SHOP_DEFAULT_TITLE ? 'Shop | TOCA' : `${heading} | TOCA`;
 }
@@ -567,22 +575,30 @@ function renderActiveFilters() {
       <button type="button" class="shop-chip shop-chip--clear js-clear-filters">Clear all</button>` : '';
 }
 
+// Sorts that need sales data or launch dates are ordered by the server.
+const SERVER_SORTS = ['bestselling', 'newest'];
+
 function sortShopProducts(products) {
   const minPrice = (p) => {
     const prices = (p.variants || []).map((v) => Number(v.price)).filter(Number.isFinite);
     return prices.length ? Math.min(...prices) : 0;
   };
   const sorted = [...products];
+  if (SERVER_SORTS.includes(shopState.sort)) return sorted;
   switch (shopState.sort) {
     case 'price-low': sorted.sort((a, b) => minPrice(a) - minPrice(b)); break;
     case 'price-high': sorted.sort((a, b) => minPrice(b) - minPrice(a)); break;
     case 'name': sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
-    default:
-      // "Featured" on All groups the catalogue in category order.
-      if (shopState.cat === 'all' && shopCategoriesCache) {
-        const rank = new Map(shopCategoriesCache.map((c, i) => [c.id, i]));
-        sorted.sort((a, b) => (rank.get(a.categoryId) ?? 99) - (rank.get(b.categoryId) ?? 99));
-      }
+    default: {
+      // "Featured": hand-picked favourites first, then (on All) category order.
+      const rank = shopState.cat === 'all' && shopCategoriesCache
+        ? new Map(shopCategoriesCache.map((c, i) => [c.id, i]))
+        : null;
+      sorted.sort((a, b) =>
+        (Number(!!b.isFeatured) - Number(!!a.isFeatured))
+        || (a.isFeatured && b.isFeatured ? (a.featuredOrder || 0) - (b.featuredOrder || 0) : 0)
+        || (rank ? (rank.get(a.categoryId) ?? 99) - (rank.get(b.categoryId) ?? 99) : 0));
+    }
   }
   return sorted;
 }
@@ -596,6 +612,7 @@ async function refreshShopProducts() {
 
   const s = shopState;
   const params = { category: s.cat };
+  if (SERVER_SORTS.includes(s.sort)) params.sort = s.sort;
   if (s.q) params.search = s.q;
   if (s.collection.length) params.collection = s.collection.join(',');
   if (s.scentFamily.length) params.scentFamily = s.scentFamily.join(',');
@@ -758,6 +775,48 @@ async function initShopFilters() {
   await renderShop();
 }
 
+// Homepage "Discover Our Favourites": tabs switch between hand-picked/best
+// sellers and the newest arrivals, both ordered by the server.
+let featuredSeq = 0;
+let featuredTabsBound = false;
+async function initFeaturedProducts() {
+  const grid = document.getElementById('featured-products');
+  if (!grid) return;
+  const tabs = [...document.querySelectorAll('[data-featured-sort]')];
+  const allLink = document.querySelector('.js-featured-all');
+
+  const load = async (sort) => {
+    const seq = ++featuredSeq;
+    grid.classList.add('is-loading');
+    tabs.forEach((t) => {
+      const on = t.dataset.featuredSort === sort;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on);
+      t.tabIndex = on ? 0 : -1;
+    });
+    if (allLink) allLink.href = sort === 'newest' ? 'shop.html?sort=newest' : 'shop.html';
+    const products = await fetchProducts({ sort, limit: 8 });
+    if (seq !== featuredSeq) return;
+    renderProducts('featured-products', products);
+    grid.classList.remove('is-loading');
+  };
+
+  if (!featuredTabsBound) {
+    featuredTabsBound = true;
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => load(tab.dataset.featuredSort));
+      tab.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        next.focus();
+        load(next.dataset.featuredSort);
+      });
+    });
+  }
+  const active = tabs.find((t) => t.classList.contains('is-active'));
+  await load(active?.dataset.featuredSort || 'favourites');
+}
+
 function initScrollReveal() {
   const observerOptions = {
     threshold: 0.1,
@@ -812,7 +871,7 @@ async function handleCurrencyChange(e) {
   } else {
     // Reload other globals
     PRODUCTS = await fetchProducts();
-    if (document.getElementById('featured-products')) renderProducts('featured-products', PRODUCTS.filter(p => p.status === 'ACTIVE'), 8);
+    initFeaturedProducts();
     if (document.querySelector('.product-detail')) window.location.reload(); // Refresh detail page values
   }
   
@@ -892,10 +951,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initShopFilters();
   } else {
     PRODUCTS = await fetchProducts();
-    if (document.getElementById('featured-products')) {
-      const featured = PRODUCTS.filter(p => p.status === 'ACTIVE').slice(0, 8);
-      renderProducts('featured-products', featured);
-    }
+    initFeaturedProducts();
   }
   
   updateCartUI();

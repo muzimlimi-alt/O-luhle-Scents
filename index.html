@@ -145,7 +145,7 @@
       <p class="hero__subtitle" data-content="hero_subtitle">Discover extrait de parfum crafted with rare ingredients and timeless artistry. Each fragrance tells a story worth wearing.</p>
       <div class="hero__cta">
         <a href="shop.html" class="btn btn--primary btn--lg" data-content="hero_cta_primary_label" data-content-href="hero_cta_primary_href">Explore the Collection</a>
-        <a href="#featured" class="btn btn--outline btn--lg" data-content="hero_cta_secondary_label" data-content-href="hero_cta_secondary_href">New Arrivals</a>
+        <a href="shop.html?sort=newest" class="btn btn--outline btn--lg" data-content="hero_cta_secondary_label" data-content-href="hero_cta_secondary_href">New Arrivals</a>
       </div>
     </div>
     <div class="hero__scroll">
@@ -232,13 +232,17 @@
   <!-- Featured Products -->
   <section class="section" id="featured" style="background:var(--color-surface);">
     <div class="container">
-      <div class="text-center reveal" style="margin-bottom:48px;">
-        <p class="section-label">New to TOCA</p>
-        <h2 data-content="featured_heading">Recently Discovered</h2>
+      <div class="text-center reveal" style="margin-bottom:40px;">
+        <p class="section-label">Curated for You</p>
+        <h2 data-content="featured_heading">Discover Our Favourites</h2>
+        <div class="featured-tabs" role="tablist" aria-label="Featured products">
+          <button type="button" role="tab" class="featured-tab is-active" aria-selected="true" aria-controls="featured-products" data-featured-sort="favourites">The TOCA Favourites</button>
+          <button type="button" role="tab" class="featured-tab" aria-selected="false" aria-controls="featured-products" data-featured-sort="newest" tabindex="-1">Recently Discovered</button>
+        </div>
       </div>
-      <div class="products-grid" id="featured-products"></div>
+      <div class="products-grid" id="featured-products" role="tabpanel"></div>
       <div class="text-center mt-md reveal">
-        <a href="shop.html" class="btn btn--dark">View All Fragrances</a>
+        <a href="shop.html" class="btn btn--dark js-featured-all">Explore the Collection</a>
       </div>
     </div>
   </section>

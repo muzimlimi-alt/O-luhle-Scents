@@ -4,7 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import prisma from '../lib/prisma.js'
-import { requirePerm } from '../middleware/auth.js'
+import { requirePerm, getAdminFromRequest } from '../middleware/auth.js'
 import { convertPrice } from '../lib/currencyService.js'
 import { adjustStock } from '../lib/inventoryService.js'
 import { generateUniqueProductSlug } from '../lib/slug.js'
@@ -22,6 +22,82 @@ const PRICE_BUCKETS = [
   { id: '2000-', min: 2000, max: null },
 ]
 const inBucket = (price, b) => price >= b.min && (b.max == null || price < b.max)
+
+// Orders that count as a sale — same rule as REVENUE_STATUSES in lib/financeService.js.
+const SALES_STATUSES = ['paid', 'shipped', 'delivered']
+const RANKED_SORTS = ['price-low', 'price-high', 'bestselling', 'newest', 'favourites']
+const PAIRING_LIMIT = 4
+
+async function unitsSoldByProduct(productIds) {
+  const rows = await prisma.orderItem.findMany({
+    where: { order: { status: { in: SALES_STATUSES } }, variant: { productId: { in: productIds } } },
+    select: { quantity: true, variant: { select: { productId: true } } },
+  })
+  const sold = new Map()
+  for (const r of rows) {
+    const id = r.variant?.productId
+    if (id) sold.set(id, (sold.get(id) || 0) + r.quantity)
+  }
+  return sold
+}
+
+// Cost and supplier data are internal; strip them from anything a visitor sees.
+function publicProduct(p) {
+  const { supplier, supplierId, internalName, alternativeSuppliers, ...rest } = p
+  return {
+    ...rest,
+    variants: (p.variants || []).map(({ costPrice, packagingCost, labellingCost, ...v }) => v),
+  }
+}
+
+async function withCurrency(p, currency) {
+  const variants = await Promise.all((p.variants || []).map(async (v) => ({
+    ...v,
+    originalPrice: v.price,
+    price: await convertPrice(v.price, currency),
+    currency,
+  })))
+  return { ...p, variants }
+}
+
+// Concentration/longevity follow the product type; only recomputed when the
+// type actually changes, so catalogue data isn't overwritten on every save.
+const TYPE_PROFILES = {
+  'Extrait de Parfum': { oilConcentration: '20–40%', longevity: '10–24 hours' },
+  'Parfum': { oilConcentration: '20–40%', longevity: '10–24 hours' },
+  'Eau de Parfum': { oilConcentration: '15–20%', longevity: '6–10 hours' },
+  'Eau de Toilette': { oilConcentration: '5–15%', longevity: '3–6 hours' },
+  'Eau de Cologne': { oilConcentration: '2–4%', longevity: '1–2 hours' },
+  'Eau Fraîche': { oilConcentration: '1–3%', longevity: '1–2 hours' },
+  'Eau de Senteur': { oilConcentration: null, longevity: 'Short, depends on solvents' },
+  'Splash & Aftershave': { oilConcentration: null, longevity: '1–3 hours' },
+}
+const SCENT_CHARACTERISTICS = {
+  Floral: 'Sweet, Soft, Feminine',
+  Citrus: 'Fresh, Bright, Uplifting',
+  Fresh: 'Fresh, Bright, Uplifting',
+  Fruity: 'Sweet, Juicy, Fun',
+  Woody: 'Warm, Masculine, Deep',
+  Oriental: 'Warm, Exotic, Sensual',
+  Aquatic: 'Clean, Fresh, Airy',
+  Herbal: 'Fresh, Herbal, Clean',
+  Chypre: 'Complex, Structured, Timeless',
+}
+const typeProfile = (type) => TYPE_PROFILES[type] || { oilConcentration: null, longevity: null }
+const blankToNull = (v) => (v === undefined ? undefined : (String(v).trim() || null))
+// Note lists arrive as JSON arrays; an empty list is stored as null so the
+// storefront doesn't render an empty scent pyramid.
+function normaliseNotes(v) {
+  if (v === undefined) return undefined
+  if (!v) return null
+  try {
+    const parsed = JSON.parse(v)
+    if (Array.isArray(parsed)) return parsed.length ? JSON.stringify(parsed) : null
+  } catch {}
+  return String(v).trim() || null
+}
+const parseBool = (v) => (v === undefined ? undefined : v === true || v === 'true')
+const parseOrder = (v) => (v === undefined || v === '' ? undefined : (parseInt(v, 10) || 0))
 const listParam = (raw) => String(raw || '').split(',').map((v) => v.trim()).filter((v) => v && v !== 'all')
 
 // Storefront search: every word must match somewhere (name, copy, scent
@@ -86,6 +162,7 @@ router.get('/', async (req, res, next) => {
       minPrice,
       maxPrice,
       priceRanges,
+      featured,
       tags,
       currency = 'ZAR',
       page = 1,
@@ -96,9 +173,10 @@ router.get('/', async (req, res, next) => {
     const limitNum = Math.min(Math.max(parseInt(limit) || 10, 1), 200)
     const skip = (pageNum - 1) * limitNum
 
-    // Admins (Bearer token present) see all products by default; storefront only sees active
-    const isAdmin = !!req.headers.authorization
+    // Signed-in admins see every status by default; everyone else only sees active.
+    const isAdmin = !!(await getAdminFromRequest(req))
     const where = isAdmin ? {} : { status: 'ACTIVE' }
+    if (featured === 'true') where.isFeatured = true
 
     // If admin explicitly requests a status
     if (isAdmin && status && status !== 'all') {
@@ -215,26 +293,39 @@ router.get('/', async (req, res, next) => {
     if (sort === 'name-asc' || sort === 'name') orderBy = { name: 'asc' }
     if (sort === 'name-desc') orderBy = { name: 'desc' }
 
-    // Price sort is a two-stage query: we need each product's cheapest
-    // variant price as the sort key, and Prisma findMany doesn't order on
-    // related aggregates directly. Resolve the id order first via a raw-ish
-    // groupBy, then hydrate with the usual include. Still only two DB round
-    // trips, same shape of response as the default order path.
-    const isPriceSort = sort === 'price-low' || sort === 'price-high'
+    // Price, sales and merchandising sorts depend on related data Prisma can't
+    // order by directly: rank the matching ids first, then hydrate that page.
     let orderedIds = null
-    if (isPriceSort) {
-      const matchingProducts = await prisma.product.findMany({
+    if (RANKED_SORTS.includes(sort)) {
+      const matching = await prisma.product.findMany({
         where,
-        select: { id: true, variants: { select: { price: true } } },
+        select: { id: true, createdAt: true, launchDate: true, isFeatured: true, featuredOrder: true, variants: { select: { price: true } } },
       })
-      const withMinPrice = matchingProducts
-        .map((p) => {
-          const prices = p.variants.map((v) => Number(v.price)).filter((n) => Number.isFinite(n))
-          return { id: p.id, minPrice: prices.length ? Math.min(...prices) : null }
-        })
-        .filter((p) => p.minPrice !== null)
-      withMinPrice.sort((a, b) => sort === 'price-low' ? a.minPrice - b.minPrice : b.minPrice - a.minPrice)
-      orderedIds = withMinPrice.slice(skip, skip + limitNum).map((p) => p.id)
+      const sold = sort === 'bestselling' || sort === 'favourites' ? await unitsSoldByProduct(matching.map((p) => p.id)) : new Map()
+      const ranked = matching.map((p) => {
+        const prices = p.variants.map((v) => Number(v.price)).filter(Number.isFinite)
+        return {
+          id: p.id,
+          minPrice: prices.length ? Math.min(...prices) : null,
+          newness: (p.launchDate || p.createdAt).getTime(),
+          sold: sold.get(p.id) || 0,
+          featured: p.isFeatured,
+          featuredOrder: p.featuredOrder,
+        }
+      })
+      const byNewest = (a, b) => b.newness - a.newness
+      const bySales = (a, b) => b.sold - a.sold || byNewest(a, b)
+      const comparators = {
+        'price-low': (a, b) => a.minPrice - b.minPrice,
+        'price-high': (a, b) => b.minPrice - a.minPrice,
+        newest: byNewest,
+        bestselling: bySales,
+        // Hand-picked favourites first (in their set order), then best sellers.
+        favourites: (a, b) => (b.featured - a.featured) || (a.featured && b.featured ? a.featuredOrder - b.featuredOrder : 0) || bySales(a, b),
+      }
+      const list = sort.startsWith('price') ? ranked.filter((p) => p.minPrice !== null) : ranked
+      list.sort(comparators[sort])
+      orderedIds = list.slice(skip, skip + limitNum).map((p) => p.id)
     }
 
     const [products, total] = await Promise.all([
@@ -242,7 +333,7 @@ router.get('/', async (req, res, next) => {
         where: orderedIds ? { id: { in: orderedIds } } : where,
         include: {
           category: true,
-          supplier: true,
+          supplier: isAdmin,
           brandRef: true,
           variants: { include: { inventory: true } },
           attributeValues: { include: { definition: true } },
@@ -264,15 +355,9 @@ router.get('/', async (req, res, next) => {
       products.push(...reordered)
     }
 
-    // On-the-fly currency conversion
     const formattedProducts = await Promise.all(products.map(async (p) => {
-      const convertedVariants = await Promise.all(p.variants.map(async (v) => ({
-        ...v,
-        originalPrice: v.price,
-        price: await convertPrice(v.price, currency),
-        currency
-      })))
-      return { ...p, variants: convertedVariants }
+      const converted = await withCurrency(p, currency)
+      return isAdmin ? converted : publicProduct(converted)
     }))
 
     res.json({ 
@@ -440,16 +525,12 @@ router.get('/:id', async (req, res, next) => {
       }
     })
 
-    if (!product || (product.status !== 'ACTIVE' && !req.headers.authorization)) {
+    const isAdmin = !!(await getAdminFromRequest(req))
+    if (!product || (product.status !== 'ACTIVE' && !isAdmin)) {
       return res.status(404).json({ error: 'Scent not found' })
     }
 
-    const convertedVariants = await Promise.all(product.variants.map(async (v) => ({
-      ...v,
-      originalPrice: v.price,
-      price: await convertPrice(v.price, currency),
-      currency
-    })))
+    const converted = await withCurrency(product, currency)
 
     const related = await prisma.product.findMany({
       where: {
@@ -464,17 +545,119 @@ router.get('/:id', async (req, res, next) => {
     const formattedRelated = await Promise.all(related.map(async (r) => {
       const minPrice = r.variants.length > 0 ? Math.min(...r.variants.map(rv => rv.price)) : 0
       return {
-        ...r,
+        ...publicProduct(r),
         price: await convertPrice(minPrice, currency),
         currency
       }
     }))
 
-    res.json({ 
-      ...product, 
-      variants: convertedVariants,
+    res.json({
+      ...(isAdmin ? converted : publicProduct(converted)),
       related: formattedRelated
     })
+  } catch (err) { next(err) }
+})
+
+// GET /api/products/:id/pairings — "Complete the Scent Experience".
+// Curated pairings first (shown in both directions), then other-category
+// products that share this product's scent family. Real data only.
+router.get('/:id/pairings', async (req, res, next) => {
+  try {
+    const { currency = 'ZAR' } = req.query
+    const id = req.params.id
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { id: true, categoryId: true, scentFamily: true, status: true },
+    })
+    if (!product || product.status !== 'ACTIVE') return res.json({ products: [] })
+
+    const include = { category: true, variants: { include: { inventory: true }, orderBy: { price: 'asc' } } }
+    const links = await prisma.productPairing.findMany({
+      where: { OR: [{ productId: id }, { pairedProductId: id }] },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    })
+    const curatedIds = [...new Set(links.map((l) => (l.productId === id ? l.pairedProductId : l.productId)))]
+    const curatedRows = curatedIds.length
+      ? await prisma.product.findMany({ where: { id: { in: curatedIds }, status: 'ACTIVE' }, include })
+      : []
+    const curatedById = new Map(curatedRows.map((p) => [p.id, p]))
+    const curated = curatedIds.map((pid) => curatedById.get(pid)).filter(Boolean)
+
+    let automatic = []
+    if (product.scentFamily && curated.length < PAIRING_LIMIT) {
+      const candidates = await prisma.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          id: { notIn: [id, ...curatedIds] },
+          ...(product.categoryId ? { categoryId: { not: product.categoryId } } : {}),
+          scentFamily: { equals: product.scentFamily, mode: 'insensitive' },
+        },
+        include,
+        orderBy: { createdAt: 'desc' },
+      })
+      // One per category first so the suggestions span product types.
+      const seen = new Set()
+      const firstPerCategory = []
+      const rest = []
+      for (const c of candidates) {
+        if (seen.has(c.categoryId)) rest.push(c)
+        else { seen.add(c.categoryId); firstPerCategory.push(c) }
+      }
+      automatic = [...firstPerCategory, ...rest]
+    }
+
+    const picked = [
+      ...curated.map((p) => ({ p, reason: 'curated' })),
+      ...automatic.map((p) => ({ p, reason: 'scentFamily' })),
+    ].slice(0, PAIRING_LIMIT)
+
+    const products = await Promise.all(picked.map(async ({ p, reason }) => ({
+      ...publicProduct(await withCurrency(p, currency)),
+      pairingReason: reason,
+    })))
+    res.json({ products })
+  } catch (err) { next(err) }
+})
+
+// GET /api/products/:id/pairings/curated — admin: the hand-picked pairing ids.
+router.get('/:id/pairings/curated', requirePerm('products', 'read'), async (req, res, next) => {
+  try {
+    const id = req.params.id
+    const links = await prisma.productPairing.findMany({
+      where: { OR: [{ productId: id }, { pairedProductId: id }] },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    })
+    res.json({ productIds: [...new Set(links.map((l) => (l.productId === id ? l.pairedProductId : l.productId)))] })
+  } catch (err) { next(err) }
+})
+
+// PUT /api/products/:id/pairings — admin: replace this product's curated pairings.
+router.put('/:id/pairings', requirePerm('products', 'write'), async (req, res, next) => {
+  try {
+    const id = req.params.id
+    if (!Array.isArray(req.body.productIds)) {
+      return res.status(400).json({ error: 'productIds must be an array' })
+    }
+    const productIds = [...new Set(req.body.productIds.map(String))].filter((pid) => pid !== id).slice(0, 12)
+    const [self, found] = await Promise.all([
+      prisma.product.findUnique({ where: { id }, select: { id: true } }),
+      prisma.product.count({ where: { id: { in: productIds } } }),
+    ])
+    if (!self) return res.status(404).json({ error: 'Product not found' })
+    if (found !== productIds.length) return res.status(400).json({ error: 'One or more paired products do not exist' })
+
+    await prisma.$transaction(async (tx) => {
+      await tx.productPairing.deleteMany({ where: { OR: [{ productId: id }, { pairedProductId: id }] } })
+      if (productIds.length) {
+        await tx.productPairing.createMany({
+          data: productIds.map((pid, i) => ({ productId: id, pairedProductId: pid, sortOrder: i })),
+        })
+      }
+      await tx.auditLog.create({
+        data: { adminUserId: req.adminId, action: 'UPDATE_PRODUCT_PAIRINGS', entity: 'Product', entityId: id, details: { productIds } },
+      })
+    })
+    res.json({ productIds })
   } catch (err) { next(err) }
 })
 
@@ -500,37 +683,11 @@ router.post('/', requirePerm('products', 'write'), upload.array('images', 10), a
       internalName, family, brandId, tags, launchDate, retirementDate,
       shortDescription, marketingDescription, ingredients,
       usageInstructions, safetyWarnings, careInstructions,
-      metaTitle, metaDescription, attributes
+      metaTitle, metaDescription, attributes, isFeatured, featuredOrder
     } = req.body
 
-    // Auto-population Logic (Backend Enforcement)
-    let oilConcentration = "Varies";
-    let longevity = "N/A";
-    if (type === "Extrait de Parfum" || type === "Parfum") {
-      oilConcentration = "±20–40%"; longevity = "±10–24 hours";
-    } else if (type === "Eau de Parfum") {
-      oilConcentration = "±15–20%"; longevity = "±6–10 hours";
-    } else if (type === "Eau de Toilette") {
-      oilConcentration = "±5–15%"; longevity = "±3–6 hours";
-    } else if (type === "Eau de Cologne" || type === "Eau Fraîche") {
-      oilConcentration = type === "Eau de Cologne" ? "±2–4%" : "±1–3%";
-      longevity = "±1–2 hours";
-    } else if (type === "Eau de Senteur") {
-      longevity = "Short, depends on solvents";
-    } else if (type === "Splash & Aftershave") {
-      longevity = "±1–3 hours";
-    }
-
-    const characteristicMap = {
-      "Floral": "Sweet, Soft, Feminine",
-      "Citrus": "Fresh, Bright, Uplifting",
-      "Fruity": "Sweet, Juicy, Fun",
-      "Woody": "Warm, Masculine, Deep",
-      "Oriental": "Warm, Exotic, Sensual",
-      "Aquatic": "Clean, Fresh, Airy; not too sweet or heavy",
-      "Herbal": "Fresh, Herbal, Clean"
-    };
-    const characteristic = characteristicMap[scentFamily] || "N/A";
+    const { oilConcentration, longevity } = typeProfile(type)
+    const characteristic = SCENT_CHARACTERISTICS[scentFamily] || null
 
     const files = req.files || []
     const filenames = files.map(f => f.filename)
@@ -558,14 +715,16 @@ router.post('/', requirePerm('products', 'write'), upload.array('images', 10), a
           cardBadge,
           status: PRODUCT_STATUSES.includes(status) ? status : 'ACTIVE',
           collection,
-          type,
+          type: blankToNull(type),
           oilConcentration,
           longevity,
-          scentFamily,
+          scentFamily: blankToNull(scentFamily),
           characteristic,
-          topNotes,
-          heartNotes,
-          baseNotes,
+          topNotes: normaliseNotes(topNotes),
+          heartNotes: normaliseNotes(heartNotes),
+          baseNotes: normaliseNotes(baseNotes),
+          isFeatured: parseBool(isFeatured) ?? false,
+          featuredOrder: parseOrder(featuredOrder) ?? 0,
           slug,
           internalName: internalName || null,
           brandRef: safeBrandId ? { connect: { id: safeBrandId } } : undefined,
@@ -682,41 +841,21 @@ router.patch('/:id', requirePerm('products', 'write'), upload.array('images', 10
       internalName, family, brandId, tags, launchDate, retirementDate,
       shortDescription, marketingDescription, ingredients,
       usageInstructions, safetyWarnings, careInstructions,
-      metaTitle, metaDescription, slug: requestedSlug, attributes
+      metaTitle, metaDescription, slug: requestedSlug, attributes, isFeatured, featuredOrder
     } = req.body
 
     const previous = await prisma.product.findUnique({ where: { id: req.params.id } })
     if (!previous) return res.status(404).json({ error: 'Product not found' })
 
-    // Auto-population Logic (Backend Enforcement)
-    let oilConcentration = "Varies";
-    let longevity = "N/A";
-    if (type === "Extrait de Parfum" || type === "Parfum") {
-      oilConcentration = "±20–40%"; longevity = "±10–24 hours";
-    } else if (type === "Eau de Parfum") {
-      oilConcentration = "±15–20%"; longevity = "±6–10 hours";
-    } else if (type === "Eau de Toilette") {
-      oilConcentration = "±5–15%"; longevity = "±3–6 hours";
-    } else if (type === "Eau de Cologne" || type === "Eau Fraîche") {
-      oilConcentration = type === "Eau de Cologne" ? "±2–4%" : "±1–3%";
-      longevity = "±1–2 hours";
-    } else if (type === "Eau de Senteur") {
-      longevity = "Short, depends on solvents";
-    } else if (type === "Splash & Aftershave") {
-      longevity = "±1–3 hours";
-    }
+    // Derived fields only change when their source field changes — otherwise
+    // every admin save would overwrite catalogue-sourced values.
+    const nextType = blankToNull(type)
+    const nextScentFamily = blankToNull(scentFamily)
+    const typeChanged = nextType !== undefined && nextType !== previous.type
+    const scentChanged = nextScentFamily !== undefined && nextScentFamily !== previous.scentFamily
+    const { oilConcentration, longevity } = typeChanged ? typeProfile(nextType) : {}
+    const characteristic = scentChanged ? (SCENT_CHARACTERISTICS[nextScentFamily] || null) : undefined
 
-    const characteristicMap = {
-      "Floral": "Sweet, Soft, Feminine",
-      "Citrus": "Fresh, Bright, Uplifting",
-      "Fruity": "Sweet, Juicy, Fun",
-      "Woody": "Warm, Masculine, Deep",
-      "Oriental": "Warm, Exotic, Sensual",
-      "Aquatic": "Clean, Fresh, Airy; not too sweet or heavy",
-      "Herbal": "Fresh, Herbal, Clean"
-    };
-    const characteristic = characteristicMap[scentFamily] || "N/A";
-    
     // Manage image orchestration
     let currentImages = []
     try { currentImages = JSON.parse(existingImages || '[]') } catch (e) { currentImages = [] }
@@ -760,14 +899,16 @@ router.patch('/:id', requirePerm('products', 'write'), upload.array('images', 10
           primaryImage,
           cardBadge,
           collection,
-          type,
+          type: nextType,
           oilConcentration,
           longevity,
-          scentFamily,
+          scentFamily: nextScentFamily,
           characteristic,
-          topNotes,
-          heartNotes,
-          baseNotes,
+          topNotes: normaliseNotes(topNotes),
+          heartNotes: normaliseNotes(heartNotes),
+          baseNotes: normaliseNotes(baseNotes),
+          isFeatured: parseBool(isFeatured),
+          featuredOrder: parseOrder(featuredOrder),
           slug: resolvedSlug,
           internalName: internalName !== undefined ? (internalName || null) : undefined,
           brandRef: brandId !== undefined ? (safeBrandId ? { connect: { id: safeBrandId } } : { disconnect: true }) : undefined,
@@ -896,7 +1037,7 @@ router.patch('/:id', requirePerm('products', 'write'), upload.array('images', 10
       })
     })
 
-    const TRACKED_FIELDS = ['name', 'brand', 'status', 'family', 'slug', 'categoryId', 'supplierId', 'brandId']
+    const TRACKED_FIELDS = ['name', 'brand', 'status', 'family', 'slug', 'categoryId', 'supplierId', 'brandId', 'isFeatured', 'featuredOrder']
     const changes = {}
     for (const field of TRACKED_FIELDS) {
       if (previous[field] !== product[field]) {

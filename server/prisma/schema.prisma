@@ -112,10 +112,16 @@ model Product {
   metaTitle       String? @map("meta_title") @db.VarChar(70)
   metaDescription String? @map("meta_description") @db.VarChar(180)
 
+  // Merchandising: hand-picked for "The TOCA Favourites" (lower order first).
+  isFeatured    Boolean @default(false) @map("is_featured")
+  featuredOrder Int     @default(0) @map("featured_order")
+
   attributeValues      ProductAttributeValue[]
   alternativeSuppliers ProductSupplier[]
   media                ProductMedia[]
   collections          ProductCollection[]
+  pairings             ProductPairing[]        @relation("PairingSource")
+  pairedWith           ProductPairing[]        @relation("PairingTarget")
 
   supplier  Supplier?        @relation(fields: [supplierId], references: [id])
   createdAt DateTime         @default(now()) @map("created_at")
@@ -126,6 +132,7 @@ model Product {
   @@index([status, createdAt])
   @@index([brandId])
   @@index([family])
+  @@index([isFeatured, featuredOrder])
   @@map("products")
 }
 
@@ -161,6 +168,22 @@ model ProductCollection {
   @@id([productId, collectionId])
   @@index([collectionId])
   @@map("product_collections")
+}
+
+// Curated "Complete the Scent Experience" links. Shown in both directions,
+// so one row pairs two products with each other.
+model ProductPairing {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  product         Product  @relation("PairingSource", fields: [productId], references: [id], onDelete: Cascade)
+  pairedProductId String   @map("paired_product_id") @db.Uuid
+  pairedProduct   Product  @relation("PairingTarget", fields: [pairedProductId], references: [id], onDelete: Cascade)
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([productId, pairedProductId])
+  @@index([pairedProductId])
+  @@map("product_pairings")
 }
 
 // ── 3b. BRANDS ───────────────────────────────────────────────────────────────

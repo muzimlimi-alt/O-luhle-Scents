@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import prisma from '../lib/prisma.js'
 import { asciiFilename } from '../lib/uploadNames.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
-import { sendNewsletterConfirmation } from '../utils/email.js'
+import { sendNewsletterConfirmation, sendOrderDispatched, sendOrderDelivered } from '../utils/email.js'
 import { recordConsent } from '../lib/consentService.js'
 
 import { calculateShipping } from '../lib/shippingService.js'
@@ -384,6 +384,21 @@ router.get('/', requireAdmin, async (req, res, next) => {
 import { fulfillOrder, addTrackingEvent } from '../lib/logisticsService.js'
 import { sendWhatsAppNotification } from '../lib/invoiceService.js'
 
+// Customer email when an order first becomes shipped or delivered. A failed
+// email must never fail the status change itself.
+async function emailOnStatusChange(orderId, previousStatus, nextStatus) {
+  if (!nextStatus || previousStatus === nextStatus) return
+  try {
+    if (nextStatus === 'shipped') await sendOrderDispatched(orderId)
+    else if (nextStatus === 'delivered') await sendOrderDelivered(orderId)
+  } catch (err) {
+    console.error(`[Email] ${nextStatus} email failed for order ${orderId}:`, err.message)
+  }
+}
+
+const currentStatus = async (orderId) =>
+  (await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } }))?.status
+
 // PATCH /api/orders/:id/fulfill — admin: fulfill and ship
 router.patch('/:id/fulfill', requireAdmin, async (req, res, next) => {
   try {
@@ -392,6 +407,7 @@ router.patch('/:id/fulfill', requireAdmin, async (req, res, next) => {
       return res.status(400).json({ error: 'Tracking number and courier are required' })
     }
 
+    const previousStatus = await currentStatus(req.params.id)
     const order = await fulfillOrder(req.params.id, {
       trackingNumber,
       courierKey,
@@ -400,6 +416,7 @@ router.patch('/:id/fulfill', requireAdmin, async (req, res, next) => {
 
     // Send WhatsApp notification
     await sendWhatsAppNotification(order.id, 'SHIPPED')
+    await emailOnStatusChange(order.id, previousStatus, 'shipped')
 
     res.json(order)
   } catch (err) {
@@ -418,6 +435,7 @@ router.patch('/:id/status', requireAdmin, async (req, res, next) => {
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` })
     }
+    const previousStatus = await currentStatus(req.params.id)
     const order = await prisma.order.update({
       where: { id: req.params.id },
       data: { status },
@@ -426,6 +444,7 @@ router.patch('/:id/status', requireAdmin, async (req, res, next) => {
     await prisma.auditLog.create({
       data: { adminUserId: req.adminId, action: 'UPDATE_ORDER_STATUS', entity: 'Order', entityId: order.id, details: { status } }
     })
+    await emailOnStatusChange(order.id, previousStatus, status)
 
     res.json(order)
   } catch (err) {
@@ -452,11 +471,13 @@ router.post('/:id/tracking-events', requireAdmin, async (req, res, next) => {
     const { status, message, location, advanceOrderStatus } = req.body
     if (!status?.trim()) return res.status(400).json({ error: 'status is required' })
 
+    const previousStatus = await currentStatus(req.params.id)
     const event = await addTrackingEvent(req.params.id, { status: status.trim(), message, location, advanceOrderStatus: !!advanceOrderStatus })
 
     await prisma.auditLog.create({
       data: { adminUserId: req.adminId, action: 'ADD_TRACKING_EVENT', entity: 'Order', entityId: req.params.id, details: { status } }
     })
+    if (advanceOrderStatus) await emailOnStatusChange(req.params.id, previousStatus, await currentStatus(req.params.id))
 
     res.status(201).json(event)
   } catch (err) {

@@ -2501,3 +2501,51 @@ html.search-open, html.search-open body { overflow: hidden; }
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* --- Homepage favourites tabs --- */
+.featured-tabs {
+  display: inline-flex;
+  gap: 32px;
+  margin-top: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+.featured-tab {
+  position: relative;
+  padding: 10px 2px 12px;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.featured-tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--color-dark);
+  transform: scaleX(0);
+  transition: transform var(--transition);
+}
+.featured-tab:hover { color: var(--color-dark); }
+.featured-tab.is-active { color: var(--color-dark); }
+.featured-tab.is-active::after { transform: scaleX(1); }
+.featured-tab:focus-visible { outline: 1px solid var(--color-gold); outline-offset: 4px; }
+#featured-products { transition: opacity 0.25s ease; }
+#featured-products.is-loading { opacity: 0.45; }
+@media (max-width: 480px) {
+  .featured-tabs { gap: 20px; }
+  .featured-tab { font-size: 1rem; }
+}
+
+/* --- Product page: Complete the Scent Experience --- */
+.pairing-section[hidden] { display: none; }
+.pairing-section__intro {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+}

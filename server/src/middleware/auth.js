@@ -39,6 +39,24 @@ async function hasLiveSession(token) {
   return !!session
 }
 
+// For public routes that show extra data to admins (drafts, costs). Returns the
+// decoded admin only for a valid admin token with a live session; anything else
+// (no header, a customer token, a forged header) is treated as a visitor.
+export async function getAdminFromRequest(req) {
+  const header = req.headers.authorization
+  if (!header?.startsWith('Bearer ')) return null
+  const token = header.slice(7)
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    if (decoded.type === 'customer') return null
+    if (!VALID_ADMIN_ROLES.includes(decoded.role?.toLowerCase())) return null
+    if (!(await hasLiveSession(token))) return null
+    return decoded
+  } catch {
+    return null
+  }
+}
+
 export function requireAdmin(req, res, next) {
   requireAuth(req, res, async () => {
     const role = req.user.role?.toLowerCase()

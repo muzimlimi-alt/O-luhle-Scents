@@ -92,6 +92,28 @@ export function Categories() {
     }
   };
 
+  const handleImageUpload = async (file) => {
+    if (!editing) return;
+    try {
+      const updated = await categoriesApi.uploadImage(editing.id, file);
+      setEditing(updated);
+      fetchCategories();
+    } catch (err) {
+      showMessage('error', 'Image Upload Failed', err.message);
+    }
+  };
+
+  const handleImageRemove = async () => {
+    if (!editing) return;
+    try {
+      const updated = await categoriesApi.removeImage(editing.id);
+      setEditing(updated);
+      fetchCategories();
+    } catch (err) {
+      showMessage('error', 'Image Remove Failed', err.message);
+    }
+  };
+
   const handleArchive = async (category) => {
     if (!window.confirm(`Remove "${category.name}"? This only works if it has no products or subcategories.`)) return;
     try {
@@ -162,6 +184,31 @@ export function Categories() {
           <FormField label="Display Order">
             <input type="number" value={form.displayOrder} onChange={e => setForm(f => ({ ...f, displayOrder: e.target.value }))} />
           </FormField>
+          {editing && (
+            <FormField label="Banner image" hint="Shown behind the title on this category's shop page. A wide landscape photo works best.">
+              {editing.image ? (
+                <div className="cat-banner-preview">
+                  <img src={`/images/categories/${editing.image}`} alt="" />
+                  {canWrite && (
+                    <button type="button" className="btn btn--sm" onClick={handleImageRemove}>Remove</button>
+                  )}
+                </div>
+              ) : (
+                <p className="cat-banner-hint">No banner image yet. The shop shows a plain dark banner for <code>{editing.name}</code>.</p>
+              )}
+              {canWrite && (
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                    e.target.value = '';
+                  }}
+                />
+              )}
+            </FormField>
+          )}
           <div className="cat-actions">
             <button type="button" className="btn" onClick={() => setShowModal(false)}>Cancel</button>
             <button type="submit" className="btn btn--primary" disabled={submitting}>
@@ -174,6 +221,9 @@ export function Categories() {
       <style dangerouslySetInnerHTML={{ __html: `
         .cat-form { display: flex; flex-direction: column; }
         .cat-actions { display: flex; justify-content: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
+        .cat-banner-preview { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+        .cat-banner-preview img { width: 100%; max-height: 140px; object-fit: cover; border-radius: 4px; border: 1px solid var(--color-border); }
+        .cat-banner-hint { font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 8px; }
 
         @media (max-width: 480px) {
           .cat-actions { flex-wrap: wrap; }
