@@ -39,6 +39,8 @@ import { Reconciliation } from './pages/Reconciliation';
 import { Expenses } from './pages/Expenses';
 import { AgedReports } from './pages/AgedReports';
 import { Campaigns } from './pages/Campaigns';
+import { Reviews } from './pages/Reviews';
+import { Wishlists } from './pages/Wishlists';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
 import { AppearanceProvider } from './context/AppearanceProvider';
@@ -117,6 +119,8 @@ function App() {
               <Route path="preferences" element={<Preferences />} />
               <Route path="content" element={<Content />} />
               <Route path="campaigns" element={<Campaigns />} />
+              <Route path="reviews" element={<Reviews />} />
+              <Route path="wishlists" element={<Wishlists />} />
               <Route path="shipping-methods" element={<ShippingMethods />} />
               <Route path="tax-rates" element={<TaxRates />} />
               <Route path="finance/ledger" element={<GeneralLedger />} />

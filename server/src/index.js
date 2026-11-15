@@ -36,6 +36,8 @@ import adminPrivacyRoutes from './routes/admin_privacy.js'
 import collectionsRoutes from './routes/admin_collections.js'
 import adminCatalogueRoutes from './routes/admin_catalogue.js'
 import campaignRoutes from './routes/campaigns.js'
+import reviewRoutes from './routes/reviews.js'
+import wishlistRoutes from './routes/wishlist.js'
 import { requireRole, requireAdmin } from './middleware/auth.js'
 
 import { errorHandler } from './middleware/errorHandler.js'
@@ -146,6 +148,9 @@ app.use('/api/admin/privacy', adminPrivacyRoutes)
 // Campaigns: public GET /active for the storefront hero, admin CRUD gated
 // per-route via requirePerm('campaigns', ...).
 app.use('/api/campaigns', campaignRoutes)
+app.use('/api/reviews', reviewRoutes)
+// Wishlist: mixed public/customer/admin — no mount-level gate; auth is per-route inside
+app.use('/api/wishlist', wishlistRoutes)
 
 
 
@@ -178,7 +183,7 @@ app.use('/extra', express.static(path.join(rootDir, 'extra')))
 // Serve top-level web pages — also handles any *.html file in root dynamically
 import fs from 'fs'
 
-const webPages = ['cart.html', 'checkout.html', 'checkout-success.html', 'product-detail.html', 'shop.html', 'track.html', 'quotes.html', 'guide.html', 'robots.txt', 'sitemap.xml']
+const webPages = ['cart.html', 'checkout.html', 'checkout-success.html', 'product-detail.html', 'shop.html', 'track.html', 'quotes.html', 'guide.html', 'discover.html', 'journal.html', 'robots.txt', 'sitemap.xml']
 webPages.forEach(file => {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(rootDir, file)))
 })

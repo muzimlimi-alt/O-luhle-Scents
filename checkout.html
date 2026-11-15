@@ -14,8 +14,8 @@
 
   <div class="page-loader"><div class="loader-spinner"></div></div>
 
-  <!-- Simplified Header -->
-  <header class="header">
+  <!-- Simplified Header (nav.js skips data-nav="checkout") -->
+  <header class="header" data-nav="checkout">
     <nav class="navbar">
       <div class="navbar__left">
         <a href="cart.html" style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-text-light);">← Back to Cart</a>
@@ -627,6 +627,7 @@
       });
     });
   </script>
+  <script src="js/nav.js"></script>
   <script src="js/header.js"></script>
 </body>
 </html>

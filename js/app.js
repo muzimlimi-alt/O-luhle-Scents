@@ -6,6 +6,67 @@
 let PRODUCTS = [];
 let currentCurrency = localStorage.getItem('toca_currency') || 'ZAR';
 
+// ── Wishlist state ────────────────────────────────────────────────────────────
+// Loaded once per page from GET /api/wishlist when customer is signed in.
+// Stored as a Set of productIds for O(1) heart-state lookups.
+let _wishlistProductIds = new Set();
+let _wishlistLoaded = false;
+
+async function loadWishlistState() {
+  const token = typeof getToken === 'function' ? getToken() : (localStorage.getItem('toca_customer_token') || sessionStorage.getItem('toca_customer_token'));
+  if (!token) return;
+  try {
+    const res = await fetch('/api/wishlist', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return;
+    const data = await res.json();
+    _wishlistProductIds = new Set((data.items || []).map(i => i.productId));
+    _wishlistLoaded = true;
+    // Update badge in header
+    try { localStorage.setItem('toca_wishlist_count', data.items?.length || 0); } catch {}
+    document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
+      const count = data.items?.length || 0;
+      el.textContent = count > 0 ? count : '';
+      el.style.display = count > 0 ? '' : 'none';
+    });
+    // Apply saved state to any already-rendered cards
+    document.querySelectorAll('.js-wishlist-toggle[data-product-id]').forEach(btn => {
+      if (_wishlistProductIds.has(btn.dataset.productId)) btn.classList.add('product-card__wishlist--saved');
+    });
+  } catch {}
+}
+
+async function toggleWishlist(productId, btn) {
+  const token = typeof getToken === 'function' ? getToken() : (localStorage.getItem('toca_customer_token') || sessionStorage.getItem('toca_customer_token'));
+  if (!token) { window.location.href = `account-login.html?redirect=${encodeURIComponent(window.location.href)}`; return; }
+  const saved = _wishlistProductIds.has(productId);
+  try {
+    if (saved) {
+      await fetch(`/api/wishlist/items/${productId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      _wishlistProductIds.delete(productId);
+      btn?.classList.remove('product-card__wishlist--saved');
+    } else {
+      await fetch('/api/wishlist/items', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+      _wishlistProductIds.add(productId);
+      btn?.classList.add('product-card__wishlist--saved');
+    }
+    // Update all badges for this product
+    document.querySelectorAll(`.js-wishlist-toggle[data-product-id="${productId}"]`).forEach(b => {
+      if (_wishlistProductIds.has(productId)) b.classList.add('product-card__wishlist--saved');
+      else b.classList.remove('product-card__wishlist--saved');
+    });
+    // Update header count
+    const newCount = _wishlistProductIds.size;
+    document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
+      el.textContent = newCount > 0 ? newCount : '';
+      el.style.display = newCount > 0 ? '' : 'none';
+    });
+    try { localStorage.setItem('toca_wishlist_count', newCount); } catch {}
+    if (typeof showToast === 'function') showToast(saved ? 'Removed from favourites' : 'Saved to favourites');
+  } catch (err) {
+    console.error('Wishlist toggle failed:', err);
+  }
+}
+
 const CURRENCY_SYMBOLS = {
   'ZAR': 'R',
   'USD': '$',
@@ -276,6 +337,11 @@ function renderProducts(containerId, products, limit) {
         <a href="product-detail.html?id=${product.id}">
           <img src="images/products/${product.primaryImage}" alt="${product.name}" onerror="this.src='${getPlaceholderImage(product.name, product.family)}'">
         </a>
+        <button class="product-card__wishlist js-wishlist-toggle${_wishlistProductIds.has(product.id) ? ' product-card__wishlist--saved' : ''}" data-product-id="${product.id}" aria-label="Save to favourites" title="Save to favourites" onclick="event.preventDefault();toggleWishlist('${product.id}', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
         ${quickAddVariant ? `
         <div class="product-card__actions">
           <button class="btn btn--sm" onclick="event.preventDefault();addToCart('${product.id}', '${quickAddVariant.id}')">
@@ -955,7 +1021,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   updateCartUI();
-  
+  loadWishlistState();
+
   // Checkout Validation Interceptor
   document.querySelectorAll('a[href="checkout.html"]').forEach(btn => {
     btn.addEventListener('click', async (e) => {

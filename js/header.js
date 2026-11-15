@@ -9,6 +9,7 @@
 
   const ICON_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>';
   const ICON_ACCOUNT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+  const ICON_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
 
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
@@ -49,8 +50,17 @@
     account.setAttribute('aria-label', signedIn ? 'My account' : 'Sign in');
     account.innerHTML = ICON_ACCOUNT;
 
+    const signedInForWishlist = isSignedIn();
+    const wishlist = document.createElement('a');
+    wishlist.className = 'nav-icon js-wishlist-nav';
+    wishlist.href = signedInForWishlist ? 'account.html#wishlist' : 'account-login.html?redirect=' + encodeURIComponent('account.html#wishlist');
+    wishlist.setAttribute('aria-label', 'My Favourites');
+    const savedCount = (() => { try { return parseInt(localStorage.getItem('toca_wishlist_count') || '0', 10) || 0; } catch { return 0; } })();
+    wishlist.innerHTML = ICON_HEART + `<span class="nav-icon__badge wishlist-count" style="display:${savedCount > 0 ? '' : 'none'}">${savedCount > 0 ? savedCount : ''}</span>`;
+
     icons.insertBefore(search, cart || null);
     icons.insertBefore(account, cart || null);
+    icons.insertBefore(wishlist, cart || null);
 
     const mobileMenu = document.querySelector('.mobile-menu');
     if (mobileMenu && !mobileMenu.querySelector('.js-mobile-account')) {

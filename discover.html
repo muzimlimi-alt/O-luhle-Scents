@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discover Your Scent | TOCA</title>
+  <meta name="description" content="Take the TOCA scent quiz to find your perfect fragrance — answer a few questions and we'll match you with your ideal perfume, candle or bath ritual.">
+  <link rel="canonical" href="https://www.toca.co.za/discover.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TOCA">
+  <meta property="og:title" content="Discover Your Scent | TOCA">
+  <meta property="og:description" content="Take the TOCA scent quiz to find your perfect fragrance.">
+  <meta property="og:url" content="https://www.toca.co.za/discover.html">
+  <meta property="og:image" content="https://www.toca.co.za/images/Here_s_an_enhanced_Banana_2_pr_2.jpg">
+  <meta property="og:locale" content="en_ZA">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/modern-extensions.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('toca_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.toca.co.za/" },
+      { "@type": "ListItem", "position": 2, "name": "Discover Your Scent", "item": "https://www.toca.co.za/discover.html" }
+    ]
+  }
+  </script>
+
+  <style>
+    .discover-page { padding-top: var(--header-height, 80px); min-height: 100vh; }
+
+    /* Hero */
+    .discover-hero {
+      text-align: center;
+      padding: 64px 24px 48px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .discover-hero__label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--color-gold);
+      margin-bottom: 16px;
+    }
+    .discover-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      margin-bottom: 16px;
+    }
+    .discover-hero p {
+      color: var(--color-text-light);
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+
+    /* Quiz container */
+    .quiz-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* Progress */
+    .quiz-progress {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 48px;
+    }
+    .quiz-progress__bar {
+      flex: 1;
+      height: 3px;
+      background: var(--color-border);
+      border-radius: 2px;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+    .quiz-progress__bar.done {
+      background: var(--color-gold);
+    }
+
+    /* Step */
+    .quiz-step {
+      display: none;
+      animation: quizFadeIn 0.4s ease;
+    }
+    .quiz-step.active { display: block; }
+
+    @keyframes quizFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .quiz-step__q {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 400;
+      margin-bottom: 8px;
+      letter-spacing: 0.01em;
+    }
+    .quiz-step__hint {
+      color: var(--color-text-light);
+      font-size: 0.85rem;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    /* Option cards */
+    .quiz-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .quiz-option {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg, 12px);
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      background: var(--color-surface, #fff);
+    }
+    .quiz-option:hover {
+      border-color: var(--color-gold);
+      transform: translateY(-2px);
+    }
+    .quiz-option.selected {
+      border-color: var(--color-gold);
+      background: rgba(184,155,106,0.06);
+    }
+    .quiz-option__icon {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .quiz-option__label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .quiz-option__desc {
+      font-size: 0.75rem;
+      color: var(--color-text-light);
+      line-height: 1.5;
+    }
+
+    /* Navigation */
+    .quiz-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 40px;
+    }
+    .quiz-nav__back {
+      background: none;
+      border: none;
+      color: var(--color-text-light);
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 8px 0;
+      font-family: inherit;
+    }
+    .quiz-nav__back:hover { color: var(--color-gold); }
+    .quiz-nav__next {
+      padding: 12px 32px;
+    }
+
+    /* Results */
+    .quiz-result {
+      display: none;
+      text-align: center;
+      padding: 48px 0;
+      animation: quizFadeIn 0.5s ease;
+    }
+    .quiz-result.active { display: block; }
+    .quiz-result__icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-gold), #d4af7a);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 1.5rem;
+    }
+    .quiz-result h2 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 400;
+      margin-bottom: 12px;
+    }
+    .quiz-result p {
+      color: var(--color-text-light);
+      max-width: 480px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+    .quiz-result__tags {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .quiz-result__tag {
+      padding: 6px 16px;
+      border: 1px solid var(--color-gold);
+      border-radius: 50px;
+      font-size: 0.78rem;
+      color: var(--color-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .quiz-result__actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .quiz-result__retake {
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md, 8px);
+      padding: 12px 28px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: var(--color-text);
+      transition: border-color 0.2s;
+    }
+    .quiz-result__retake:hover { border-color: var(--color-gold); }
+
+    @media (max-width: 600px) {
+      .discover-hero { padding: 40px 16px 32px; }
+      .quiz-options { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .quiz-option { padding: 18px 14px; }
+      .quiz-step__q { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-loader"><div class="loader-spinner"></div></div>
+
+  <!-- Header (generated by js/nav.js) -->
+  <header class="header"></header>
+
+  <main class="discover-page">
+    <div class="discover-hero">
+      <p class="discover-hero__label">Scent Discovery</p>
+      <h1>Find Your Signature Scent</h1>
+      <p>Answer four quick questions and we'll match you with the TOCA fragrances, candles and rituals that suit your taste.</p>
+    </div>
+
+    <div class="quiz-wrap">
+      <div class="quiz-progress" id="quiz-progress"></div>
+
+      <!-- Q1: What are you looking for? -->
+      <div class="quiz-step active" data-step="0">
+        <h2 class="quiz-step__q">What are you looking for?</h2>
+        <p class="quiz-step__hint">Choose one or more categories.</p>
+        <div class="quiz-options" data-key="category" data-multi="true">
+          <div class="quiz-option" data-value="perfume">
+            <span class="quiz-option__icon">&#10024;</span>
+            <div class="quiz-option__label">Perfume</div>
+            <div class="quiz-option__desc">Extrait de parfum — long-lasting, luxurious</div>
+          </div>
+          <div class="quiz-option" data-value="candles">
+            <span class="quiz-option__icon">&#128367;</span>
+            <div class="quiz-option__label">Candles</div>
+            <div class="quiz-option__desc">Hand-poured soy candles for the home</div>
+          </div>
+          <div class="quiz-option" data-value="bath-salts">
+            <span class="quiz-option__icon">&#127793;</span>
+            <div class="quiz-option__label">Bath Salts</div>
+            <div class="quiz-option__desc">Scented bath rituals and body care</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2: Scent family -->
+      <div class="quiz-step" data-step="1">
+        <h2 class="quiz-step__q">What mood speaks to you?</h2>
+        <p class="quiz-step__hint">Pick the scent character that draws you in.</p>
+        <div class="quiz-options" data-key="scentFamily" data-multi="true">
+          <div class="quiz-option" data-value="Floral">
+            <span class="quiz-option__icon">&#127800;</span>
+            <div class="quiz-option__label">Floral</div>
+            <div class="quiz-option__desc">Rose, jasmine, peony — romantic and feminine</div>
+          </div>
+          <div class="quiz-option" data-value="Woody">
+            <span class="quiz-option__icon">&#127795;</span>
+            <div class="quiz-option__label">Woody</div>
+            <div class="quiz-option__desc">Oud, sandalwood, cedar — warm and grounding</div>
+          </div>
+          <div class="quiz-option" data-value="Oriental">
+            <span class="quiz-option__icon">&#127774;</span>
+            <div class="quiz-option__label">Oriental</div>
+            <div class="quiz-option__desc">Amber, vanilla, spice — rich and opulent</div>
+          </div>
+          <div class="quiz-option" data-value="Fresh">
+            <span class="quiz-option__icon">&#127811;</span>
+            <div class="quiz-option__label">Fresh</div>
+            <div class="quiz-option__desc">Citrus, green, clean — bright and energising</div>
+          </div>
+          <div class="quiz-option" data-value="Fruity">
+            <span class="quiz-option__icon">&#127815;</span>
+            <div class="quiz-option__label">Fruity</div>
+            <div class="quiz-option__desc">Berry, peach, apple — playful and sweet</div>
+          </div>
+          <div class="quiz-option" data-value="Aquatic">
+            <span class="quiz-option__icon">&#127754;</span>
+            <div class="quiz-option__label">Aquatic</div>
+            <div class="quiz-option__desc">Ocean, rain, sea salt — cool and refreshing</div>
+          </div>
+          <div class="quiz-option" data-value="Herbal">
+            <span class="quiz-option__icon">&#127807;</span>
+            <div class="quiz-option__label">Herbal</div>
+            <div class="quiz-option__desc">Lavender, rosemary, mint — natural and calming</div>
+          </div>
+          <div class="quiz-option" data-value="Chypre">
+            <span class="quiz-option__icon">&#128142;</span>
+            <div class="quiz-option__label">Chypre</div>
+            <div class="quiz-option__desc">Oakmoss, bergamot, patchouli — elegant and complex</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q3: Occasion -->
+      <div class="quiz-step" data-step="2">
+        <h2 class="quiz-step__q">When will you wear it?</h2>
+        <p class="quiz-step__hint">This helps us find the right intensity.</p>
+        <div class="quiz-options" data-key="occasion">
+          <div class="quiz-option" data-value="everyday">
+            <span class="quiz-option__icon">&#9728;</span>
+            <div class="quiz-option__label">Everyday</div>
+            <div class="quiz-option__desc">Office, errands, daily comfort</div>
+          </div>
+          <div class="quiz-option" data-value="evening">
+            <span class="quiz-option__icon">&#127769;</span>
+            <div class="quiz-option__label">Evenings Out</div>
+            <div class="quiz-option__desc">Dinner, dates, special occasions</div>
+          </div>
+          <div class="quiz-option" data-value="gift">
+            <span class="quiz-option__icon">&#127873;</span>
+            <div class="quiz-option__label">It's a Gift</div>
+            <div class="quiz-option__desc">Shopping for someone special</div>
+          </div>
+          <div class="quiz-option" data-value="home">
+            <span class="quiz-option__icon">&#127968;</span>
+            <div class="quiz-option__label">Home Ambience</div>
+            <div class="quiz-option__desc">Atmosphere and ritual for the home</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q4: Budget -->
+      <div class="quiz-step" data-step="3">
+        <h2 class="quiz-step__q">What's your budget?</h2>
+        <p class="quiz-step__hint">All TOCA products range from R280 to R2 500.</p>
+        <div class="quiz-options" data-key="price">
+          <div class="quiz-option" data-value="0-500">
+            <span class="quiz-option__icon">&#128176;</span>
+            <div class="quiz-option__label">Under R500</div>
+            <div class="quiz-option__desc">Great introductions and smaller sizes</div>
+          </div>
+          <div class="quiz-option" data-value="500-1000">
+            <span class="quiz-option__icon">&#128176;&#128176;</span>
+            <div class="quiz-option__label">R500 – R1 000</div>
+            <div class="quiz-option__desc">Our most popular range</div>
+          </div>
+          <div class="quiz-option" data-value="1000-2000">
+            <span class="quiz-option__icon">&#128176;&#128176;&#128176;</span>
+            <div class="quiz-option__label">R1 000 – R2 000</div>
+            <div class="quiz-option__desc">Premium extraits and sets</div>
+          </div>
+          <div class="quiz-option" data-value="">
+            <span class="quiz-option__icon">&#8734;</span>
+            <div class="quiz-option__label">No Limit</div>
+            <div class="quiz-option__desc">Show me everything</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation buttons (injected per step) -->
+      <div class="quiz-nav" id="quiz-nav" style="display:none;">
+        <button class="quiz-nav__back" id="quiz-back">&larr; Back</button>
+        <button class="btn btn--primary quiz-nav__next" id="quiz-next">Next</button>
+      </div>
+
+      <!-- Result -->
+      <div class="quiz-result" id="quiz-result">
+        <div class="quiz-result__icon">&#10024;</div>
+        <h2>Your TOCA Match</h2>
+        <p id="quiz-result-text">We've curated a selection just for you based on your preferences.</p>
+        <div class="quiz-result__tags" id="quiz-result-tags"></div>
+        <div class="quiz-result__actions">
+          <a href="#" class="btn btn--primary" id="quiz-result-link">View My Matches</a>
+          <button class="quiz-result__retake" id="quiz-retake">Retake Quiz</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <div class="footer__brand-name">TOCA</div>
+          <p data-content="footer_note">Luxury fragrances from Officina Del Toca. Extrait de parfum crafted for those who appreciate the finer things.</p>
+          <div class="footer__social">
+            <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
+            <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
+          </div>
+        </div>
+        <div>
+          <h4>Shop</h4>
+          <div class="footer__links">
+            <a href="shop.html">Shop All</a><br>
+            <a href="shop.html?cat=perfume">Perfumes</a><br>
+            <a href="shop.html?cat=candles">Scented Candles</a><br>
+            <a href="shop.html?cat=bath-salts">Scented Bath Salts</a><br>
+          </div>
+        </div>
+        <div>
+          <h4>Support</h4>
+          <div class="footer__links">
+            <a href="guide.html" aria-label="View Fragrance Guide">Fragrance Guide</a><br>
+            <a href="track.html" aria-label="Track Order">Track Order</a><br>
+            <a href="quotes.html" aria-label="Request A Quote">Request A Quote</a><br>
+            <a href="index.html#contact" aria-label="Contact us">Contact Us</a><br>
+          </div>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <div class="footer__links">
+            <a href="tel:0761112096" class="footer__contact-link" aria-label="Call us">076 111 2096</a><br>
+            <a href="mailto:info@toca.co.za" aria-label="Email us">info@toca.co.za</a><br>
+            <a href="#" style="pointer-events:none;">South Africa</a><br>
+          </div>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>&copy; 2026 TOCA (Pty) Ltd. All rights reserved.</span>
+        <span>Authorized retailer of Officina Del Toca</span>
+        <span class="footer__bottom-actions">
+          <button class="footer__legal-btn js-open-legal" aria-label="Legal information and more">Legal &amp; More</button>
+          <button class="footer__legal-btn js-open-cookies" aria-label="Manage cookie preferences">Cookie Settings</button>
+          <span class="footer__credit">Site by <a href="https://culchar.co.za" target="_blank" rel="noopener noreferrer">Cul.Char</a></span>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Cart Panel -->
+  <div class="cart-overlay"></div>
+  <div class="cart-panel">
+    <div class="cart-panel__header">
+      <h3>Your Selection</h3>
+      <button class="cart-panel__close" aria-label="Close cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="cart-panel__items"></div>
+    <div class="cart-panel__footer">
+      <div class="cart-panel__total">
+        <span>Subtotal</span>
+        <span class="cart-panel__total-amount">R0</span>
+      </div>
+      <a href="cart.html" class="btn btn--dark btn--full" style="margin-bottom:8px;">View Cart</a>
+      <a href="checkout.html" class="btn btn--primary btn--full">Checkout</a>
+    </div>
+  </div>
+
+  <button class="back-to-top" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <script src="js/app.js"></script>
+  <script src="js/footer.js"></script>
+  <script src="js/cookie-consent.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/header.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var STEPS = document.querySelectorAll('.quiz-step');
+    var TOTAL = STEPS.length;
+    var current = 0;
+    var answers = {};
+
+    // Build progress bars
+    var prog = document.getElementById('quiz-progress');
+    for (var i = 0; i < TOTAL; i++) {
+      var bar = document.createElement('div');
+      bar.className = 'quiz-progress__bar';
+      prog.appendChild(bar);
+    }
+
+    function updateProgress() {
+      var bars = prog.querySelectorAll('.quiz-progress__bar');
+      for (var i = 0; i < bars.length; i++) {
+        bars[i].classList.toggle('done', i <= current);
+      }
+    }
+
+    // Option click handlers
+    STEPS.forEach(function (step) {
+      var optionsWrap = step.querySelector('.quiz-options');
+      var isMulti = optionsWrap.getAttribute('data-multi') === 'true';
+      var key = optionsWrap.getAttribute('data-key');
+
+      optionsWrap.addEventListener('click', function (e) {
+        var card = e.target.closest('.quiz-option');
+        if (!card) return;
+
+        if (isMulti) {
+          card.classList.toggle('selected');
+          var selected = optionsWrap.querySelectorAll('.quiz-option.selected');
+          answers[key] = Array.from(selected).map(function (el) { return el.getAttribute('data-value'); });
+        } else {
+          optionsWrap.querySelectorAll('.quiz-option').forEach(function (c) { c.classList.remove('selected'); });
+          card.classList.add('selected');
+          answers[key] = card.getAttribute('data-value');
+        }
+
+        showNav();
+      });
+    });
+
+    var navEl = document.getElementById('quiz-nav');
+    var backBtn = document.getElementById('quiz-back');
+    var nextBtn = document.getElementById('quiz-next');
+
+    function hasAnswer() {
+      var step = STEPS[current];
+      var key = step.querySelector('.quiz-options').getAttribute('data-key');
+      var a = answers[key];
+      if (Array.isArray(a)) return a.length > 0;
+      return !!a || a === '';
+    }
+
+    function showNav() {
+      if (!hasAnswer()) { navEl.style.display = 'none'; return; }
+      navEl.style.display = 'flex';
+      backBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === TOTAL - 1 ? 'See My Matches' : 'Next';
+    }
+
+    function goTo(idx) {
+      STEPS.forEach(function (s) { s.classList.remove('active'); });
+      STEPS[idx].classList.add('active');
+      current = idx;
+      updateProgress();
+      showNav();
+      window.scrollTo({ top: prog.offsetTop - 100, behavior: 'smooth' });
+    }
+
+    backBtn.addEventListener('click', function () {
+      if (current > 0) goTo(current - 1);
+    });
+
+    nextBtn.addEventListener('click', function () {
+      if (current < TOTAL - 1) {
+        goTo(current + 1);
+      } else {
+        showResult();
+      }
+    });
+
+    function buildShopUrl() {
+      var params = [];
+
+      // Category
+      var cats = answers.category;
+      if (cats && cats.length === 1) {
+        params.push('cat=' + encodeURIComponent(cats[0]));
+      }
+
+      // Scent family
+      var families = answers.scentFamily;
+      if (families && families.length > 0) {
+        params.push('scentFamily=' + families.map(encodeURIComponent).join(','));
+      }
+
+      // Price
+      var price = answers.price;
+      if (price) {
+        params.push('price=' + encodeURIComponent(price));
+      }
+
+      // Occasion -> sort hint (gift = bestselling, evening = price-high, home = category candles bias)
+      var occasion = answers.occasion;
+      if (occasion === 'gift') {
+        params.push('sort=bestselling');
+      } else if (occasion === 'evening') {
+        params.push('sort=price-high');
+      } else if (occasion === 'home' && (!cats || cats.length !== 1)) {
+        // Nudge toward candles/bath salts if no single category chosen
+        if (!cats || cats.length === 0) params.push('cat=candles');
+      }
+
+      return 'shop.html' + (params.length ? '?' + params.join('&') : '');
+    }
+
+    function buildResultText() {
+      var parts = [];
+      var cats = answers.category || [];
+      var families = answers.scentFamily || [];
+
+      if (families.length > 0) {
+        parts.push('We\'ve selected ' + families.join(', ') + ' fragrances');
+      } else {
+        parts.push('We\'ve curated a selection');
+      }
+
+      if (cats.length === 1) {
+        var catNames = { perfume: 'perfumes', candles: 'candles', 'bath-salts': 'bath salts' };
+        parts[0] += ' from our ' + (catNames[cats[0]] || cats[0]) + ' collection';
+      }
+
+      parts[0] += ' just for you.';
+      return parts.join(' ');
+    }
+
+    function showResult() {
+      // Hide quiz steps and nav
+      STEPS.forEach(function (s) { s.classList.remove('active'); });
+      navEl.style.display = 'none';
+
+      // Mark all progress done
+      prog.querySelectorAll('.quiz-progress__bar').forEach(function (b) { b.classList.add('done'); });
+
+      // Build tags
+      var tagsEl = document.getElementById('quiz-result-tags');
+      tagsEl.innerHTML = '';
+      var allTags = (answers.category || []).concat(answers.scentFamily || []);
+      if (answers.occasion) allTags.push(answers.occasion);
+      allTags.forEach(function (t) {
+        var span = document.createElement('span');
+        span.className = 'quiz-result__tag';
+        span.textContent = t;
+        tagsEl.appendChild(span);
+      });
+
+      document.getElementById('quiz-result-text').textContent = buildResultText();
+      document.getElementById('quiz-result-link').href = buildShopUrl();
+      document.getElementById('quiz-result').classList.add('active');
+    }
+
+    document.getElementById('quiz-retake').addEventListener('click', function () {
+      answers = {};
+      document.querySelectorAll('.quiz-option.selected').forEach(function (c) { c.classList.remove('selected'); });
+      document.getElementById('quiz-result').classList.remove('active');
+      goTo(0);
+    });
+
+    updateProgress();
+  }());
+  </script>
+</body>
+</html>

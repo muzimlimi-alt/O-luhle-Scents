@@ -69,6 +69,7 @@
           <button data-tab="addresses">Addresses</button>
           <button data-tab="profile">Profile</button>
           <button data-tab="privacy">Privacy</button>
+          <button data-tab="wishlist">My Favourites</button>
           <button class="logout" id="logout-btn">Sign Out</button>
         </nav>
 
@@ -160,6 +161,14 @@
               <p id="privacy-delete-message" style="display:none;font-size:0.82rem;margin-top:10px;color:var(--color-text-light);"></p>
             </div>
           </div>
+
+          <div class="account-tab" id="tab-wishlist">
+            <h2>My Favourites</h2>
+            <p id="js-wishlist-empty" style="display:none;color:var(--color-text-light);font-size:0.85rem;">
+              You haven't saved anything yet. <a href="shop.html" style="color:var(--color-gold);">Browse the collection &rarr;</a>
+            </p>
+            <div id="js-wishlist-grid" class="product-grid" style="margin-top:20px;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -198,10 +207,73 @@
       });
     });
 
+    // Support #hash deep-link to a tab (e.g. account.html#wishlist)
+    const hashTab = window.location.hash.replace('#', '');
+    if (hashTab) {
+      const btn = document.querySelector(`.account-nav button[data-tab="${hashTab}"]`);
+      if (btn) btn.click();
+    }
+
     document.getElementById('logout-btn').addEventListener('click', () => {
       logout();
       window.location.href = 'index.html';
     });
+
+    // --- Wishlist tab ---
+    async function loadWishlistTab() {
+      const grid = document.getElementById('js-wishlist-grid');
+      const empty = document.getElementById('js-wishlist-empty');
+      if (!grid) return;
+      try {
+        const res = await fetch('/api/wishlist', { headers: { Authorization: `Bearer ${getToken()}` } });
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json();
+        const items = data.items || [];
+        if (!items.length) { empty.style.display = ''; grid.innerHTML = ''; return; }
+        empty.style.display = 'none';
+        grid.innerHTML = items.map(item => {
+          const p = item.product;
+          if (!p) return '';
+          const variants = (p.variants || []).sort((a, b) => Number(a.price) - Number(b.price));
+          const price = variants[0] ? (typeof window.formatPrice === 'function' ? window.formatPrice(variants[0].price) : `R${Number(variants[0].price).toLocaleString()}`) : '';
+          const img = p.primaryImage ? `images/products/${p.primaryImage}` : '';
+          return `<div class="product-card reveal" style="position:relative;">
+            <div class="product-card__image">
+              <a href="product-detail.html?id=${p.id}"><img src="${img}" alt="${p.name || ''}" onerror="this.style.display='none'"></a>
+              <button class="product-card__wishlist product-card__wishlist--saved js-wishlist-remove" data-product-id="${p.id}" style="opacity:1;transform:scale(1);" title="Remove from favourites">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </button>
+            </div>
+            <div class="product-card__info">
+              <h4 class="product-card__name"><a href="product-detail.html?id=${p.id}" style="color:inherit;text-decoration:none;">${p.name || ''}</a></h4>
+              <div class="product-card__price">${price}</div>
+            </div>
+          </div>`;
+        }).join('');
+        grid.querySelectorAll('.js-wishlist-remove').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const pid = btn.dataset.productId;
+            await fetch(`/api/wishlist/items/${pid}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
+            btn.closest('.product-card').remove();
+            const remaining = grid.querySelectorAll('.product-card').length;
+            if (!remaining) empty.style.display = '';
+            const count = remaining;
+            try { localStorage.setItem('toca_wishlist_count', count); } catch {}
+            document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
+              el.textContent = count > 0 ? count : '';
+              el.style.display = count > 0 ? '' : 'none';
+            });
+          });
+        });
+      } catch (err) {
+        console.error('Wishlist load error:', err);
+        grid.innerHTML = '<p style="color:var(--color-text-light);font-size:0.85rem;">Could not load your favourites.</p>';
+      }
+    }
+    // Load when tab is opened, and immediately if deep-linked
+    document.querySelector('.account-nav button[data-tab="wishlist"]')?.addEventListener('click', loadWishlistTab);
+    if (hashTab === 'wishlist') loadWishlistTab();
 
     // --- Orders ---
     async function loadOrders() {

@@ -122,6 +122,8 @@ model Product {
   collections          ProductCollection[]
   pairings             ProductPairing[]        @relation("PairingSource")
   pairedWith           ProductPairing[]        @relation("PairingTarget")
+  reviews              ProductReview[]
+  wishlistItems        WishlistItem[]
 
   supplier  Supplier?        @relation(fields: [supplierId], references: [id])
   createdAt DateTime         @default(now()) @map("created_at")
@@ -404,6 +406,8 @@ model Customer {
   quotes                 Quote[]
   consentRecords         ConsentRecord[]
   dataSubjectRequests    DataSubjectRequest[]
+  reviews                ProductReview[]
+  wishlists              Wishlist[]
 
   @@map("customers")
 }
@@ -1475,4 +1479,59 @@ model HomepageCampaign {
 
   @@index([isActive, startsAt, endsAt])
   @@map("homepage_campaigns")
+}
+
+// ── 52. PRODUCT_REVIEWS — verified-purchase reviews ────────────────────────
+model ProductReview {
+  id          String   @id @default(uuid()) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  customerId  String   @map("customer_id") @db.Uuid
+  orderItemId String?  @unique @map("order_item_id") @db.Uuid
+  rating      Int
+  title       String?  @db.VarChar(200)
+  body        String?
+  status      String   @default("pending") @db.VarChar(20)
+  moderatedBy String?  @map("moderated_by") @db.Uuid
+  moderatedAt DateTime? @map("moderated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([customerId])
+  @@index([status, createdAt])
+  @@map("product_reviews")
+}
+
+// ── 53. WISHLISTS ────────────────────────────────────────────────────────────
+model Wishlist {
+  id         String         @id @default(uuid()) @db.Uuid
+  customerId String         @map("customer_id") @db.Uuid
+  name       String         @default("My Favourites") @db.VarChar(100)
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items    WishlistItem[]
+
+  @@unique([customerId, name])
+  @@index([customerId])
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String    @id @default(uuid()) @db.Uuid
+  wishlistId String    @map("wishlist_id") @db.Uuid
+  productId  String    @map("product_id") @db.Uuid
+  variantId  String?   @map("variant_id") @db.Uuid
+  addedAt    DateTime  @default(now()) @map("added_at")
+
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId, variantId])
+  @@index([wishlistId])
+  @@map("wishlist_items")
 }

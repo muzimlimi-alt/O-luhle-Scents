@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderProduct(productData);
         renderRelated(productData.related);
         renderPairings(productId, currency);
+        loadReviews(productId);
+        initPdpWishlist(productId);
         
         // Trigger reveal animations for the newly rendered content
         if (typeof window.initScrollReveal === 'function') {
@@ -359,5 +361,90 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
         `).join('');
+    }
+
+    function stars(rating, max) {
+        max = max || 5;
+        var html = '';
+        for (var i = 1; i <= max; i++) {
+            html += i <= Math.round(rating)
+                ? '<span style="color:var(--color-gold);">&#9733;</span>'
+                : '<span style="color:var(--color-border);">&#9733;</span>';
+        }
+        return html;
+    }
+
+    async function loadReviews(pid) {
+        var section = document.getElementById('reviews-section');
+        if (!section) return;
+        try {
+            var [summaryRes, listRes] = await Promise.all([
+                fetch('/api/reviews/product/' + pid + '/summary'),
+                fetch('/api/reviews/product/' + pid),
+            ]);
+            var summary = await summaryRes.json();
+            var reviews = await listRes.json();
+
+            if (summary.count === 0) {
+                section.querySelector('.reviews-empty').style.display = 'block';
+                section.querySelector('.reviews-summary').style.display = 'none';
+                section.querySelector('.reviews-list').innerHTML = '';
+                section.hidden = false;
+                return;
+            }
+
+            section.querySelector('.reviews-empty').style.display = 'none';
+            var sumEl = section.querySelector('.reviews-summary');
+            sumEl.style.display = 'flex';
+            sumEl.querySelector('.reviews-summary__avg').textContent = summary.average;
+            sumEl.querySelector('.reviews-summary__stars').innerHTML = stars(summary.average);
+            sumEl.querySelector('.reviews-summary__count').textContent = summary.count + ' review' + (summary.count !== 1 ? 's' : '');
+
+            var barWrap = sumEl.querySelector('.reviews-summary__bars');
+            barWrap.innerHTML = '';
+            for (var r = 5; r >= 1; r--) {
+                var pct = summary.count ? Math.round((summary.distribution[r] / summary.count) * 100) : 0;
+                barWrap.innerHTML += '<div class="reviews-bar"><span class="reviews-bar__label">' + r + '</span>' +
+                    '<div class="reviews-bar__track"><div class="reviews-bar__fill" style="width:' + pct + '%"></div></div>' +
+                    '<span class="reviews-bar__count">' + summary.distribution[r] + '</span></div>';
+            }
+
+            var listEl = section.querySelector('.reviews-list');
+            listEl.innerHTML = reviews.map(function (rev) {
+                var name = (rev.customer && rev.customer.name) || 'Anonymous';
+                var date = new Date(rev.createdAt).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' });
+                return '<div class="review-card">' +
+                    '<div class="review-card__header">' +
+                        '<span class="review-card__stars">' + stars(rev.rating) + '</span>' +
+                        '<span class="review-card__date">' + date + '</span>' +
+                    '</div>' +
+                    (rev.title ? '<h4 class="review-card__title">' + rev.title + '</h4>' : '') +
+                    (rev.body ? '<p class="review-card__body">' + rev.body + '</p>' : '') +
+                    '<p class="review-card__author">' + name + '</p>' +
+                '</div>';
+            }).join('');
+
+            section.hidden = false;
+        } catch (err) {
+            console.warn('[product] reviews unavailable', err);
+        }
+    }
+
+    function initPdpWishlist(pid) {
+        const btn = document.querySelector('.js-pdp-wishlist');
+        if (!btn) return;
+        if (typeof _wishlistProductIds !== 'undefined' && _wishlistProductIds.has(pid)) {
+            btn.classList.add('product-card__wishlist--saved');
+            btn.querySelector('svg').setAttribute('fill', 'currentColor');
+        }
+        btn.addEventListener('click', async () => {
+            if (typeof toggleWishlist === 'function') {
+                await toggleWishlist(pid, btn);
+                const saved = typeof _wishlistProductIds !== 'undefined' && _wishlistProductIds.has(pid);
+                btn.querySelector('svg').setAttribute('fill', saved ? 'currentColor' : 'none');
+            } else {
+                if (typeof showToast === 'function') showToast('Sign in to save favourites', 'info');
+            }
+        });
     }
 });

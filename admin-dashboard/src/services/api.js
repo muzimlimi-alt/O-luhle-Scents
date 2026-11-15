@@ -443,4 +443,15 @@ export const testimonialsApi = {
   remove: (id) => api.delete(`/testimonials/admin/${id}`),
 };
 
+export const reviewsApi = {
+  list: (params) => api.get('/reviews', { params }),
+  moderate: (id, status) => api.patch(`/reviews/${id}/moderate`, { status }),
+  remove: (id) => api.delete(`/reviews/${id}`),
+};
+
+export const wishlistsApi = {
+  list: (params) => api.get('/wishlist/admin/all', { params }),
+  getByCustomer: (customerId) => api.get(`/wishlist/admin/customer/${customerId}`),
+};
+
 export default api;

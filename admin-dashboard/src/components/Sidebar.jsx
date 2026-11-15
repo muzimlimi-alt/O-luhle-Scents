@@ -41,7 +41,9 @@ import {
   Lock,
   FileCheck,
   Calculator,
-  Megaphone
+  Megaphone,
+  MessageSquare,
+  Heart
 } from 'lucide-react';
 
 // Single source of truth for the sidebar, grouped into the same four
@@ -94,6 +96,8 @@ const NAV = [
           { path: '/customers', label: 'Customers', icon: <Users size={16} /> },
           { path: '/newsletters', label: 'Newsletters', icon: <Mail size={16} /> },
           { path: '/testimonials', label: 'Testimonials', icon: <Quote size={16} /> },
+          { path: '/reviews', label: 'Reviews', icon: <MessageSquare size={16} /> },
+          { path: '/wishlists', label: 'Wishlists', icon: <Heart size={16} /> },
         ]
       },
     ],
