@@ -43,7 +43,8 @@ import {
   Calculator,
   Megaphone,
   MessageSquare,
-  Heart
+  Heart,
+  Scale
 } from 'lucide-react';
 
 // Single source of truth for the sidebar, grouped into the same four
@@ -134,6 +135,7 @@ const NAV = [
           { path: '/admin-users', label: 'Admin Users', icon: <UserCog size={16} /> },
           { path: '/audit-logs', label: 'Audit Logs', icon: <ScrollText size={16} /> },
           { path: '/privacy', label: 'Privacy & POPIA', icon: <Lock size={16} /> },
+          { path: '/legal-policies', label: 'Legal Policies', icon: <Scale size={16} /> },
           { path: '/notifications', label: 'Notifications', icon: <Bell size={16} /> },
         ]
       },

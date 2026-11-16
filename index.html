@@ -371,7 +371,7 @@
           </div>
           <label class="contact-form__consent">
             <input type="checkbox" id="contact-consent" required>
-            <span>I agree that TOCA may use my details to respond to this enquiry, in accordance with our <a href="index.html#" class="js-open-legal">Privacy Policy</a>.</span>
+            <span>I agree that TOCA may use my details to respond to this enquiry, in accordance with our <a href="/privacy" style="color:var(--color-gold);">Privacy Policy</a>.</span>
           </label>
           <div id="contact-feedback" class="newsletter__feedback" role="alert" aria-live="polite" hidden></div>
           <button type="submit" class="btn btn--primary btn--lg contact-form__submit" id="contact-submit">
@@ -454,6 +454,16 @@
           </div>
         </div>
         <div class="reveal reveal-delay-3">
+          <h4>Customer Policies</h4>
+          <div class="footer__links">
+            <a href="/privacy" aria-label="Privacy Policy">Privacy Policy</a><br>
+            <a href="/returns" aria-label="Return & Refund Policy">Return &amp; Refund Policy</a><br>
+            <a href="/terms" aria-label="Terms of Service">Terms of Service</a><br>
+            <a href="/shipping" aria-label="Shipping & Delivery">Shipping &amp; Delivery</a><br>
+            <a href="/cookies" aria-label="Cookie Policy">Cookie Policy</a><br>
+          </div>
+        </div>
+        <div class="reveal reveal-delay-4">
           <h4>Contact</h4>
           <div class="footer__links">
             <a href="tel:0761112096" class="footer__contact-link" aria-label="Call us">076 111 2096</a><br>
@@ -464,12 +474,11 @@
       </div>
       <div class="footer__bottom reveal">
         <span>&copy; 2026 TOCA (Pty) Ltd. All rights reserved.</span>
-        <span>Authorized retailer of Officina Del Toca</span>
-        <span class="footer__bottom-actions">
-          <button class="footer__legal-btn js-open-legal" aria-label="View legal information and policies">Legal &amp; More</button>
-          <button class="footer__legal-btn js-open-cookies" aria-label="Manage cookie preferences">Cookie Settings</button>
-          <a href="/admin/login" class="footer__legal-btn footer__admin-btn" aria-label="Redirect to Admin Dashboard login">Admin Portal</a>
-          <br>
+        <span class="footer__bottom-links">
+          <button class="js-open-cookies" aria-label="Manage cookie preferences">Cookie Preferences</button>
+          <span class="footer__dot" aria-hidden="true">&middot;</span>
+          <a href="/admin/login">Admin</a>
+          <span class="footer__dot" aria-hidden="true">&middot;</span>
           <span class="footer__credit">Site by <a href="https://culchar.co.za" target="_blank" rel="noopener noreferrer">Cul.Char</a></span>
         </span>
       </div>

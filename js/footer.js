@@ -86,6 +86,9 @@
         <p>Once your return is received and inspected, we will notify you by email. Approved refunds are processed within <strong>5–10 business days</strong> to your original payment method.</p>
 
         <p class="legal-note">Gift cards and sale items are final sale and cannot be returned.</p>
+        <p style="margin-top:20px;padding-top:16px;border-top:1px solid var(--color-border-light);font-size:0.8rem;">
+          <a href="/returns" style="color:var(--color-gold-dark);">Read the full Return &amp; Refund Policy ›</a>
+        </p>
       </section>
 
       <!-- ── PRIVACY POLICY ───────────────────────────────────────────── -->
@@ -113,6 +116,9 @@
 
         <h3>Cookies</h3>
         <p>We use essential cookies to maintain your shopping cart and session. No third-party tracking cookies are set without your consent.</p>
+        <p style="margin-top:20px;padding-top:16px;border-top:1px solid var(--color-border-light);font-size:0.8rem;">
+          <a href="/privacy" style="color:var(--color-gold-dark);">Read the full Privacy Policy ›</a>
+        </p>
       </section>
 
       <!-- ── TERMS OF SERVICE ─────────────────────────────────────────── -->
@@ -142,6 +148,9 @@
 
         <h3>Governing Law</h3>
         <p>These terms are governed by the laws of the Republic of South Africa.</p>
+        <p style="margin-top:20px;padding-top:16px;border-top:1px solid var(--color-border-light);font-size:0.8rem;">
+          <a href="/terms" style="color:var(--color-gold-dark);">Read the full Terms of Service ›</a>
+        </p>
       </section>
 
       <!-- ── CONTACT ──────────────────────────────────────────────────── -->

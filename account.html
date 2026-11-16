@@ -115,7 +115,7 @@
           <div class="account-tab" id="tab-privacy">
             <h2>Privacy</h2>
             <p style="color:var(--color-text-light);font-size:0.85rem;margin-top:-8px;margin-bottom:28px;">
-              What we hold about you, what you've consented to, and your rights under South Africa's POPIA. Read our full <a href="#" class="js-open-legal" data-legal-tab="privacy" style="color:var(--color-gold);">Privacy Policy</a>.
+              What we hold about you, what you've consented to, and your rights under South Africa's POPIA. Read our full <a href="/privacy" style="color:var(--color-gold);">Privacy Policy</a>.
             </p>
 
             <div class="privacy-block">
@@ -163,10 +163,31 @@
           </div>
 
           <div class="account-tab" id="tab-wishlist">
-            <h2>My Favourites</h2>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+              <h2 style="margin:0;">My Favourites</h2>
+              <div id="js-wl-actions" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+                <select id="js-wl-picker" style="padding:6px 10px;border:1px solid var(--color-border);border-radius:var(--radius);font-size:0.85rem;font-family:inherit;background:var(--color-bg);color:var(--color-text);min-width:160px;"></select>
+                <button id="js-wl-new" class="btn btn--sm btn--outline-dark" title="New list">+ New List</button>
+                <button id="js-wl-rename" class="btn btn--sm btn--outline-dark" title="Rename list" style="padding:4px 10px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 3l4 4L7 21H3v-4L17 3z"/></svg>
+                </button>
+                <button id="js-wl-delete" class="btn btn--sm btn--outline-dark" title="Delete list" style="padding:4px 10px;border-color:#c0392b;color:#c0392b;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                </button>
+                <button id="js-wl-share" class="btn btn--sm btn--outline-dark" title="Share this list" style="padding:4px 10px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                </button>
+              </div>
+            </div>
             <p id="js-wishlist-empty" style="display:none;color:var(--color-text-light);font-size:0.85rem;">
               You haven't saved anything yet. <a href="shop.html" style="color:var(--color-gold);">Browse the collection &rarr;</a>
             </p>
+            <div id="js-wl-share-bar" style="display:none;background:var(--color-bg-alt);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:0.82rem;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span style="color:var(--color-text-light);">Share link:</span>
+              <input id="js-wl-share-url" readonly style="flex:1;min-width:200px;padding:4px 8px;border:1px solid var(--color-border);border-radius:var(--radius);font-size:0.82rem;font-family:monospace;background:var(--color-bg);color:var(--color-text);">
+              <button id="js-wl-share-copy" class="btn btn--sm btn--primary" style="padding:4px 12px;">Copy</button>
+              <button id="js-wl-share-revoke" class="btn btn--sm btn--outline-dark" style="padding:4px 12px;border-color:#c0392b;color:#c0392b;">Revoke</button>
+            </div>
             <div id="js-wishlist-grid" class="product-grid" style="margin-top:20px;"></div>
           </div>
         </div>
@@ -174,9 +195,10 @@
     </div>
   </section>
 
-  <footer style="padding:32px 0;text-align:center;color:var(--color-text-light);font-size:0.75rem;border-top:1px solid var(--color-border-light);">
+  <footer style="padding:32px 0;text-align:center;color:var(--color-text-light);font-size:0.72rem;border-top:1px solid var(--color-border-light);">
     <div class="container">
-      <p>&copy; 2026 TOCA (Pty) Ltd · <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a></p>
+      <p>&copy; 2026 TOCA (Pty) Ltd &middot; <a href="tel:0761112096" style="color:var(--color-gold);">076 111 2096</a></p>
+      <p style="margin-top:6px;opacity:0.5;"><button class="js-open-cookies" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;opacity:0.8;">Cookie Preferences</button> &middot; Site by <a href="https://culchar.co.za" target="_blank" rel="noopener noreferrer" style="color:var(--color-gold-dark);text-decoration:none;">Cul.Char</a></p>
     </div>
   </footer>
 
@@ -191,8 +213,25 @@
     } from './js/api.js';
     import { renderEftProofWidget } from './js/eft-proof-upload.js';
 
-    if (!getToken()) {
-      window.location.href = `account-login.html?redirect=${encodeURIComponent('account.html')}`;
+    const _isGuest = !getToken();
+    if (_isGuest && window.location.hash !== '#wishlist') {
+      window.location.href = `account-login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    }
+
+    // Merge guest wishlist on account page load (handles post-login redirect)
+    if (!_isGuest) {
+      try {
+        const guestToken = localStorage.getItem('toca_wishlist_guest');
+        if (guestToken) {
+          fetch('/api/wishlist/merge', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guestToken }),
+          }).then(() => {
+            localStorage.removeItem('toca_wishlist_guest');
+          }).catch(() => {});
+        }
+      } catch {}
     }
 
     document.querySelector('.page-loader')?.classList.add('hidden');
@@ -220,57 +259,237 @@
     });
 
     // --- Wishlist tab ---
+    let _wlLists = [];
+    let _wlActiveId = null;
+    let _wlActiveShareId = null;
+
+    function _wlAuth() {
+      const jwt = getToken();
+      return jwt ? { Authorization: `Bearer ${jwt}` } : {};
+    }
+
+    function _wlRenderItems(items) {
+      const grid = document.getElementById('js-wishlist-grid');
+      const empty = document.getElementById('js-wishlist-empty');
+      const jwt = getToken();
+      if (!items.length) { empty.style.display = ''; grid.innerHTML = ''; return; }
+      empty.style.display = 'none';
+      grid.innerHTML = items.map(item => {
+        const p = item.product;
+        if (!p) return '';
+        const variants = (p.variants || []).sort((a, b) => Number(a.price) - Number(b.price));
+        const price = variants[0] ? (typeof window.formatPrice === 'function' ? window.formatPrice(variants[0].price) : `R${Number(variants[0].price).toLocaleString()}`) : '';
+        const img = p.primaryImage ? `images/products/${p.primaryImage}` : '';
+        const stock = variants[0]?.inventory?.quantity;
+        const stockLabel = stock != null ? (stock <= 0 ? '<span style="color:#c0392b;font-size:0.75rem;">Out of stock</span>' : stock <= 3 ? '<span style="color:#e67e22;font-size:0.75rem;">Low stock</span>' : '<span style="color:#27ae60;font-size:0.75rem;">In stock</span>') : '';
+        return `<div class="product-card reveal" style="position:relative;">
+          <div class="product-card__image">
+            <a href="product-detail.html?id=${p.id}"><img src="${img}" alt="${p.name || ''}" onerror="this.style.display='none'"></a>
+            <button class="product-card__wishlist product-card__wishlist--saved js-wishlist-remove" data-product-id="${p.id}" style="opacity:1;transform:scale(1);" title="Remove from favourites">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="product-card__info">
+            <h4 class="product-card__name"><a href="product-detail.html?id=${p.id}" style="color:inherit;text-decoration:none;">${p.name || ''}</a></h4>
+            <div class="product-card__price">${price}</div>
+            <div style="margin-top:4px;">${stockLabel}</div>
+            <button class="btn btn--sm btn--primary js-wishlist-to-bag" data-product-id="${p.id}" data-variant-id="${variants[0]?.id || ''}" data-name="${(p.name||'').replace(/"/g,'&quot;')}" data-price="${variants[0]?.price || 0}" data-size="${variants[0]?.size || ''}" data-image="${p.primaryImage || ''}" style="margin-top:8px;width:100%;"${stock != null && stock <= 0 ? ' disabled' : ''}>Move to Bag</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      grid.querySelectorAll('.js-wishlist-remove').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const pid = btn.dataset.productId;
+          if (jwt && _wlActiveId) {
+            await fetch(`/api/wishlist/lists/${_wlActiveId}/items/${pid}`, { method: 'DELETE', headers: _wlAuth() });
+          } else if (jwt) {
+            await fetch(`/api/wishlist/items/${pid}`, { method: 'DELETE', headers: _wlAuth() });
+          } else {
+            const gt = (() => { try { return localStorage.getItem('toca_wishlist_guest'); } catch { return null; } })();
+            if (gt) await fetch(`/api/wishlist/guest/items/${pid}`, { method: 'DELETE', headers: { 'x-wishlist-token': gt } });
+          }
+          btn.closest('.product-card').remove();
+          const remaining = grid.querySelectorAll('.product-card').length;
+          if (!remaining) empty.style.display = '';
+          try { localStorage.setItem('toca_wishlist_count', remaining); } catch {}
+          document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
+            el.textContent = remaining > 0 ? remaining : '';
+            el.style.display = remaining > 0 ? '' : 'none';
+          });
+          if (typeof _wishlistProductIds !== 'undefined') _wishlistProductIds.delete(pid);
+        });
+      });
+
+      grid.querySelectorAll('.js-wishlist-to-bag').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const d = btn.dataset;
+          if (!d.variantId) return;
+          const cart = JSON.parse(localStorage.getItem('toca_cart') || '[]');
+          const existing = cart.find(c => c.variantId === d.variantId);
+          if (existing) { existing.qty = (Number(existing.qty) || 0) + 1; }
+          else { cart.push({ id: d.productId, variantId: d.variantId, name: d.name, size: d.size, price: Number(d.price) || 0, qty: 1, image: d.image ? `products/${d.image}` : '', currency: localStorage.getItem('toca_currency') || 'ZAR' }); }
+          localStorage.setItem('toca_cart', JSON.stringify(cart));
+          window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+          if (typeof showToast === 'function') showToast(`${d.name} added to bag`);
+          btn.textContent = 'Added!';
+          btn.disabled = true;
+          setTimeout(() => { btn.textContent = 'Move to Bag'; btn.disabled = false; }, 2000);
+        });
+      });
+    }
+
+    function _wlUpdatePicker() {
+      const picker = document.getElementById('js-wl-picker');
+      const actions = document.getElementById('js-wl-actions');
+      const deleteBtn = document.getElementById('js-wl-delete');
+      const renameBtn = document.getElementById('js-wl-rename');
+      if (!picker) return;
+      picker.innerHTML = _wlLists.map(l =>
+        `<option value="${l.id}"${l.id === _wlActiveId ? ' selected' : ''}>${l.name} (${l._count?.items ?? l.items?.length ?? 0})</option>`
+      ).join('');
+      actions.style.display = _wlLists.length ? 'flex' : 'none';
+      const active = _wlLists.find(l => l.id === _wlActiveId);
+      deleteBtn.style.display = active?.isDefault ? 'none' : '';
+      renameBtn.style.display = active?.isDefault ? 'none' : '';
+    }
+
     async function loadWishlistTab() {
       const grid = document.getElementById('js-wishlist-grid');
       const empty = document.getElementById('js-wishlist-empty');
+      const shareBar = document.getElementById('js-wl-share-bar');
       if (!grid) return;
+      shareBar.style.display = 'none';
+      _wlActiveShareId = null;
       try {
-        const res = await fetch('/api/wishlist', { headers: { Authorization: `Bearer ${getToken()}` } });
-        if (!res.ok) throw new Error('fetch failed');
-        const data = await res.json();
-        const items = data.items || [];
-        if (!items.length) { empty.style.display = ''; grid.innerHTML = ''; return; }
-        empty.style.display = 'none';
-        grid.innerHTML = items.map(item => {
-          const p = item.product;
-          if (!p) return '';
-          const variants = (p.variants || []).sort((a, b) => Number(a.price) - Number(b.price));
-          const price = variants[0] ? (typeof window.formatPrice === 'function' ? window.formatPrice(variants[0].price) : `R${Number(variants[0].price).toLocaleString()}`) : '';
-          const img = p.primaryImage ? `images/products/${p.primaryImage}` : '';
-          return `<div class="product-card reveal" style="position:relative;">
-            <div class="product-card__image">
-              <a href="product-detail.html?id=${p.id}"><img src="${img}" alt="${p.name || ''}" onerror="this.style.display='none'"></a>
-              <button class="product-card__wishlist product-card__wishlist--saved js-wishlist-remove" data-product-id="${p.id}" style="opacity:1;transform:scale(1);" title="Remove from favourites">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </button>
-            </div>
-            <div class="product-card__info">
-              <h4 class="product-card__name"><a href="product-detail.html?id=${p.id}" style="color:inherit;text-decoration:none;">${p.name || ''}</a></h4>
-              <div class="product-card__price">${price}</div>
-            </div>
-          </div>`;
-        }).join('');
-        grid.querySelectorAll('.js-wishlist-remove').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const pid = btn.dataset.productId;
-            await fetch(`/api/wishlist/items/${pid}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
-            btn.closest('.product-card').remove();
-            const remaining = grid.querySelectorAll('.product-card').length;
-            if (!remaining) empty.style.display = '';
-            const count = remaining;
-            try { localStorage.setItem('toca_wishlist_count', count); } catch {}
-            document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
-              el.textContent = count > 0 ? count : '';
-              el.style.display = count > 0 ? '' : 'none';
-            });
-          });
-        });
+        const jwt = getToken();
+        if (jwt) {
+          const res = await fetch('/api/wishlist', { headers: _wlAuth() });
+          if (!res.ok) throw new Error('fetch failed');
+          _wlLists = await res.json();
+          if (!_wlLists.length) { empty.style.display = ''; grid.innerHTML = ''; return; }
+          if (!_wlActiveId || !_wlLists.find(l => l.id === _wlActiveId)) {
+            _wlActiveId = _wlLists[0].id;
+          }
+          _wlUpdatePicker();
+          const active = _wlLists.find(l => l.id === _wlActiveId);
+          _wlRenderItems(active?.items || []);
+        } else {
+          document.getElementById('js-wl-actions').style.display = 'none';
+          const guestToken = (() => { try { return localStorage.getItem('toca_wishlist_guest'); } catch { return null; } })();
+          if (!guestToken) { empty.style.display = ''; grid.innerHTML = ''; return; }
+          const res = await fetch('/api/wishlist/guest', { headers: { 'x-wishlist-token': guestToken } });
+          if (!res.ok) throw new Error('fetch failed');
+          const data = await res.json();
+          _wlRenderItems(data.items || []);
+        }
       } catch (err) {
         console.error('Wishlist load error:', err);
         grid.innerHTML = '<p style="color:var(--color-text-light);font-size:0.85rem;">Could not load your favourites.</p>';
       }
     }
+
+    // List picker change
+    document.getElementById('js-wl-picker')?.addEventListener('change', (e) => {
+      _wlActiveId = e.target.value;
+      const active = _wlLists.find(l => l.id === _wlActiveId);
+      _wlRenderItems(active?.items || []);
+      _wlUpdatePicker();
+      document.getElementById('js-wl-share-bar').style.display = 'none';
+    });
+
+    // New list
+    document.getElementById('js-wl-new')?.addEventListener('click', async () => {
+      const name = prompt('New list name:');
+      if (!name?.trim()) return;
+      try {
+        const res = await fetch('/api/wishlist/lists', { method: 'POST', headers: { ...(_wlAuth()), 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim() }) });
+        if (res.status === 409) { if (typeof showToast === 'function') showToast('A list with that name already exists'); return; }
+        if (!res.ok) throw new Error();
+        const list = await res.json();
+        _wlLists.push(list);
+        _wlActiveId = list.id;
+        _wlUpdatePicker();
+        _wlRenderItems([]);
+        if (typeof showToast === 'function') showToast(`"${list.name}" created`);
+      } catch { if (typeof showToast === 'function') showToast('Could not create list'); }
+    });
+
+    // Rename list
+    document.getElementById('js-wl-rename')?.addEventListener('click', async () => {
+      const active = _wlLists.find(l => l.id === _wlActiveId);
+      if (!active || active.isDefault) return;
+      const name = prompt('Rename list:', active.name);
+      if (!name?.trim() || name.trim() === active.name) return;
+      try {
+        const res = await fetch(`/api/wishlist/lists/${_wlActiveId}`, { method: 'PATCH', headers: { ...(_wlAuth()), 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim() }) });
+        if (!res.ok) throw new Error();
+        const updated = await res.json();
+        const idx = _wlLists.findIndex(l => l.id === _wlActiveId);
+        if (idx >= 0) _wlLists[idx] = { ..._wlLists[idx], name: updated.name };
+        _wlUpdatePicker();
+        if (typeof showToast === 'function') showToast('List renamed');
+      } catch { if (typeof showToast === 'function') showToast('Could not rename list'); }
+    });
+
+    // Delete list
+    document.getElementById('js-wl-delete')?.addEventListener('click', async () => {
+      const active = _wlLists.find(l => l.id === _wlActiveId);
+      if (!active || active.isDefault) return;
+      if (!confirm(`Delete "${active.name}"? Items in this list will be removed.`)) return;
+      try {
+        const res = await fetch(`/api/wishlist/lists/${_wlActiveId}`, { method: 'DELETE', headers: _wlAuth() });
+        if (!res.ok) throw new Error();
+        _wlLists = _wlLists.filter(l => l.id !== _wlActiveId);
+        _wlActiveId = _wlLists[0]?.id || null;
+        _wlUpdatePicker();
+        if (_wlActiveId) {
+          const a = _wlLists.find(l => l.id === _wlActiveId);
+          _wlRenderItems(a?.items || []);
+        } else {
+          document.getElementById('js-wishlist-grid').innerHTML = '';
+          document.getElementById('js-wishlist-empty').style.display = '';
+        }
+        if (typeof showToast === 'function') showToast('List deleted');
+      } catch { if (typeof showToast === 'function') showToast('Could not delete list'); }
+    });
+
+    // Share list
+    document.getElementById('js-wl-share')?.addEventListener('click', async () => {
+      if (!_wlActiveId) return;
+      const shareBar = document.getElementById('js-wl-share-bar');
+      try {
+        const res = await fetch(`/api/wishlist/share/${_wlActiveId}`, { method: 'POST', headers: _wlAuth() });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        _wlActiveShareId = data.shareId;
+        const shareUrl = `${window.location.origin}/wishlist-shared.html?token=${data.token}`;
+        document.getElementById('js-wl-share-url').value = shareUrl;
+        shareBar.style.display = 'flex';
+      } catch { if (typeof showToast === 'function') showToast('Could not create share link'); }
+    });
+
+    // Copy share link
+    document.getElementById('js-wl-share-copy')?.addEventListener('click', () => {
+      const input = document.getElementById('js-wl-share-url');
+      navigator.clipboard.writeText(input.value).then(() => {
+        if (typeof showToast === 'function') showToast('Link copied!');
+      });
+    });
+
+    // Revoke share link
+    document.getElementById('js-wl-share-revoke')?.addEventListener('click', async () => {
+      if (!_wlActiveShareId) return;
+      try {
+        await fetch(`/api/wishlist/share/${_wlActiveShareId}`, { method: 'DELETE', headers: _wlAuth() });
+        document.getElementById('js-wl-share-bar').style.display = 'none';
+        _wlActiveShareId = null;
+        if (typeof showToast === 'function') showToast('Share link revoked');
+      } catch { if (typeof showToast === 'function') showToast('Could not revoke link'); }
+    });
+
     // Load when tab is opened, and immediately if deep-linked
     document.querySelector('.account-nav button[data-tab="wishlist"]')?.addEventListener('click', loadWishlistTab);
     if (hashTab === 'wishlist') loadWishlistTab();

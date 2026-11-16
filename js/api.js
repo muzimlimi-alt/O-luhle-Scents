@@ -197,6 +197,7 @@ export async function loginCustomer(email, password) {
   })
   setToken(data.token)
   setUser(data.customer)
+  if (typeof mergeGuestWishlist === 'function') mergeGuestWishlist();
   return data
 }
 

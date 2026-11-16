@@ -50,10 +50,9 @@
     account.setAttribute('aria-label', signedIn ? 'My account' : 'Sign in');
     account.innerHTML = ICON_ACCOUNT;
 
-    const signedInForWishlist = isSignedIn();
     const wishlist = document.createElement('a');
     wishlist.className = 'nav-icon js-wishlist-nav';
-    wishlist.href = signedInForWishlist ? 'account.html#wishlist' : 'account-login.html?redirect=' + encodeURIComponent('account.html#wishlist');
+    wishlist.href = signedIn ? 'account.html#wishlist' : 'account.html#wishlist';
     wishlist.setAttribute('aria-label', 'My Favourites');
     const savedCount = (() => { try { return parseInt(localStorage.getItem('toca_wishlist_count') || '0', 10) || 0; } catch { return 0; } })();
     wishlist.innerHTML = ICON_HEART + `<span class="nav-icon__badge wishlist-count" style="display:${savedCount > 0 ? '' : 'none'}">${savedCount > 0 ? savedCount : ''}</span>`;

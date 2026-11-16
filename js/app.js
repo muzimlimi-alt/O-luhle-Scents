@@ -7,60 +7,96 @@ let PRODUCTS = [];
 let currentCurrency = localStorage.getItem('toca_currency') || 'ZAR';
 
 // ── Wishlist state ────────────────────────────────────────────────────────────
-// Loaded once per page from GET /api/wishlist when customer is signed in.
+// Works for both signed-in customers (JWT) and guests (opaque token).
 // Stored as a Set of productIds for O(1) heart-state lookups.
 let _wishlistProductIds = new Set();
 let _wishlistLoaded = false;
 
-async function loadWishlistState() {
-  const token = typeof getToken === 'function' ? getToken() : (localStorage.getItem('toca_customer_token') || sessionStorage.getItem('toca_customer_token'));
-  if (!token) return;
+function _getCustomerToken() {
+  return typeof getToken === 'function' ? getToken() : (localStorage.getItem('toca_customer_token') || sessionStorage.getItem('toca_customer_token'));
+}
+function _getOrCreateGuestToken() {
   try {
-    const res = await fetch('/api/wishlist', { headers: { Authorization: `Bearer ${token}` } });
+    let t = localStorage.getItem('toca_wishlist_guest');
+    if (!t) { t = crypto.randomUUID(); localStorage.setItem('toca_wishlist_guest', t); }
+    return t;
+  } catch { return null; }
+}
+function _isSignedIn() { return !!_getCustomerToken(); }
+
+function _updateWishlistBadges() {
+  const count = _wishlistProductIds.size;
+  document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
+    el.textContent = count > 0 ? count : '';
+    el.style.display = count > 0 ? '' : 'none';
+  });
+  try { localStorage.setItem('toca_wishlist_count', count); } catch {}
+}
+
+async function loadWishlistState() {
+  const jwt = _getCustomerToken();
+  try {
+    let res;
+    if (jwt) {
+      res = await fetch('/api/wishlist/default', { headers: { Authorization: `Bearer ${jwt}` } });
+    } else {
+      const guest = _getOrCreateGuestToken();
+      if (!guest) return;
+      res = await fetch('/api/wishlist/guest', { headers: { 'x-wishlist-token': guest } });
+    }
     if (!res.ok) return;
     const data = await res.json();
     _wishlistProductIds = new Set((data.items || []).map(i => i.productId));
     _wishlistLoaded = true;
-    // Update badge in header
-    try { localStorage.setItem('toca_wishlist_count', data.items?.length || 0); } catch {}
-    document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
-      const count = data.items?.length || 0;
-      el.textContent = count > 0 ? count : '';
-      el.style.display = count > 0 ? '' : 'none';
-    });
-    // Apply saved state to any already-rendered cards
+    _updateWishlistBadges();
     document.querySelectorAll('.js-wishlist-toggle[data-product-id]').forEach(btn => {
       if (_wishlistProductIds.has(btn.dataset.productId)) btn.classList.add('product-card__wishlist--saved');
     });
   } catch {}
 }
 
+async function mergeGuestWishlist() {
+  const jwt = _getCustomerToken();
+  const guest = (() => { try { return localStorage.getItem('toca_wishlist_guest'); } catch { return null; } })();
+  if (!jwt || !guest) return;
+  try {
+    await fetch('/api/wishlist/merge', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestToken: guest }),
+    });
+    try { localStorage.removeItem('toca_wishlist_guest'); } catch {}
+    await loadWishlistState();
+  } catch {}
+}
+
 async function toggleWishlist(productId, btn) {
-  const token = typeof getToken === 'function' ? getToken() : (localStorage.getItem('toca_customer_token') || sessionStorage.getItem('toca_customer_token'));
-  if (!token) { window.location.href = `account-login.html?redirect=${encodeURIComponent(window.location.href)}`; return; }
+  const jwt = _getCustomerToken();
+  const isGuest = !jwt;
   const saved = _wishlistProductIds.has(productId);
   try {
-    if (saved) {
-      await fetch(`/api/wishlist/items/${productId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      _wishlistProductIds.delete(productId);
-      btn?.classList.remove('product-card__wishlist--saved');
+    if (jwt) {
+      if (saved) {
+        await fetch(`/api/wishlist/items/${productId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${jwt}` } });
+      } else {
+        await fetch('/api/wishlist/items', { method: 'POST', headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+      }
     } else {
-      await fetch('/api/wishlist/items', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
-      _wishlistProductIds.add(productId);
-      btn?.classList.add('product-card__wishlist--saved');
+      const guest = _getOrCreateGuestToken();
+      if (!guest) return;
+      if (saved) {
+        await fetch(`/api/wishlist/guest/items/${productId}`, { method: 'DELETE', headers: { 'x-wishlist-token': guest } });
+      } else {
+        await fetch('/api/wishlist/guest/items', { method: 'POST', headers: { 'x-wishlist-token': guest, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+      }
     }
-    // Update all badges for this product
+    if (saved) { _wishlistProductIds.delete(productId); btn?.classList.remove('product-card__wishlist--saved'); }
+    else { _wishlistProductIds.add(productId); btn?.classList.add('product-card__wishlist--saved'); }
     document.querySelectorAll(`.js-wishlist-toggle[data-product-id="${productId}"]`).forEach(b => {
       if (_wishlistProductIds.has(productId)) b.classList.add('product-card__wishlist--saved');
       else b.classList.remove('product-card__wishlist--saved');
     });
-    // Update header count
-    const newCount = _wishlistProductIds.size;
-    document.querySelectorAll('.wishlist-count, .js-wishlist-count').forEach(el => {
-      el.textContent = newCount > 0 ? newCount : '';
-      el.style.display = newCount > 0 ? '' : 'none';
-    });
-    try { localStorage.setItem('toca_wishlist_count', newCount); } catch {}
+    _updateWishlistBadges();
     if (typeof showToast === 'function') showToast(saved ? 'Removed from favourites' : 'Saved to favourites');
   } catch (err) {
     console.error('Wishlist toggle failed:', err);
@@ -302,6 +338,21 @@ function variantSizeLabel(v) {
   return v.size || '';
 }
 
+function _parsePriceBuckets(ids) {
+  return ids.map(id => {
+    const [lo, hi] = id.split('-');
+    return { min: Number(lo), max: hi === '' ? null : Number(hi) };
+  });
+}
+
+function _cheapestInBuckets(variants, buckets) {
+  for (const v of variants) {
+    const p = Number(v.price);
+    if (buckets.some(b => p >= b.min && (b.max == null || p < b.max))) return v;
+  }
+  return null;
+}
+
 function renderProducts(containerId, products, limit) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -315,14 +366,16 @@ function renderProducts(containerId, products, limit) {
     return;
   }
 
+  const activeBuckets = shopState && shopState.price && shopState.price.length
+    ? _parsePriceBuckets(shopState.price) : null;
   const items = limit ? products.slice(0, limit) : products;
 
   container.innerHTML = items.map(product => {
     const variants = [...(product.variants || [])].sort((a, b) => Number(a.price) - Number(b.price));
     const inStock = variants.filter(isVariantAvailable);
     const soldOut = variants.length > 0 && inStock.length === 0;
-    // "From" price is the cheapest size; Quick Add uses the cheapest size in stock.
-    const variant = variants[0] || { price: 0, id: null };
+    const variant = (activeBuckets && _cheapestInBuckets(variants, activeBuckets))
+      || variants[0] || { price: 0, id: null };
     const quickAddVariant = inStock[0];
     const sizes = variants.map(variantSizeLabel).filter(Boolean).join(' · ');
     const badgeHtml = product.cardBadge ? `<div style="position: absolute; top: 12px; left: 12px; background: #ffffff; color: #000000; font-size: 0.65rem; font-weight: 700; padding: 4px 10px; text-transform: uppercase; letter-spacing: 1px; z-index: 2; border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">${product.cardBadge}</div>` : '';
@@ -841,6 +894,27 @@ async function initShopFilters() {
   await renderShop();
 }
 
+function hydrateCategoryPriceHints(products) {
+  const map = [
+    { el: '[data-content="collection_1_price_hint"]', slug: 'perfume' },
+    { el: '[data-content="collection_2_price_hint"]', slug: 'candles' },
+    { el: '[data-content="collection_3_price_hint"]', slug: 'bath-salts' },
+  ];
+  for (const { el, slug } of map) {
+    const target = document.querySelector(el);
+    if (!target) continue;
+    let min = Infinity;
+    for (const p of products) {
+      if ((p.category?.slug || '').toLowerCase() !== slug) continue;
+      for (const v of (p.variants || [])) {
+        const n = Number(v.price);
+        if (Number.isFinite(n) && n < min) min = n;
+      }
+    }
+    if (min < Infinity) target.textContent = 'From ' + formatPrice(min);
+  }
+}
+
 // Homepage "Discover Our Favourites": tabs switch between hand-picked/best
 // sellers and the newest arrivals, both ordered by the server.
 let featuredSeq = 0;
@@ -1017,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initShopFilters();
   } else {
     PRODUCTS = await fetchProducts();
+    hydrateCategoryPriceHints(PRODUCTS);
     initFeaturedProducts();
   }
   
@@ -1036,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.js-open-cart').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); openCartPanel(); }));
   document.querySelector('.cart-panel__close')?.addEventListener('click', closeCartPanel);
   document.querySelector('.cart-overlay')?.addEventListener('click', closeCartPanel);
-  document.querySelector('.hamburger')?.addEventListener('click', toggleMobileMenu);
+  document.addEventListener('click', (e) => { if (e.target.closest('.hamburger')) toggleMobileMenu(); });
 
   hideLoader();
 });

@@ -454,4 +454,16 @@ export const wishlistsApi = {
   getByCustomer: (customerId) => api.get(`/wishlist/admin/customer/${customerId}`),
 };
 
+export const policiesApi = {
+  list: () => api.get('/admin/policies'),
+  get: (id) => api.get(`/admin/policies/${id}`),
+  create: (data) => api.post('/admin/policies', data),
+  update: (id, data) => api.put(`/admin/policies/${id}`, data),
+  updateStatus: (id, status) => api.put(`/admin/policies/${id}/status`, { status }),
+  getVersions: (id) => api.get(`/admin/policies/${id}/versions`),
+  getVersion: (id, versionId) => api.get(`/admin/policies/${id}/versions/${versionId}`),
+  restoreVersion: (id, versionId) => api.post(`/admin/policies/${id}/restore/${versionId}`),
+  remove: (id) => api.delete(`/admin/policies/${id}`),
+};
+
 export default api;

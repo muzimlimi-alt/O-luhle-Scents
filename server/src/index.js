@@ -38,6 +38,8 @@ import adminCatalogueRoutes from './routes/admin_catalogue.js'
 import campaignRoutes from './routes/campaigns.js'
 import reviewRoutes from './routes/reviews.js'
 import wishlistRoutes from './routes/wishlist.js'
+import policyRoutes from './routes/policies.js'
+import adminPolicyRoutes from './routes/admin_policies.js'
 import { requireRole, requireAdmin } from './middleware/auth.js'
 
 import { errorHandler } from './middleware/errorHandler.js'
@@ -151,6 +153,9 @@ app.use('/api/campaigns', campaignRoutes)
 app.use('/api/reviews', reviewRoutes)
 // Wishlist: mixed public/customer/admin — no mount-level gate; auth is per-route inside
 app.use('/api/wishlist', wishlistRoutes)
+// Policies: public GET for storefront, admin-gated inside the router for mutations
+app.use('/api/policies', policyRoutes)
+app.use('/api/admin/policies', requireAdmin, adminPolicyRoutes)
 
 
 
@@ -186,6 +191,12 @@ import fs from 'fs'
 const webPages = ['cart.html', 'checkout.html', 'checkout-success.html', 'product-detail.html', 'shop.html', 'track.html', 'quotes.html', 'guide.html', 'discover.html', 'journal.html', 'robots.txt', 'sitemap.xml']
 webPages.forEach(file => {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(rootDir, file)))
+})
+
+// Clean policy URLs — served by policy.html SPA-style page
+const policySlugRoutes = ['privacy', 'returns', 'terms', 'shipping', 'cookies']
+policySlugRoutes.forEach(slug => {
+  app.get(`/${slug}`, (_req, res) => res.sendFile(path.join(rootDir, 'policy.html')))
 })
 
 // --- C. Catch-all Routing ---

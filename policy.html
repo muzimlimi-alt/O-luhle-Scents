@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Policy | TOCA</title>
+  <meta name="robots" content="noindex">
+  <link rel="canonical" id="canonical-url" href="https://www.toca.co.za/">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+  <!-- Apply saved theme before first paint -->
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('toca_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/modern-extensions.css">
+
+  <style>
+    /* ── Policy Page Styles ──────────────────────────────────────────── */
+    .policy-hero {
+      background: var(--color-bg-alt);
+      border-bottom: 1px solid var(--color-border);
+      padding: 100px 0 48px;
+    }
+    .policy-hero__inner {
+      max-width: 760px;
+    }
+    .policy-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-light);
+      margin-bottom: 24px;
+    }
+    .policy-breadcrumb a {
+      color: var(--color-text-light);
+      text-decoration: none;
+    }
+    .policy-breadcrumb a:hover { color: var(--color-gold); }
+    .policy-breadcrumb__sep { opacity: 0.4; }
+    .policy-hero__title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--color-text);
+      margin: 0 0 16px;
+    }
+    .policy-hero__meta {
+      font-size: 0.78rem;
+      color: var(--color-text-light);
+      letter-spacing: 0.03em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .policy-hero__meta span { display: flex; align-items: center; gap: 6px; }
+    .policy-hero__intro {
+      font-size: 1.05rem;
+      line-height: 1.75;
+      color: var(--color-text);
+      margin-top: 20px;
+      max-width: 680px;
+    }
+
+    /* ── Layout ──────────────────────────────────────────────────────── */
+    .policy-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 48px;
+      align-items: start;
+      padding: 56px 0 80px;
+    }
+    @media (max-width: 860px) {
+      .policy-layout { grid-template-columns: 1fr; }
+      .policy-toc { display: none; }
+    }
+
+    /* ── Table of Contents ───────────────────────────────────────────── */
+    .policy-toc {
+      position: sticky;
+      top: 90px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .policy-toc__title {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-gold);
+      margin: 0 0 14px;
+      font-family: var(--font-body, sans-serif);
+    }
+    .policy-toc__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .policy-toc__list li { margin-bottom: 6px; }
+    .policy-toc__list a {
+      font-size: 0.8rem;
+      color: var(--color-text-light);
+      text-decoration: none;
+      line-height: 1.5;
+      display: block;
+      padding: 2px 0;
+      border-left: 2px solid transparent;
+      padding-left: 10px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .policy-toc__list a:hover,
+    .policy-toc__list a.is-active {
+      color: var(--color-gold);
+      border-left-color: var(--color-gold);
+    }
+
+    /* ── Content ─────────────────────────────────────────────────────── */
+    .policy-content {
+      min-width: 0;
+    }
+    .policy-content h2 {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 500;
+      color: var(--color-text);
+      margin: 2.5rem 0 0.8rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-border-light);
+    }
+    .policy-content h2:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+    .policy-content h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: var(--color-text);
+      margin: 1.8rem 0 0.5rem;
+    }
+    .policy-content p {
+      font-size: 0.95rem;
+      line-height: 1.85;
+      color: var(--color-text);
+      margin: 0 0 1rem;
+    }
+    .policy-content ul,
+    .policy-content ol {
+      padding-left: 1.6rem;
+      margin: 0 0 1rem;
+    }
+    .policy-content li {
+      font-size: 0.95rem;
+      line-height: 1.8;
+      color: var(--color-text);
+      margin-bottom: 0.4rem;
+    }
+    .policy-content a { color: var(--color-gold-dark); }
+    .policy-content a:hover { color: var(--color-gold); }
+    .policy-content strong { font-weight: 600; }
+
+    .policy-placeholder {
+      display: inline-block;
+      background: rgba(184, 155, 106, 0.12);
+      border: 1px dashed var(--color-gold);
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 0.8em;
+      color: var(--color-gold-dark);
+      font-style: italic;
+    }
+
+    /* ── Contact card ────────────────────────────────────────────────── */
+    .policy-contact-card {
+      background: var(--color-bg-alt);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 28px 32px;
+      margin-top: 48px;
+    }
+    .policy-contact-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      margin: 0 0 12px;
+    }
+    .policy-contact-card p { margin: 0 0 8px; font-size: 0.88rem; }
+    .policy-contact-card a { color: var(--color-gold-dark); }
+
+    /* ── Related policies ────────────────────────────────────────────── */
+    .policy-related {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid var(--color-border);
+    }
+    .policy-related__title {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-text-light);
+      margin: 0 0 16px;
+    }
+    .policy-related__links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .policy-related__links a {
+      font-size: 0.8rem;
+      color: var(--color-text-light);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      text-decoration: none;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .policy-related__links a:hover {
+      color: var(--color-gold);
+      border-color: var(--color-gold);
+    }
+
+    /* ── States ──────────────────────────────────────────────────────── */
+    .policy-loading,
+    .policy-error {
+      min-height: 40vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 0;
+    }
+    .policy-loading__spinner {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-gold);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .policy-error__code {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      color: var(--color-gold);
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-loader"><div class="loader-spinner"></div></div>
+
+  <header class="header"></header>
+
+  <main id="policy-main">
+    <div class="policy-loading" id="policy-loading">
+      <div>
+        <div class="policy-loading__spinner"></div>
+        <p style="color:var(--color-text-light);font-size:0.85rem;">Loading policy…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <div class="footer__brand-name">TOCA</div>
+          <p data-content="footer_note">Luxury fragrances from Officina Del Toca. Extrait de parfum crafted for those who appreciate the finer things.</p>
+        </div>
+        <div>
+          <h4>Shop</h4>
+          <div class="footer__links">
+            <a href="/shop">Shop All</a><br>
+            <a href="/shop?cat=perfume">Perfumes</a><br>
+            <a href="/shop?cat=candles">Scented Candles</a><br>
+            <a href="/shop?cat=bath-salts">Scented Bath Salts</a><br>
+          </div>
+        </div>
+        <div>
+          <h4>Support</h4>
+          <div class="footer__links">
+            <a href="/guide">Fragrance Guide</a><br>
+            <a href="/track">Track Order</a><br>
+            <a href="/quotes">Request A Quote</a><br>
+            <a href="/#contact">Contact Us</a><br>
+          </div>
+        </div>
+        <div>
+          <h4>Customer Policies</h4>
+          <div class="footer__links">
+            <a href="/privacy">Privacy Policy</a><br>
+            <a href="/returns">Return &amp; Refund Policy</a><br>
+            <a href="/terms">Terms of Service</a><br>
+            <a href="/shipping">Shipping &amp; Delivery</a><br>
+            <a href="/cookies">Cookie Policy</a><br>
+          </div>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <div class="footer__links">
+            <a href="tel:0761112096" class="footer__contact-link">076 111 2096</a><br>
+            <a href="mailto:info@toca.co.za">info@toca.co.za</a><br>
+            <a href="#" style="pointer-events:none;">South Africa</a><br>
+          </div>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>&copy; 2026 TOCA (Pty) Ltd. All rights reserved.</span>
+        <span class="footer__bottom-links">
+          <button class="js-open-cookies" aria-label="Manage cookie preferences">Cookie Preferences</button>
+          <span class="footer__dot" aria-hidden="true">&middot;</span>
+          <a href="/admin/login">Admin</a>
+          <span class="footer__dot" aria-hidden="true">&middot;</span>
+          <span class="footer__credit">Site by <a href="https://culchar.co.za" target="_blank" rel="noopener noreferrer">Cul.Char</a></span>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <button class="back-to-top" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <!-- Legal modal injected by footer.js -->
+  <script src="js/footer.js"></script>
+  <script src="js/cookie-consent.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/header.js"></script>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // Dismiss the shared page-loader spinner (normally handled by app.js)
+    document.querySelector('.page-loader')?.classList.add('hidden');
+
+    const ALL_POLICIES = [
+      { slug: 'privacy',  label: 'Privacy Policy' },
+      { slug: 'returns',  label: 'Return & Refund Policy' },
+      { slug: 'terms',    label: 'Terms of Service' },
+      { slug: 'shipping', label: 'Shipping & Delivery' },
+      { slug: 'cookies',  label: 'Cookie Policy' },
+    ];
+
+    function getSlugFromPath() {
+      const p = window.location.pathname.replace(/\/$/, '');
+      const parts = p.split('/');
+      return parts[parts.length - 1] || '';
+    }
+
+    function formatDate(iso) {
+      if (!iso) return null;
+      return new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function buildToc(contentEl) {
+      const headings = contentEl.querySelectorAll('h2');
+      if (headings.length < 2) return null;
+      const list = document.createElement('ul');
+      list.className = 'policy-toc__list';
+      headings.forEach((h, i) => {
+        if (!h.id) h.id = 'section-' + i;
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = '#' + h.id;
+        a.textContent = h.textContent;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      return list;
+    }
+
+    function activateTocObserver(tocList) {
+      if (!tocList || !window.IntersectionObserver) return;
+      const links = Array.from(tocList.querySelectorAll('a'));
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            links.forEach(l => l.classList.remove('is-active'));
+            const link = tocList.querySelector('a[href="#' + e.target.id + '"]');
+            if (link) link.classList.add('is-active');
+          }
+        });
+      }, { rootMargin: '-80px 0px -60% 0px' });
+      document.querySelectorAll('.policy-content h2').forEach(h => obs.observe(h));
+    }
+
+    function renderPolicy(policy) {
+      const main = document.getElementById('policy-main');
+      const slug = getSlugFromPath();
+      const related = ALL_POLICIES.filter(p => p.slug !== slug);
+      const updated = formatDate(policy.updatedAt);
+      const effective = formatDate(policy.effectiveDate);
+
+      // Update document head
+      const pageTitle = (policy.metaTitle || policy.title) + ' | TOCA';
+      document.title = pageTitle;
+      const canon = document.getElementById('canonical-url');
+      if (canon) canon.href = 'https://www.toca.co.za/' + slug;
+
+      // Remove noindex once published — policy is public
+      const robots = document.querySelector('meta[name="robots"]');
+      if (robots) robots.content = 'index, follow';
+
+      // Add meta description
+      if (policy.metaDescription) {
+        let meta = document.querySelector('meta[name="description"]');
+        if (!meta) { meta = document.createElement('meta'); meta.name = 'description'; document.head.appendChild(meta); }
+        meta.content = policy.metaDescription;
+      }
+
+      // Build content HTML from stored content
+      const contentWrapper = document.createElement('div');
+      contentWrapper.className = 'policy-content';
+      contentWrapper.innerHTML = policy.content;
+
+      // Build ToC
+      const tocList = buildToc(contentWrapper);
+
+      const relatedLinks = related.map(p =>
+        `<a href="/${p.slug}">${p.label}</a>`
+      ).join('');
+
+      main.innerHTML = `
+        <div class="policy-hero">
+          <div class="container">
+            <div class="policy-hero__inner">
+              <nav class="policy-breadcrumb" aria-label="Breadcrumb">
+                <a href="/">Home</a>
+                <span class="policy-breadcrumb__sep" aria-hidden="true">·</span>
+                <span aria-current="page">${policy.title}</span>
+              </nav>
+              <h1 class="policy-hero__title">${policy.title}</h1>
+              <div class="policy-hero__meta">
+                ${updated ? `<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated ${updated}</span>` : ''}
+                ${effective ? `<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Effective ${effective}</span>` : ''}
+                <span>Version ${policy.version}</span>
+              </div>
+              ${policy.summary ? `<p class="policy-hero__intro">${policy.summary}</p>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div class="container">
+          <div class="policy-layout">
+            <aside class="policy-toc" id="policy-toc" aria-label="Table of contents">
+              <p class="policy-toc__title">On this page</p>
+            </aside>
+            <article class="policy-content" id="policy-article">
+            </article>
+          </div>
+        </div>
+      `;
+
+      // Insert content
+      const article = document.getElementById('policy-article');
+      article.appendChild(contentWrapper.cloneNode(true));
+
+      // Contact card
+      article.insertAdjacentHTML('beforeend', `
+        <div class="policy-contact-card" id="contact-us">
+          <h3>Questions About This Policy?</h3>
+          <p>If you have any questions, concerns, or requests regarding this policy, please contact us.</p>
+          <p>
+            <strong>Email:</strong> <a href="mailto:info@toca.co.za">info@toca.co.za</a><br>
+            <strong>Phone:</strong> <a href="tel:0761112096">076 111 2096</a><br>
+            <strong>Returns enquiries:</strong> <a href="mailto:returns@toca.co.za">returns@toca.co.za</a><br>
+            <strong>Privacy enquiries:</strong> <a href="mailto:privacy@toca.co.za">privacy@toca.co.za</a>
+          </p>
+        </div>
+        <nav class="policy-related" aria-label="Other policies">
+          <p class="policy-related__title">Related Policies</p>
+          <div class="policy-related__links">${relatedLinks}</div>
+        </nav>
+      `);
+
+      // Wire up ToC
+      const tocEl = document.getElementById('policy-toc');
+      if (tocList && tocEl) {
+        tocEl.appendChild(tocList);
+        activateTocObserver(tocList);
+      } else if (tocEl) {
+        tocEl.style.display = 'none';
+      }
+
+      // Structured data
+      const ld = {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: policy.title,
+        url: 'https://www.toca.co.za/' + slug,
+        dateModified: policy.updatedAt,
+      };
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(ld);
+      document.head.appendChild(script);
+    }
+
+    function renderError(status) {
+      const main = document.getElementById('policy-main');
+      const isNotFound = status === 404;
+      document.title = (isNotFound ? 'Policy Not Found' : 'Error') + ' | TOCA';
+      main.innerHTML = `
+        <div class="policy-error">
+          <div>
+            <div class="policy-error__code">${isNotFound ? '404' : '⚠'}</div>
+            <p style="font-size:1.1rem;margin-bottom:8px;">${isNotFound ? 'Policy not found.' : 'Unable to load policy.'}</p>
+            <p style="font-size:0.85rem;color:var(--color-text-light);margin-bottom:28px;">
+              ${isNotFound
+                ? 'This policy may not be available yet, or the URL may be incorrect.'
+                : 'Please try again shortly, or contact us if the problem persists.'}
+            </p>
+            <a href="/" class="btn btn--outline-dark btn--sm">Return Home</a>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadPolicy() {
+      const slug = getSlugFromPath();
+      if (!slug) { renderError(404); return; }
+      try {
+        const res = await fetch('/api/policies/' + encodeURIComponent(slug));
+        if (!res.ok) { renderError(res.status); return; }
+        const policy = await res.json();
+        renderPolicy(policy);
+      } catch (err) {
+        renderError(500);
+      }
+    }
+
+    // Hide loader once content renders
+    const loader = document.getElementById('policy-loading');
+    if (loader) loader.remove();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadPolicy);
+    } else {
+      loadPolicy();
+    }
+
+    // Back-to-top button
+    const btt = document.querySelector('.back-to-top');
+    if (btt) {
+      window.addEventListener('scroll', () => btt.classList.toggle('visible', window.scrollY > 400), { passive: true });
+      btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
+  }());
+  </script>
+</body>
+</html>
