@@ -41,13 +41,13 @@ export function Reviews() {
       if (statusFilter) params.status = statusFilter;
       params.limit = 200;
       const res = await reviewsApi.list(params);
-      setItems(res.data.reviews);
-      setTotal(res.data.total);
+      setItems(res.reviews || []);
+      setTotal(res.total || 0);
       if (!statusFilter) {
-        setPendingCount(res.data.reviews.filter(r => r.status === 'pending').length);
+        setPendingCount((res.reviews || []).filter(r => r.status === 'pending').length);
       } else {
         const allRes = await reviewsApi.list({ limit: 200 });
-        setPendingCount(allRes.data.reviews.filter(r => r.status === 'pending').length);
+        setPendingCount((allRes.reviews || []).filter(r => r.status === 'pending').length);
       }
     } catch (err) {
       showMessage('error', 'Load Failed', err.message || 'Unable to load reviews.');

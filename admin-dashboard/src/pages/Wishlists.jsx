@@ -20,8 +20,8 @@ export function Wishlists() {
     setLoading(true);
     try {
       const res = await wishlistsApi.list({ page, limit });
-      setWishlists(res.data.wishlists || []);
-      setTotal(res.data.total || 0);
+      setWishlists(res.wishlists || []);
+      setTotal(res.total || 0);
     } catch (err) {
       showMessage('error', 'Load Failed', err.message || 'Unable to load wishlists.');
     } finally {
@@ -34,7 +34,7 @@ export function Wishlists() {
   const viewCustomer = async (customerId) => {
     try {
       const res = await wishlistsApi.getByCustomer(customerId);
-      setDetail(res.data);
+      setDetail(res);
     } catch (err) {
       showMessage('error', 'Load Failed', err.message || 'Unable to load customer wishlist.');
     }

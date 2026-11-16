@@ -47,16 +47,14 @@ import {
   Scale
 } from 'lucide-react';
 
-// Single source of truth for the sidebar, grouped into the same four
-// sections as the reference design (Insight/Commerce/Revenue/Workspace).
-// Adding a page is one entry here — either a standalone { type: 'link' }
-// or one more object in a group's `children` array, under whichever
-// section it belongs to.
+// Single source of truth for the sidebar navigation — seven functional
+// sections. Adding a page is one entry here — either a standalone
+// { type: 'link' } or one more object in a group's `children` array.
 const NAV = [
   {
-    section: 'Insight',
+    section: 'Overview',
     items: [
-      { type: 'link', path: '/', label: 'Overview', icon: <LayoutDashboard size={18} /> },
+      { type: 'link', path: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
       { type: 'link', path: '/reports', label: 'Reports', icon: <FileBarChart size={18} /> },
     ],
   },
@@ -70,7 +68,6 @@ const NAV = [
           { path: '/categories', label: 'Categories', icon: <FolderTree size={16} /> },
           { path: '/collections', label: 'Collections', icon: <Layers size={16} /> },
           { path: '/attributes', label: 'Attributes', icon: <SlidersHorizontal size={16} /> },
-          { path: '/inventory', label: 'Inventory', icon: <Boxes size={16} /> },
           { path: '/catalogue-imports', label: 'Catalogue Imports', icon: <FileText size={16} /> },
         ]
       },
@@ -91,23 +88,23 @@ const NAV = [
           { path: '/coupons', label: 'Coupons', icon: <Ticket size={16} /> },
         ]
       },
-      {
-        type: 'group', id: 'customers', label: 'Customers', icon: <Users size={18} />,
-        children: [
-          { path: '/customers', label: 'Customers', icon: <Users size={16} /> },
-          { path: '/newsletters', label: 'Newsletters', icon: <Mail size={16} /> },
-          { path: '/testimonials', label: 'Testimonials', icon: <Quote size={16} /> },
-          { path: '/reviews', label: 'Reviews', icon: <MessageSquare size={16} /> },
-          { path: '/wishlists', label: 'Wishlists', icon: <Heart size={16} /> },
-        ]
-      },
     ],
   },
   {
-    section: 'Revenue',
+    section: 'Customers',
+    items: [
+      { type: 'link', path: '/customers', label: 'Customers', icon: <Users size={18} /> },
+      { type: 'link', path: '/reviews', label: 'Reviews', icon: <MessageSquare size={18} /> },
+      { type: 'link', path: '/wishlists', label: 'Wishlists', icon: <Heart size={18} /> },
+      { type: 'link', path: '/newsletters', label: 'Newsletters', icon: <Mail size={18} /> },
+      { type: 'link', path: '/testimonials', label: 'Testimonials', icon: <Quote size={18} /> },
+    ],
+  },
+  {
+    section: 'Finance',
     items: [
       {
-        type: 'group', id: 'finance', label: 'Finance', icon: <Landmark size={18} />,
+        type: 'group', id: 'accounting', label: 'Accounting', icon: <Landmark size={18} />,
         children: [
           { path: '/finance/ledger', label: 'General Ledger', icon: <BookOpen size={16} /> },
           { path: '/finance/journals', label: 'Journals', icon: <ReceiptText size={16} /> },
@@ -127,29 +124,35 @@ const NAV = [
     ],
   },
   {
-    section: 'Workspace',
+    section: 'Content & Marketing',
+    items: [
+      { type: 'link', path: '/content', label: 'Site Content', icon: <Layout size={18} /> },
+      { type: 'link', path: '/campaigns', label: 'Campaigns', icon: <Megaphone size={18} /> },
+    ],
+  },
+  {
+    section: 'Operations',
+    items: [
+      { type: 'link', path: '/inventory', label: 'Inventory', icon: <Boxes size={18} /> },
+      { type: 'link', path: '/shipping-methods', label: 'Shipping Methods', icon: <Truck size={18} /> },
+      { type: 'link', path: '/tax-rates', label: 'Tax Rates', icon: <Percent size={18} /> },
+    ],
+  },
+  {
+    section: 'Administration',
     items: [
       {
-        type: 'group', id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />,
+        type: 'group', id: 'team', label: 'Team', icon: <ShieldCheck size={18} />,
         children: [
           { path: '/admin-users', label: 'Admin Users', icon: <UserCog size={16} /> },
           { path: '/audit-logs', label: 'Audit Logs', icon: <ScrollText size={16} /> },
-          { path: '/privacy', label: 'Privacy & POPIA', icon: <Lock size={16} /> },
-          { path: '/legal-policies', label: 'Legal Policies', icon: <Scale size={16} /> },
-          { path: '/notifications', label: 'Notifications', icon: <Bell size={16} /> },
         ]
       },
-      {
-        type: 'group', id: 'configuration', label: 'Configuration', icon: <Settings size={18} />,
-        children: [
-          { path: '/settings', label: 'Settings', icon: <Cog size={16} /> },
-          { path: '/content', label: 'Site Content', icon: <Layout size={16} /> },
-          { path: '/campaigns', label: 'Campaigns', icon: <Megaphone size={16} /> },
-          { path: '/preferences', label: 'Preferences', icon: <Sliders size={16} /> },
-          { path: '/shipping-methods', label: 'Shipping Methods', icon: <Truck size={16} /> },
-          { path: '/tax-rates', label: 'Tax Rates', icon: <Percent size={16} /> },
-        ]
-      },
+      { type: 'link', path: '/privacy', label: 'Privacy & POPIA', icon: <Lock size={18} /> },
+      { type: 'link', path: '/legal-policies', label: 'Legal Policies', icon: <Scale size={18} /> },
+      { type: 'link', path: '/notifications', label: 'Notifications', icon: <Bell size={18} /> },
+      { type: 'link', path: '/settings', label: 'Settings', icon: <Cog size={18} /> },
+      { type: 'link', path: '/preferences', label: 'Preferences', icon: <Sliders size={18} /> },
     ],
   },
 ];
@@ -292,7 +295,7 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
           border-right: 1px solid var(--border-low);
           min-width: 0;
           z-index: 60;
-          transition: width var(--t) var(--ease-out);
+          transition: width .3s var(--ease-out);
         }
 
         .brand {
@@ -307,16 +310,18 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
         }
         .brand-mark {
           flex: none;
-          width: 32px; height: 32px;
+          width: 34px; height: 34px;
           display: grid; place-items: center;
-          border: 1px solid var(--y-dark);
+          border-radius: var(--r);
+          background: linear-gradient(135deg, var(--y-base), var(--y-dark));
           font-family: var(--f-display);
           font-size: 1.1rem;
-          color: var(--y-base);
+          font-weight: 500;
+          color: var(--text-inverse);
         }
         .brand-txt { display: flex; flex-direction: column; line-height: 1.2; overflow: hidden; }
         .brand-name { font-family: var(--f-display); font-size: 1.05rem; letter-spacing: .18em; color: var(--text-primary); white-space: nowrap; }
-        .brand-sub { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+        .brand-sub { font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
         .side.rail .brand { padding: 0; justify-content: center; }
         .side.rail .brand-txt { display: none; }
 
@@ -324,12 +329,12 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
           flex: 1;
           overflow-y: auto;
           overflow-x: hidden;
-          padding: var(--sp-5) var(--sp-3) var(--sp-4);
+          padding: var(--sp-4) var(--sp-3) var(--sp-4);
           scrollbar-width: thin;
         }
         .nav-label {
-          font-size: .6rem;
-          letter-spacing: .26em;
+          font-size: .58rem;
+          letter-spacing: .24em;
           text-transform: uppercase;
           color: var(--text-muted);
           padding: 0 var(--sp-3);
@@ -338,15 +343,15 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
         .nav-label:first-child { margin-top: 0; }
         .side.rail .nav-label { opacity: 0; height: 8px; margin: var(--sp-4) 0 0; overflow: hidden; }
 
-        .nav-group { position: relative; margin-bottom: 2px; }
+        .nav-group { position: relative; margin-bottom: 1px; }
 
         .nav-item {
           display: flex;
           align-items: center;
           gap: var(--sp-3);
           width: 100%;
-          min-height: var(--tap);
-          padding: 10px var(--sp-3);
+          min-height: 40px;
+          padding: 8px var(--sp-3);
           text-align: left;
           color: var(--text-secondary);
           background: none;
@@ -354,16 +359,21 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
           border-left: 2px solid transparent;
           border-radius: var(--r);
           cursor: pointer;
-          transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+          transition: background .12s ease, color .12s ease;
           text-decoration: none;
+          font-size: .88rem;
         }
-        .nav-item:hover { background: var(--bg-elevated); color: #fff; text-decoration: none; }
-        .nav-item .ic { width: 20px; flex: none; display: inline-flex; justify-content: center; color: var(--text-muted); transition: color var(--t-fast) var(--ease); }
+        .nav-item:hover { background: rgba(255, 255, 255, .04); color: var(--text-primary); text-decoration: none; }
+        .nav-item .ic { width: 20px; flex: none; display: inline-flex; justify-content: center; color: var(--text-muted); transition: color .12s ease; }
         .nav-item:hover .ic { color: var(--y-base); }
-        .nav-item .lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .92rem; letter-spacing: .01em; }
-        .nav-item .chev { display: inline-flex; font-size: .62rem; color: var(--text-muted); transition: transform var(--t) var(--ease); }
+        .nav-item .lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .01em; }
+        .nav-item .chev { display: inline-flex; font-size: .62rem; color: var(--text-muted); transition: transform .2s ease; }
         .nav-item[aria-expanded="true"] .chev { transform: rotate(90deg); }
-        .nav-item.is-current { background: linear-gradient(90deg, rgba(var(--y-rgb), .15), transparent 70%); color: #fff; border-left-color: var(--y-base); }
+        .nav-item.is-current {
+          background: rgba(var(--y-rgb), .1);
+          color: var(--text-primary);
+          border-left-color: var(--y-base);
+        }
         .nav-item.is-current .ic { color: var(--y-base); }
         .nav-item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--color-border-focus); }
 
@@ -373,12 +383,12 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
         .nav-sub {
           list-style: none;
           margin: 2px 0 var(--sp-2);
-          padding: 0 0 0 var(--sp-5);
+          padding: 0 0 0 calc(var(--sp-5) + 4px);
           display: grid;
           grid-template-rows: 0fr;
-          transition: grid-template-rows var(--t) var(--ease-out);
+          transition: grid-template-rows .3s var(--ease-out);
         }
-        .nav-sub > div { overflow: hidden; min-height: 0; visibility: hidden; transition: visibility var(--t); }
+        .nav-sub > div { overflow: hidden; min-height: 0; visibility: hidden; transition: visibility .3s; }
         .nav-group.open .nav-sub { grid-template-rows: 1fr; }
         .nav-group.open .nav-sub > div { visibility: visible; }
         .nav-sub a {
@@ -386,26 +396,27 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
           align-items: center;
           justify-content: space-between;
           gap: var(--sp-2);
-          min-height: 36px;
-          padding: 6px var(--sp-3);
+          min-height: 34px;
+          padding: 5px var(--sp-3);
           color: var(--text-muted);
-          font-size: .86rem;
+          font-size: .84rem;
           border-left: 1px solid var(--border-low);
           border-radius: 0;
           text-decoration: none;
+          transition: color .12s ease, border-color .12s ease;
         }
-        .nav-sub a:hover { color: #fff; border-left-color: var(--y-dark); background: rgba(255, 255, 255, .03); text-decoration: none; }
-        .nav-sub a.is-current { color: var(--y-base); border-left-color: var(--y-base); }
+        .nav-sub a:hover { color: var(--text-primary); border-left-color: var(--y-dark); text-decoration: none; }
+        .nav-sub a.is-current { color: var(--y-base); border-left-color: var(--y-base); font-weight: 400; }
         .nav-sub a:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--color-border-focus); }
 
         .side.rail .nav-sub {
           position: absolute; left: 100%; top: 0; z-index: 80;
-          width: 224px; margin: 0; padding: var(--sp-2);
+          width: 220px; margin: 0; padding: var(--sp-2);
           background: var(--bg-elevated); border: 1px solid var(--border-default);
-          border-left: 2px solid var(--y-base); box-shadow: var(--sh-xl);
+          border-radius: var(--r); box-shadow: var(--sh-lg);
           grid-template-rows: 1fr;
-          opacity: 0; visibility: hidden; transform: translateX(-10px);
-          transition: opacity var(--t-fast) var(--ease), transform var(--t) var(--ease-out), visibility var(--t);
+          opacity: 0; visibility: hidden; transform: translateX(-6px);
+          transition: opacity .15s ease, transform .2s var(--ease-out), visibility .15s;
         }
         .side.rail .nav-group:hover .nav-sub,
         .side.rail .nav-group:focus-within .nav-sub {
@@ -415,11 +426,12 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
         .side.rail .nav-sub::before {
           content: attr(data-title);
           display: block;
-          font-size: .6rem; letter-spacing: .24em; text-transform: uppercase;
+          font-size: .58rem; letter-spacing: .22em; text-transform: uppercase;
           color: var(--y-base);
           padding: var(--sp-2) var(--sp-3) var(--sp-2);
         }
-        .side.rail .nav-sub a { border-left: 0; padding-left: var(--sp-3); }
+        .side.rail .nav-sub a { border-left: 0; padding-left: var(--sp-3); border-radius: 6px; }
+        .side.rail .nav-sub a:hover { background: rgba(var(--y-rgb), .06); }
 
         .side-foot { flex: none; border-top: 1px solid var(--border-low); padding: var(--sp-3); }
 
@@ -428,24 +440,30 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
           width: 100%; min-height: var(--tap); padding: 0 var(--sp-3);
           background: none; border: none; cursor: pointer;
           color: var(--text-muted); border-radius: var(--r);
+          transition: background .12s ease, color .12s ease;
         }
-        .rail-toggle:hover { background: var(--bg-elevated); color: var(--y-base); }
-        .rail-toggle .ic { width: 20px; display: inline-flex; justify-content: center; transition: transform var(--t) var(--ease); }
-        .rail-toggle .lbl { font-size: .82rem; white-space: nowrap; }
+        .rail-toggle:hover { background: rgba(255, 255, 255, .04); color: var(--y-base); }
+        .rail-toggle .ic { width: 20px; display: inline-flex; justify-content: center; transition: transform .3s ease; }
+        .rail-toggle .lbl { font-size: .8rem; white-space: nowrap; }
         .side.rail .rail-toggle { justify-content: center; padding: 0; }
         .side.rail .rail-toggle .lbl { display: none; }
         .side.rail .rail-toggle .ic { transform: rotate(180deg); }
 
-        @media (max-width: 1080px) {
+        @media (max-width: 1024px) {
           .side {
             position: fixed; top: 0; left: 0; width: var(--nav-w); height: 100vh;
             transform: translateX(-100%); visibility: hidden;
-            transition: transform var(--t) var(--ease-out), visibility var(--t);
-            box-shadow: var(--sh-xl);
+            transition: transform .3s var(--ease-out), visibility .3s;
+            box-shadow: var(--sh-lg);
           }
           .side.nav-open { transform: none; visibility: visible; }
           .side.rail { width: var(--nav-w); }
           .side-foot { display: none; }
+        }
+
+        @media (max-width: 480px) {
+          .side { width: 100vw; }
+          .nav-sub a { min-height: var(--tap); padding: 8px var(--sp-3); }
         }
       `}} />
     </aside>

@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Link, NavLink } from 'react-router-dom';
 import { Sidebar, RAIL_KEY } from '../components/Sidebar';
 import { Drawer } from '../components/Drawer';
 import { AppearancePanel } from '../components/AppearancePanel';
-import { Search, Menu, Palette, ChevronDown, Bell, CircleHelp, Sliders, UsersRound, LogOut } from 'lucide-react';
+import { Search, Menu, Palette, ChevronDown, Bell, CircleHelp, Sliders, UsersRound, LogOut, LayoutDashboard, ShoppingCart, Package, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAppearance } from '../context/AppearanceContext';
 import '../styles/design-tokens.css';
 import '../styles/App.css';
 import '../styles/buttons.css';
 import '../styles/appearance.css';
+import '../styles/utilities.css';
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -172,6 +173,34 @@ export function DashboardLayout() {
         </div>
       </main>
 
+      <nav className="bottom-nav" aria-label="Quick navigation">
+        <NavLink to="/" end className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <LayoutDashboard size={20} aria-hidden="true" />
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/orders" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <ShoppingCart size={20} aria-hidden="true" />
+          <span>Orders</span>
+        </NavLink>
+        <NavLink to="/products" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <Package size={20} aria-hidden="true" />
+          <span>Products</span>
+        </NavLink>
+        <NavLink to="/customers" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <Users size={20} aria-hidden="true" />
+          <span>Customers</span>
+        </NavLink>
+        <button
+          type="button"
+          className="bottom-nav-item"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label="Open navigation menu"
+        >
+          <Menu size={20} aria-hidden="true" />
+          <span>Menu</span>
+        </button>
+      </nav>
+
       <Drawer isOpen={appearanceOpen} onClose={() => setAppearanceOpen(false)} title="Appearance">
         <AppearancePanel />
       </Drawer>
@@ -184,7 +213,7 @@ export function DashboardLayout() {
           grid-template-areas: "side top" "side main";
           height: 100vh;
           overflow: hidden;
-          transition: grid-template-columns var(--t) var(--ease-out);
+          transition: grid-template-columns .3s var(--ease-out);
         }
         .app.rail { grid-template-columns: var(--nav-w-rail) 1fr; }
 
@@ -214,28 +243,30 @@ export function DashboardLayout() {
           color: var(--text-secondary);
           cursor: pointer;
           flex-shrink: 0;
+          transition: border-color .15s ease, color .15s ease;
         }
         .burger:hover { border-color: var(--y-base); color: var(--y-base); }
 
-        .search { position: relative; flex: 1; max-width: 440px; }
+        .search { position: relative; flex: 1; max-width: 480px; }
         .search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
         .search input {
-          width: 100%; height: var(--tap);
+          width: 100%; height: 40px;
           padding: 0 var(--sp-4) 0 40px;
           background: var(--bg-surface);
-          border: 1px solid var(--border-default);
-          border-radius: var(--r);
+          border: 1px solid var(--border-low);
+          border-radius: var(--r-pill);
           color: var(--text-primary);
-          font-family: var(--f-body); font-weight: 300; font-size: .9rem;
+          font-family: var(--f-body); font-weight: 300; font-size: .88rem;
+          transition: border-color .15s ease, background .15s ease;
         }
         .search input::placeholder { color: var(--text-muted); }
-        .search input:hover { border-color: var(--border-strong); }
-        .search input:focus-visible { border-color: var(--y-base); outline-offset: 1px; }
+        .search input:hover { border-color: var(--border-default); background: var(--bg-elevated); }
+        .search input:focus-visible { border-color: var(--y-base); background: var(--bg-elevated); outline: none; box-shadow: 0 0 0 3px rgba(var(--y-rgb), .12); }
         .search kbd {
-          position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-          font-family: var(--f-mono); font-size: .62rem; color: var(--text-muted);
-          border: 1px solid var(--border-default); border-radius: var(--r); padding: 3px 6px;
-          pointer-events: none;
+          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+          font-family: var(--f-mono); font-size: .6rem; color: var(--text-muted);
+          border: 1px solid var(--border-low); border-radius: 6px; padding: 2px 7px;
+          pointer-events: none; background: var(--bg-section);
         }
 
         .top-actions { display: flex; align-items: center; gap: var(--sp-2); margin-left: auto; }
@@ -243,53 +274,54 @@ export function DashboardLayout() {
         .icon-btn {
           position: relative;
           display: grid; place-items: center;
-          width: var(--tap); height: var(--tap);
-          border: 1px solid transparent; border-radius: var(--r);
-          color: var(--text-secondary);
+          width: 36px; height: 36px;
+          border: none; border-radius: var(--r);
+          color: var(--text-muted);
           background: none;
           cursor: pointer;
           text-decoration: none;
-          transition: all var(--t-fast) var(--ease);
+          transition: color .15s ease, background .15s ease;
         }
-        .icon-btn:hover { border-color: var(--y-dark); color: var(--y-base); background: var(--bg-surface); text-decoration: none; }
+        .icon-btn:hover { color: var(--y-base); background: var(--bg-surface); text-decoration: none; }
 
-        .acct-wrap { position: relative; margin-left: var(--sp-2); }
+        .acct-wrap { position: relative; margin-left: var(--sp-3); }
         .acct {
           display: flex; align-items: center; gap: var(--sp-3);
           min-height: var(--tap);
-          padding: 0 var(--sp-3) 0 var(--sp-2);
-          border: none; border-left: 1px solid var(--border-low);
-          border-radius: var(--r);
-          background: none;
+          padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
+          border: none; border-radius: var(--r-pill);
+          background: var(--bg-surface);
           color: var(--text-secondary);
           cursor: pointer;
+          transition: background .15s ease;
         }
-        .acct:hover { color: var(--text-primary); }
-        .acct-chev { color: var(--text-muted); transition: transform var(--t-fast) var(--ease); flex-shrink: 0; }
+        .acct:hover { background: var(--bg-elevated); }
+        .acct-chev { color: var(--text-muted); transition: transform .2s ease; flex-shrink: 0; }
         .acct[aria-expanded="true"] .acct-chev { transform: rotate(180deg); color: var(--y-base); }
 
         .avatar {
-          width: 34px; height: 34px; flex: none;
+          width: 32px; height: 32px; flex: none;
           display: grid; place-items: center;
-          border: 1px solid var(--y-dark);
-          background: linear-gradient(150deg, rgba(var(--y-rgb), .22), rgba(var(--y-rgb), .03));
-          font-family: var(--f-display); font-size: .9rem;
+          border-radius: 50%;
+          background: linear-gradient(150deg, rgba(var(--y-rgb), .28), rgba(var(--y-rgb), .06));
+          font-family: var(--f-display); font-size: .82rem; font-weight: 500;
           color: var(--y-light);
         }
         .acct-meta { display: flex; flex-direction: column; text-align: left; line-height: 1.25; }
-        .acct-name { display: block; font-size: .86rem; color: var(--text-primary); white-space: nowrap; }
-        .acct-role { display: block; font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+        .acct-name { display: block; font-size: .84rem; color: var(--text-primary); white-space: nowrap; font-weight: 400; }
+        .acct-role { display: block; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
 
         .menu {
-          position: absolute; top: calc(100% + 10px); right: 0;
-          width: 284px; padding: var(--sp-2);
+          position: absolute; top: calc(100% + 8px); right: 0;
+          width: 280px; padding: var(--sp-2);
           background: var(--bg-elevated);
           border: 1px solid var(--border-default);
-          border-top: 2px solid var(--y-base);
-          border-radius: var(--r);
-          box-shadow: var(--sh-xl);
+          border-radius: var(--r-md);
+          box-shadow: var(--sh-lg);
           z-index: 70;
+          animation: menuIn .15s var(--ease-out);
         }
+        @keyframes menuIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
         .menu-head {
           display: flex; align-items: center; gap: var(--sp-3);
           padding: var(--sp-3);
@@ -297,44 +329,88 @@ export function DashboardLayout() {
           margin-bottom: var(--sp-2);
         }
         .menu-id { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
-        .menu-id b { font-weight: 400; color: var(--text-primary); font-size: .88rem; }
-        .menu-id span { font-family: var(--f-mono); font-size: .68rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
+        .menu-id b { font-weight: 400; color: var(--text-primary); font-size: .86rem; }
+        .menu-id span { font-family: var(--f-mono); font-size: .66rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
         .menu-item {
           display: flex; align-items: center; gap: var(--sp-3);
-          width: 100%; min-height: var(--tap);
+          width: 100%; min-height: 40px;
           padding: 0 var(--sp-3);
-          text-align: left; font-size: .88rem;
+          text-align: left; font-size: .86rem;
           color: var(--text-secondary);
           background: none; border: none;
           border-radius: var(--r);
           cursor: pointer;
           text-decoration: none;
-          transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+          transition: background .12s ease, color .12s ease;
         }
-        .menu-item:hover, .menu-item:focus-visible { background: var(--bg-surface); color: var(--text-primary); text-decoration: none; }
-        .menu-item svg { width: 18px; flex: none; color: var(--text-muted); }
+        .menu-item:hover, .menu-item:focus-visible { background: rgba(var(--y-rgb), .06); color: var(--text-primary); text-decoration: none; }
+        .menu-item svg { width: 16px; flex: none; color: var(--text-muted); transition: color .12s ease; }
         .menu-item:hover svg { color: var(--y-base); }
-        .menu-hint { margin-left: auto; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--y-base); white-space: nowrap; }
+        .menu-hint { margin-left: auto; font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--y-base); white-space: nowrap; opacity: .8; }
         .menu-sep { display: block; height: 1px; background: var(--border-low); margin: var(--sp-2) var(--sp-3); }
 
         .main { grid-area: main; overflow-y: auto; min-width: 0; }
-        .page-container { padding: var(--sp-6); }
+        .page-container { max-width: 1400px; padding: var(--sp-6); }
 
         .scrim { display: none; }
 
-        @media (max-width: 1080px) {
+        .bottom-nav { display: none; }
+
+        @media (max-width: 1024px) {
           .app { grid-template-columns: 1fr; grid-template-areas: "top" "main"; }
           .burger { display: flex; }
           .search { max-width: none; }
           .scrim {
             display: block; position: fixed; inset: 0; top: var(--top-h);
-            background: rgba(0, 0, 0, .5); z-index: 55;
+            background: rgba(0, 0, 0, .45); backdrop-filter: blur(2px); z-index: 55;
           }
         }
 
-        @media (max-width: 720px) {
+        @media (max-width: 768px) {
           .search kbd, .acct-meta { display: none; }
           .top { padding: 0 var(--sp-4); gap: var(--sp-2); }
+        }
+
+        @media (max-width: 480px) {
+          .bottom-nav {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            background: var(--bg-section);
+            border-top: 1px solid var(--border-low);
+            z-index: 50;
+            align-items: stretch;
+            justify-content: space-around;
+          }
+          .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            flex: 1;
+            min-width: 0;
+            padding: var(--sp-2) 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: .62rem;
+            letter-spacing: .04em;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color .15s ease;
+          }
+          .bottom-nav-item:hover,
+          .bottom-nav-item:focus-visible { color: var(--text-primary); text-decoration: none; }
+          .bottom-nav-item.active { color: var(--y-base); }
+          .bottom-nav-item.active svg { color: var(--y-base); }
+
+          .page-container { padding: var(--sp-4); padding-bottom: calc(var(--sp-4) + 72px); }
+          .burger { display: none; }
         }
       `}} />
     </div>

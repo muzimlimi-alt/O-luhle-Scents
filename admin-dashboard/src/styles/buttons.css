@@ -4,10 +4,10 @@
 */
 
 :root {
-  --btn-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --btn-radius: 8px;
-  --btn-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  --btn-shadow-hover: 0 6px 20px rgba(var(--y-rgb), 0.25);
+  --btn-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --btn-radius: var(--r, 8px);
+  --btn-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+  --btn-shadow-hover: 0 4px 14px rgba(var(--y-rgb), 0.2);
 }
 
 .btn {
@@ -35,7 +35,7 @@
   filter: grayscale(1);
 }
 
-.btn:active {
+.btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
@@ -59,7 +59,6 @@
 
 .btn--primary:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--y-hover) 0%, var(--y-base) 100%);
-  transform: translateY(-2px) scale(1.02);
   box-shadow: var(--btn-shadow-hover);
 }
 
@@ -75,7 +74,6 @@
   background: rgba(var(--y-rgb), 0.1);
   border-color: var(--color-primary);
   color: var(--color-primary);
-  transform: translateY(-2px);
 }
 
 /* --- Outline: Elegant Border --- */
@@ -89,7 +87,6 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: rgba(var(--y-rgb), 0.05);
-  transform: translateY(-2px);
 }
 
 /* --- Danger: Refined Crimson --- */
@@ -103,8 +100,7 @@
   background: #c0392b;
   border-color: #c0392b;
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(192, 57, 43, 0.2);
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.15);
 }
 
 /* --- Action/Icon Buttons: Minimalist --- */
@@ -113,7 +109,7 @@
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--r, 8px);
   cursor: pointer;
   transition: var(--btn-transition);
   display: flex;
@@ -122,10 +118,9 @@
 }
 
 .action-btn:hover, .icon-btn:hover, .classic-action-btn:hover {
-  background: rgba(var(--y-rgb), 0.1);
+  background: rgba(var(--y-rgb), 0.08);
   border-color: var(--color-primary);
   color: var(--color-primary);
-  transform: translateY(-1px);
 }
 
 .action-btn.danger:hover, .icon-btn.danger:hover {
