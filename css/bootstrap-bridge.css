@@ -1,0 +1,30 @@
+/*
+ * bootstrap-bridge.css
+ * Maps Bootstrap 5 gutter variables to TOCA's container padding.
+ *
+ * TOCA's .container uses padding: 0 24px (--container-pad).
+ * Bootstrap's .container uses calc(var(--bs-gutter-x) * 0.5) on each side.
+ * 1.5rem × 0.5 = 0.75rem = 12px each side = 24px total — matches TOCA.
+ *
+ * Load order: bootstrap-grid.min.css → bootstrap-bridge.css → style.css
+ * TOCA's .container definition in style.css wins via cascade (same specificity,
+ * loaded last), so Bootstrap's responsive max-widths are overridden by TOCA's
+ * fixed max-width: var(--container-max) = 1280px.
+ *
+ * Only .row and .col-* classes are used for new layouts. TOCA's existing
+ * .products-grid, .footer__grid etc. are untouched CSS Grid.
+ */
+
+.container,
+.container-fluid,
+.container-sm,
+.container-md,
+.container-lg,
+.container-xl,
+.container-xxl,
+.row {
+  --bs-gutter-x: 1.5rem;  /* 24px — matches TOCA container padding: 0 24px */
+  /* --bs-gutter-y intentionally NOT overridden here — Bootstrap defaults it to 0
+     via :root, but g-* classes must be able to override it. Setting it here would
+     cancel any g-3/g-4/gy-* gutter class applied to the same .row element. */
+}
