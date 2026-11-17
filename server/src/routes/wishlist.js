@@ -64,7 +64,7 @@ function getGuestToken(req) {
 const PRODUCT_SELECT = {
   id: true, name: true, primaryImage: true, family: true,
   cardBadge: true, type: true,
-  variants: { select: { id: true, price: true, size: true, uom: true, currency: true, inventory: true } },
+  variants: { select: { id: true, price: true, size: true, uom: true, volume: true, inventory: true } },
 }
 
 const LIST_INCLUDE = {

@@ -370,8 +370,8 @@ export function DashboardLayout() {
         .menu-hint { margin-left: auto; font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--y-base); white-space: nowrap; opacity: .8; }
         .menu-sep { display: block; height: 1px; background: var(--border-low); margin: var(--sp-2) var(--sp-3); }
 
-        .main { grid-area: main; overflow-y: auto; min-width: 0; }
-        .page-container { max-width: 1400px; padding: var(--sp-6); }
+        .main { grid-area: main; overflow-y: auto; min-width: 0; width: 100%; }
+        .page-container { width: 100%; padding: var(--sp-6); }
 
         .scrim { display: none; }
 

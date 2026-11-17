@@ -1769,6 +1769,7 @@ h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
 }
 
 .product-actions .btn { flex: 1; }
+.product-actions .js-pdp-wishlist { flex: 0 0 auto; aspect-ratio: 1; display: inline-flex; align-items: center; justify-content: center; }
 
 .product-meta {
   border-top: 1px solid var(--color-border-light);
