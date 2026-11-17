@@ -1,6 +1,8 @@
 import prisma from './prisma.js'
 import { issueRefund } from './orderAdminService.js'
-import { reopenPeriod } from './periodCloseService.js'
+// periodCloseService imports createApprovalRequest from here, so a static
+// import would create a cycle. Dynamic import breaks it without any
+// behavioural difference — by the time approveRequest runs, the module is loaded.
 
 // Finance Phase 11 — gates high-value refunds behind a second admin's
 // sign-off. requireAdmin has no permission-level hierarchy (every admin is
@@ -40,6 +42,7 @@ export async function approveRequest(requestId, approvedById) {
       adminUserId: request.requestedById
     })
   } else if (request.entityType === 'REOPEN_PERIOD') {
+    const { reopenPeriod } = await import('./periodCloseService.js')
     result = await reopenPeriod(request.payload.periodId)
   } else {
     throw Object.assign(new Error(`Unknown approval entityType: ${request.entityType}`), { status: 500 })
