@@ -409,7 +409,7 @@ export function AdminUsers() {
         .user-profile-cell { display: flex; align-items: center; gap: 16px; }
         .avatar-box { width: 44px; height: 44px; border-radius: var(--r); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: var(--text-inverse); }
         .avatar-box.admin { background: linear-gradient(135deg, var(--y-base), var(--y-dark)); }
-        .avatar-box.staff { background: #555; color: white; }
+        .avatar-box.staff { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border-default); }
 
         .profile-info { display: flex; flex-direction: column; }
         .profile-name { font-weight: 700; color: var(--text-primary); font-size: 0.95rem; }

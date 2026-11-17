@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { Outlet, useLocation, useNavigate, Link, NavLink } from 'react-router-dom';
 import { Sidebar, RAIL_KEY } from '../components/Sidebar';
 import { Drawer } from '../components/Drawer';
@@ -35,11 +35,14 @@ export function DashboardLayout() {
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const acctMenuRef = useRef(null);
   const searchRef = useRef(null);
+  const mainRef = useRef(null);
   const location = useLocation();
 
-  // Close the mobile drawer automatically on navigation (mobile/tablet only —
-  // harmless no-op on desktop since the sidebar isn't a drawer there).
+  // Close the mobile drawer automatically on navigation.
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  // Move focus to <main> on route change — announces new page to screen readers.
+  useEffect(() => { mainRef.current?.focus(); }, [location.pathname]);
 
   useEffect(() => {
     try { localStorage.setItem(RAIL_KEY, isRail ? '1' : '0'); } catch { /* noop */ }
@@ -83,6 +86,7 @@ export function DashboardLayout() {
 
   return (
     <div className={`app ${isRail ? 'rail' : ''}`}>
+      <a href="#main" className="skip-link">Skip to main content</a>
       <Sidebar
         isOpen={menuOpen}
         onNavigate={() => setMenuOpen(false)}
@@ -169,9 +173,11 @@ export function DashboardLayout() {
 
       {menuOpen && <div className="scrim" onClick={() => setMenuOpen(false)} />}
 
-      <main className="main" id="main">
+      <main className="main" id="main" ref={mainRef} tabIndex={-1}>
         <div className="page-container">
-          <Outlet />
+          <Suspense fallback={<div className="page-fallback">Loading…</div>}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 
@@ -208,6 +214,19 @@ export function DashboardLayout() {
       </Drawer>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        .skip-link {
+          position: fixed; top: var(--sp-3); left: var(--sp-3); z-index: 9999;
+          padding: var(--sp-2) var(--sp-4);
+          background: var(--y-base); color: var(--text-inverse);
+          border-radius: var(--r); font-size: .86rem; font-weight: 500;
+          text-decoration: none;
+          transform: translateY(-200%);
+          transition: transform .15s ease;
+        }
+        .skip-link:focus { transform: translateY(0); outline: none; box-shadow: 0 0 0 3px var(--y-glow); }
+        .main:focus { outline: none; }
+        .page-fallback { display: flex; align-items: center; justify-content: center; padding: var(--sp-8); color: var(--text-muted); font-size: .86rem; }
+
         .app {
           display: grid;
           grid-template-columns: var(--nav-w) 1fr;

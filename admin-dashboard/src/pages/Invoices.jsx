@@ -116,14 +116,39 @@ export function Invoices() {
       />
 
       <div className="card">
-        <DataTable 
-          columns={columns} 
-          data={invoices} 
+        <DataTable
+          columns={columns}
+          data={invoices}
           loading={loading}
+          caption="Invoices"
           actions={(invoice) => (
             <button className="icon-btn" onClick={() => handleDownload(invoice.id, invoice.invoiceNumber)} title="Download PDF">
                <Download size={16} />
             </button>
+          )}
+          mobileCardRenderer={(row, _cols, actions) => (
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'flex-start' }}>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(row.id)}
+                onChange={() => handleSelection(row.id)}
+                style={{ cursor: 'pointer', marginTop: '3px', flexShrink: 0 }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: 'var(--y-base)', fontFamily: 'var(--f-mono)', fontSize: '.86rem' }}>
+                    <FileText size={14} /> {row.invoiceNumber}
+                  </div>
+                  {actions && actions(row)}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.84rem', color: 'var(--text-secondary)' }}>
+                  <span>{row.order?.customer?.name || 'Guest'}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '.76rem' }}>
+                    {row.issuedDate ? new Date(row.issuedDate).toLocaleDateString() : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
         />
       </div>

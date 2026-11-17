@@ -11,6 +11,7 @@ import { OrderDetailsDrawer } from '../components/OrderDetailsDrawer';
 import { CreateOrderDrawer } from '../components/CreateOrderDrawer';
 import { useMessaging } from '../context/MessagingContext';
 import { ShoppingBag, Search, Truck, Filter, Hash, Landmark, RotateCcw, Eye, Plus, Download, PackageOpen, Timer, Printer } from 'lucide-react';
+import { KpiCard } from '../components/KpiCard';
 
 const STATUS_ACTIONS = ['processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -298,27 +299,31 @@ export function Orders() {
         </div>
       </div>
 
-      <div className="grid kpi-row mb-6">
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Unfulfilled</h2><span className="ic" aria-hidden="true"><PackageOpen size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{unfulfilledOrders.length}</p>
-          <p className="kpi-foot">{oldestUnfulfilledHours != null ? `Oldest waiting ${oldestUnfulfilledHours} hours` : 'All caught up'}</p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">In transit</h2><span className="ic" aria-hidden="true"><Truck size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{inTransitOrders.length}</p>
-          <p className="kpi-foot">Currently with couriers</p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Returns open</h2><span className="ic" aria-hidden="true"><RotateCcw size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{openReturns.length}</p>
-          <p className="kpi-foot"><span className="delta flat">{allOrders.length > 0 ? `${((openReturns.length / allOrders.length) * 100).toFixed(1)}% of orders` : '—'}</span></p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Avg. fulfilment</h2><span className="ic" aria-hidden="true"><Timer size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{avgFulfilmentDays != null ? avgFulfilmentDays.toFixed(1) : '—'} <small>days</small></p>
-          <p className="kpi-foot">Placed to shipped</p>
-        </article>
+      <div className="kpi-grid-responsive mb-6">
+        <KpiCard
+          label="Unfulfilled"
+          value={String(unfulfilledOrders.length)}
+          icon={<PackageOpen size={16} />}
+          footnote={oldestUnfulfilledHours != null ? `Oldest waiting ${oldestUnfulfilledHours} hours` : 'All caught up'}
+        />
+        <KpiCard
+          label="In transit"
+          value={String(inTransitOrders.length)}
+          icon={<Truck size={16} />}
+          footnote="Currently with couriers"
+        />
+        <KpiCard
+          label="Returns open"
+          value={String(openReturns.length)}
+          icon={<RotateCcw size={16} />}
+          delta={{ direction: 'flat', value: allOrders.length > 0 ? `${((openReturns.length / allOrders.length) * 100).toFixed(1)}% of orders` : '—' }}
+        />
+        <KpiCard
+          label="Avg. fulfilment"
+          value={avgFulfilmentDays != null ? `${avgFulfilmentDays.toFixed(1)} days` : '—'}
+          icon={<Timer size={16} />}
+          footnote="Placed to shipped"
+        />
       </div>
 
       <div className="section-title">
@@ -436,6 +441,31 @@ export function Orders() {
                 </select>
               </div>
             )}
+            mobileCardRenderer={(row, _cols, actions) => (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--y-base)', fontFamily: 'var(--f-mono)', fontSize: '.8rem', marginBottom: '4px' }}>
+                      #{row.orderNumber}
+                    </div>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '.9rem' }}>{row.customer?.name || 'Private Client'}</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>{row.customer?.email || 'Guest checkout'}</p>
+                  </div>
+                  <StatusBadge tone={STATUS_TONE[row.status?.toLowerCase()] || 'neutral'} label={row.status?.toUpperCase()} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-3)' }}>
+                  <span style={{ fontWeight: 700, fontSize: '1.05rem', fontFamily: 'var(--f-display)' }}>R{Number(row.totalAmount).toLocaleString()}</span>
+                  <span style={{ fontFamily: 'var(--f-mono)', fontSize: '0.76rem', color: row.trackingNumber ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                    {row.trackingNumber || 'Awaiting dispatch'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>{new Date(row.createdAt).toLocaleDateString('en-ZA')}</span>
+                  {actions && <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>{actions(row)}</div>}
+                </div>
+              </div>
+            )}
+            caption="All orders"
           />
         </div>
       )}
@@ -630,27 +660,10 @@ export function Orders() {
         .btn-sm { min-height: 36px; padding: 0 var(--sp-4); font-size: .74rem; }
         .btn-primary:focus-visible, .btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow); }
 
-        .grid { display: grid; gap: var(--sp-5); }
-        .kpi-row { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-
-        .kpi {
-          position: relative; padding: var(--sp-5);
-          background: var(--bg-surface); border: 1px solid var(--border-low); border-radius: var(--r);
-          overflow: hidden; transition: border-color var(--t-fast) var(--ease), transform var(--t) var(--ease-out);
-        }
-        .kpi:hover { border-color: var(--y-dark); transform: translateY(-2px); }
-        .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-        .kpi-label { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; margin: 0; }
-        .kpi-top .ic { color: var(--y-base); opacity: .8; display: inline-flex; }
-        .kpi-val { font-family: var(--f-display); line-height: 1.05; margin: var(--sp-4) 0 var(--sp-2); letter-spacing: -.01em; color: var(--text-primary); }
-        .kpi-val small { font-size: .6em; color: var(--text-muted); font-family: var(--f-body); }
-        .kpi-foot { font-size: .78rem; color: var(--text-muted); margin: 0; }
-        .delta.flat { color: var(--text-muted); font-family: var(--f-mono); }
-
         .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-4); margin: var(--sp-7) 0 var(--sp-4); flex-wrap: wrap; }
         .section-title h2 { font-size: 1.5rem; }
 
-        .board { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: var(--sp-4); overflow-x: auto; padding-bottom: var(--sp-2); }
+        .board { display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: var(--sp-4); overflow-x: auto; padding-bottom: var(--sp-2); }
         .col { background: var(--bg-surface); border: 1px solid var(--border-low); border-radius: var(--r); min-width: 0; display: flex; flex-direction: column; }
         .col-head { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-low); }
         .col-head h4 { font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-secondary); }

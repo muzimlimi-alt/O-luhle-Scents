@@ -375,8 +375,8 @@ export function Content() {
         .announcement-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; margin-bottom: var(--sp-4); }
         .announcement-toggle input { width: 16px; height: 16px; accent-color: var(--y-base); cursor: pointer; }
 
-        .quill-wrapper { background: #fff; border-radius: var(--r); overflow: hidden; }
-        .ql-editor { min-height: 160px; background: #fff; color: #1a1a1a; }
+        .quill-wrapper { background: var(--bg-surface); border-radius: var(--r); overflow: hidden; }
+        .ql-editor { min-height: 160px; background: var(--bg-surface); color: var(--text-primary); }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }

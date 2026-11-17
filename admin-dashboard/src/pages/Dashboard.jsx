@@ -10,13 +10,12 @@ import { useMessaging } from '../context/MessagingContext';
 import { useAuth } from '../context/AuthContext';
 import { useAppearance } from '../context/AppearanceContext';
 import { getChartColors } from '../utils/chartTheme';
+import { KpiCard } from '../components/KpiCard';
 import {
   Wallet,
   ShoppingCart,
   DollarSign,
   Package,
-  TrendingUp,
-  TrendingDown,
   Zap,
   Mail,
   ListOrdered,
@@ -74,32 +73,6 @@ function greetingWord() {
   return 'Good evening';
 }
 
-// Normalizes a series of numbers into an SVG polyline points string for the
-// KPI sparklines — real per-day values from the analytics endpoint, not
-// decorative/fabricated curves.
-function sparkPoints(values) {
-  if (!values || values.length < 2) return '';
-  const w = 120, h = 38, pad = 2;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const stepX = (w - pad * 2) / (values.length - 1);
-  return values.map((v, i) => {
-    const x = pad + i * stepX;
-    const y = pad + (h - pad * 2) * (1 - (v - min) / range);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-}
-
-function Sparkline({ values, tone = 'accent', label }) {
-  const points = sparkPoints(values);
-  if (!points) return <div className="spark spark--empty" aria-hidden="true" />;
-  return (
-    <svg className="spark" viewBox="0 0 120 38" role="img" aria-label={label}>
-      <polyline points={points} fill="none" className={tone === 'accent' ? 's-accent' : 's-mute'} strokeWidth="1.6" />
-    </svg>
-  );
-}
 
 export function Dashboard() {
   const { showMessage } = useMessaging();
@@ -218,6 +191,8 @@ export function Dashboard() {
   const dailyOrders = daily.map((d) => d.count);
   const dailyAOV = daily.map((d) => (d.count > 0 ? d.revenue / d.count : 0));
 
+  const isAuditor = user?.role === 'auditor';
+
   const activity = useMemo(() => {
     const orderEvents = recentOrders.map((o) => ({
       id: `order-${o.id}`,
@@ -277,63 +252,57 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className={`grid g-4 mb-6 ${analyticsLoading ? 'is-loading' : ''}`}>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Net revenue</h2><span className="ic" aria-hidden="true"><Wallet size={16} /></span></div>
-          <p className="kpi-val">R {data.revenue.toLocaleString()}</p>
-          <p className="kpi-foot">
-            {revenueGrowth === null ? <span className="delta flat">—</span> : (
-              <span className={`delta ${revenueGrowth >= 0 ? 'up' : 'down'}`}>
-                {revenueGrowth >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {Math.abs(revenueGrowth)}%
-              </span>
-            )} vs. previous month
-          </p>
-          <Sparkline values={dailyRevenue} label="Net revenue trend for the selected period" />
-        </article>
-
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Orders</h2><span className="ic" aria-hidden="true"><ShoppingCart size={16} /></span></div>
-          <p className="kpi-val">{data.orders.toLocaleString()}</p>
-          <p className="kpi-foot"><span className="delta flat">{unfulfilled} unfulfilled</span></p>
-          <Sparkline values={dailyOrders} label="Order volume trend for the selected period" />
-        </article>
-
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Avg. order value</h2><span className="ic" aria-hidden="true"><DollarSign size={16} /></span></div>
-          <p className="kpi-val">R {Number(analytics?.revenue?.average || 0).toLocaleString()}</p>
-          <p className="kpi-foot"><span className="delta flat">Across paid orders</span></p>
-          <Sparkline values={dailyAOV} tone="mute" label="Average order value trend for the selected period" />
-        </article>
-
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Stock value</h2><span className="ic" aria-hidden="true"><Package size={16} /></span></div>
-          <p className="kpi-val">R {data.stockValue.toLocaleString()}</p>
-          <p className="kpi-foot">
-            <span className={`delta ${data.lowStock > 0 ? 'down' : 'flat'}`}>{data.lowStock} low · {data.outOfStock} out</span>
-          </p>
-        </article>
-
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Total customers</h2><span className="ic" aria-hidden="true"><Users size={16} /></span></div>
-          <p className="kpi-val">{data.customers.toLocaleString()}</p>
-          <p className="kpi-foot"><span className="delta flat">Registered accounts</span></p>
-        </article>
-
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Low stock items</h2><span className="ic" aria-hidden="true"><AlertTriangle size={16} /></span></div>
-          <p className="kpi-val">{data.lowStock}</p>
-          <p className="kpi-foot">
-            <span className={`delta ${data.lowStock > 0 ? 'down' : 'flat'}`}>{data.lowStock > 0 ? 'At or below reorder level' : 'Inventory healthy'}</span>
-          </p>
-        </article>
-
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Out of stock</h2><span className="ic" aria-hidden="true"><Ban size={16} /></span></div>
-          <p className="kpi-val">{data.outOfStock}</p>
-          <p className="kpi-foot">
-            <span className={`delta ${data.outOfStock > 0 ? 'down' : 'flat'}`}>Available stock at zero</span>
-          </p>
-        </article>
+      <div className={`kpi-grid-responsive mb-6${analyticsLoading ? ' is-loading' : ''}`}>
+        <KpiCard
+          label="Net revenue"
+          value={`R ${data.revenue.toLocaleString()}`}
+          icon={<Wallet size={16} />}
+          delta={revenueGrowth === null
+            ? { direction: 'flat', value: '—' }
+            : { direction: revenueGrowth >= 0 ? 'up' : 'down', value: `${Math.abs(revenueGrowth)}%` }
+          }
+          footnote="vs. previous month"
+          sparkline={dailyRevenue}
+        />
+        <KpiCard
+          label="Orders"
+          value={data.orders.toLocaleString()}
+          icon={<ShoppingCart size={16} />}
+          delta={{ direction: 'flat', value: `${unfulfilled} unfulfilled` }}
+          sparkline={dailyOrders}
+        />
+        <KpiCard
+          label="Avg. order value"
+          value={`R ${Number(analytics?.revenue?.average || 0).toLocaleString()}`}
+          icon={<DollarSign size={16} />}
+          footnote="Across paid orders"
+          sparkline={dailyAOV}
+          sparkTone="mute"
+        />
+        <KpiCard
+          label="Stock value"
+          value={`R ${data.stockValue.toLocaleString()}`}
+          icon={<Package size={16} />}
+          delta={{ direction: data.lowStock > 0 ? 'down' : 'flat', value: `${data.lowStock} low · ${data.outOfStock} out` }}
+        />
+        <KpiCard
+          label="Total customers"
+          value={data.customers.toLocaleString()}
+          icon={<Users size={16} />}
+          footnote="Registered accounts"
+        />
+        <KpiCard
+          label="Low stock items"
+          value={String(data.lowStock)}
+          icon={<AlertTriangle size={16} />}
+          delta={{ direction: data.lowStock > 0 ? 'down' : 'flat', value: data.lowStock > 0 ? 'At or below reorder level' : 'Inventory healthy' }}
+        />
+        <KpiCard
+          label="Out of stock"
+          value={String(data.outOfStock)}
+          icon={<Ban size={16} />}
+          delta={{ direction: data.outOfStock > 0 ? 'down' : 'flat', value: 'Available stock at zero' }}
+        />
       </div>
 
       <div className="grid g-83 mb-6">
@@ -342,7 +311,7 @@ export function Dashboard() {
             <div><h3>Revenue <em>trajectory</em></h3><p className="hint">Net of refunds and discounts · ZAR</p></div>
           </div>
           <div className="card-body">
-            <div style={{ height: '280px' }}>
+            <div style={{ aspectRatio: '16/5', minHeight: '200px' }}>
               <Line
                 key={`${appearance.finish}-${appearance.accent}-${period}`}
                 data={revenueChartData}
@@ -499,6 +468,7 @@ export function Dashboard() {
         </div>
       </div>
 
+      {!isAuditor && (
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
            <Mail size={20} color="var(--y-base)" />
@@ -520,6 +490,7 @@ export function Dashboard() {
           )}
         />
       </div>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         .vh {
@@ -571,45 +542,15 @@ export function Dashboard() {
         .btn-sm { min-height: 36px; padding: 0 var(--sp-4); font-size: .74rem; }
         .btn-primary:focus-visible, .btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow, var(--color-border-focus)); }
 
-        .grid { display: grid; gap: var(--sp-5); }
-        .g-4 { grid-template-columns: repeat(4, 1fr); }
-        .g-83 { grid-template-columns: 2.1fr 1fr; }
+        .g-83 { display: grid; gap: var(--sp-5); grid-template-columns: 2.1fr 1fr; }
         .mb-6 { margin-bottom: var(--sp-6); }
-        @media (max-width: 1360px) { .g-4 { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 1180px) { .g-83 { grid-template-columns: 1fr; } }
-
-        .kpi {
-          position: relative; padding: var(--sp-5);
-          background: var(--bg-surface); border: 1px solid var(--border-low); border-radius: var(--r-md, 10px);
-          overflow: hidden; transition: border-color .2s ease, box-shadow .25s ease;
-        }
-        .kpi::after {
-          content: ""; position: absolute; inset: 0;
-          background: radial-gradient(120% 90% at 100% 0%, rgba(var(--y-rgb), .07), transparent 60%);
-          pointer-events: none; opacity: 0; transition: opacity .25s ease;
-        }
-        .kpi:hover { border-color: var(--y-dark); box-shadow: var(--sh-sm); }
-        .kpi:hover::after { opacity: 1; }
-        .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-        .kpi-label { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; margin: 0; }
-        .kpi-top .ic { color: var(--y-base); opacity: .8; display: inline-flex; }
-        .kpi-val { font-family: var(--f-display); font-size: 2.2rem; line-height: 1.05; margin: var(--sp-4) 0 var(--sp-2); letter-spacing: -.01em; color: var(--text-primary); }
-        .kpi-foot { display: flex; align-items: center; gap: var(--sp-2); font-size: .78rem; color: var(--text-muted); flex-wrap: wrap; margin: 0; }
-        .delta { display: inline-flex; align-items: center; gap: 5px; font-family: var(--f-mono); font-size: .74rem; font-weight: 500; }
-        .delta.up { color: var(--success); }
-        .delta.down { color: var(--error); }
-        .delta.flat { color: var(--text-muted); }
-        .spark { display: block; width: 100%; height: 38px; margin-top: var(--sp-4); }
-        .spark--empty { height: 38px; margin-top: var(--sp-4); }
-        .s-accent { stroke: var(--y-base); }
-        .s-mute { stroke: var(--text-muted); }
         .is-loading { opacity: .55; pointer-events: none; transition: opacity var(--t-fast) var(--ease); }
+        @media (max-width: 1180px) { .g-83 { grid-template-columns: 1fr; } }
 
         .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-5) var(--sp-5) var(--sp-4); border-bottom: 1px solid var(--border-low); flex-wrap: wrap; }
         .card-head h3 { font-size: 1.15rem; display: flex; align-items: center; gap: 8px; }
         .card-head-ic { color: var(--y-base); }
         .card-head .hint { font-size: .76rem; color: var(--text-muted); margin-top: 2px; }
-        .card-body { padding: var(--sp-5); }
         .card-body.flush { padding: 0; }
 
         .bars { display: flex; flex-direction: column; gap: var(--sp-4); }

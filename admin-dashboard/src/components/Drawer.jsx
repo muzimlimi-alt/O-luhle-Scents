@@ -72,7 +72,7 @@ export function Drawer({ isOpen, onClose, title, eyebrow, children, footer, raw 
 
   if (!isOpen) return null;
 
-  const reduceMotion = prefersReducedMotion();
+  const reduceMotion = prefersReducedMotion() || document.documentElement.classList.contains('reduce-motion');
   const panelMotionProps = reduceMotion
     ? { initial: false, animate: { x: 0 }, exit: { x: 0 }, transition: { duration: 0.01 } }
     : {

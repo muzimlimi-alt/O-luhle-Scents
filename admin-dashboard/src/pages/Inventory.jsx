@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminOpsApi, metricsApi } from '../services/api';
+import { KpiCard } from '../components/KpiCard';
 import { Drawer } from '../components/Drawer';
 import { DataTable } from '../components/DataTable';
 import { StatusBadge } from '../components/StatusBadge';
@@ -162,27 +163,31 @@ export function Inventory() {
         </div>
       </div>
 
-      <div className="grid kpi-row mb-6">
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Stock on hand</h2><span className="ic" aria-hidden="true"><Boxes size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{totalUnits.toLocaleString()} <small>units</small></p>
-          <p className="kpi-foot">Valued at R {stockValue.toLocaleString()} at cost</p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Below reorder point</h2><span className="ic" aria-hidden="true"><TriangleAlert size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{belowReorder.length} <small>SKUs</small></p>
-          <p className="kpi-foot"><span className={`delta ${belowReorder.length > 0 ? 'down' : 'flat'}`}>{belowReorder.length > 0 ? 'Action needed' : 'All healthy'}</span></p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Out of stock</h2><span className="ic" aria-hidden="true"><Ban size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{outOfStock.length} <small>SKUs</small></p>
-          <p className="kpi-foot"><span className={`delta ${outOfStock.length > 0 ? 'down' : 'flat'}`}>Available stock at zero</span></p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Incoming stock</h2><span className="ic" aria-hidden="true"><Truck size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{incomingUnits.toLocaleString()} <small>units</small></p>
-          <p className="kpi-foot">On {openPurchases.length} open purchase order{openPurchases.length === 1 ? '' : 's'}</p>
-        </article>
+      <div className="kpi-grid-responsive mb-6">
+        <KpiCard
+          label="Stock on hand"
+          value={`${totalUnits.toLocaleString()} units`}
+          icon={<Boxes size={16} />}
+          footnote={`Valued at R ${stockValue.toLocaleString()} at cost`}
+        />
+        <KpiCard
+          label="Below reorder point"
+          value={`${belowReorder.length} SKUs`}
+          icon={<TriangleAlert size={16} />}
+          delta={{ direction: belowReorder.length > 0 ? 'down' : 'flat', value: belowReorder.length > 0 ? 'Action needed' : 'All healthy' }}
+        />
+        <KpiCard
+          label="Out of stock"
+          value={`${outOfStock.length} SKUs`}
+          icon={<Ban size={16} />}
+          delta={{ direction: outOfStock.length > 0 ? 'down' : 'flat', value: 'Available stock at zero' }}
+        />
+        <KpiCard
+          label="Incoming stock"
+          value={`${incomingUnits.toLocaleString()} units`}
+          icon={<Truck size={16} />}
+          footnote={`On ${openPurchases.length} open purchase order${openPurchases.length === 1 ? '' : 's'}`}
+        />
       </div>
 
       {belowReorder.length > 0 && (
@@ -590,25 +595,8 @@ export function Inventory() {
         .btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow); }
 
         .grid { display: grid; gap: var(--sp-5); }
-        .kpi-row { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         .g-2 { grid-template-columns: repeat(2, 1fr); }
         @media (max-width: 1024px) { .g-2 { grid-template-columns: 1fr; } }
-
-        .kpi {
-          position: relative; padding: var(--sp-5);
-          background: var(--bg-surface); border: 1px solid var(--border-low); border-radius: var(--r);
-          overflow: hidden; transition: border-color var(--t-fast) var(--ease), transform var(--t) var(--ease-out);
-        }
-        .kpi:hover { border-color: var(--y-dark); transform: translateY(-2px); }
-        .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-        .kpi-label { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; margin: 0; }
-        .kpi-top .ic { color: var(--y-base); opacity: .8; display: inline-flex; }
-        .kpi-val { font-family: var(--f-display); line-height: 1.05; margin: var(--sp-4) 0 var(--sp-2); letter-spacing: -.01em; color: var(--text-primary); }
-        .kpi-val small { font-size: .6em; color: var(--text-muted); font-family: var(--f-body); }
-        .kpi-foot { font-size: .78rem; color: var(--text-muted); margin: 0; }
-        .delta { font-family: var(--f-mono); font-weight: 500; }
-        .delta.down { color: var(--error); }
-        .delta.flat { color: var(--text-muted); }
 
         .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-5) var(--sp-5) var(--sp-4); border-bottom: 1px solid var(--border-low); flex-wrap: wrap; }
         .card-head h3 { font-size: 1.15rem; }
