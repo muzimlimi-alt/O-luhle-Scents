@@ -60,8 +60,8 @@ export function DataTable({
           {caption && <caption className="visually-hidden">{caption}</caption>}
           <thead>
             <tr>
-              {columns.map(col => <th key={col.key}>{col.label}</th>)}
-              {actions && <th>Actions</th>}
+              {columns.map(col => <th key={col.key} scope="col">{col.label}</th>)}
+              {actions && <th scope="col">Actions</th>}
             </tr>
           </thead>
           <tbody>

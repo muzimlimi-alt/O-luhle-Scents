@@ -1,11 +1,18 @@
 import { motion as Motion } from 'framer-motion';
 import { CheckCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
 
+const ICON_COLOR = {
+  success: 'var(--atl-sage, var(--success))',
+  error:   'var(--atl-clay, var(--error))',
+  warning: 'var(--atl-orange, var(--warning))',
+  info:    'var(--atl-blue, var(--info))',
+};
+
 const icons = {
-  success: <CheckCircle className="elite-toast-icon text-emerald-500" />,
-  error: <AlertCircle className="elite-toast-icon text-rose-500" />,
-  warning: <AlertTriangle className="elite-toast-icon text-amber-500" />,
-  info: <Info className="elite-toast-icon text-blue-500" />,
+  success: <CheckCircle className="elite-toast-icon" style={{ color: ICON_COLOR.success }} />,
+  error:   <AlertCircle className="elite-toast-icon" style={{ color: ICON_COLOR.error }} />,
+  warning: <AlertTriangle className="elite-toast-icon" style={{ color: ICON_COLOR.warning }} />,
+  info:    <Info className="elite-toast-icon" style={{ color: ICON_COLOR.info }} />,
 };
 
 const EliteToast = ({ type = 'success', title, message, onClose }) => {
@@ -18,60 +25,60 @@ const EliteToast = ({ type = 'success', title, message, onClose }) => {
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: '16px',
-        padding: '16px 20px',
+        gap: 'var(--sp-4)',
+        padding: 'var(--sp-4) var(--sp-5)',
         minWidth: '320px',
         maxWidth: '420px',
-        background: 'rgba(15, 14, 13, 0.9)',
+        background: 'var(--bg-glass, rgba(20,20,20,.92))',
         backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(var(--y-rgb), 0.2)',
-        borderRadius: '4px',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid var(--border-default)',
+        borderRadius: 'var(--r-md)',
+        boxShadow: 'var(--sh-xl)',
         pointerEvents: 'auto',
-        marginBottom: '12px',
-        borderLeft: `4px solid ${
-          type === 'success' ? '#10b981' : 
-          type === 'error' ? '#ef4444' : 
-          type === 'warning' ? '#f59e0b' : '#3b82f6'
-        }`
+        marginBottom: 'var(--sp-3)',
+        borderLeft: `4px solid ${ICON_COLOR[type] || ICON_COLOR.info}`,
       }}
     >
       <div style={{ flexShrink: 0, marginTop: '2px' }}>
         {icons[type]}
       </div>
 
-      <div style={{ flex: 1 }}>
-        <h4 style={{ 
-          margin: 0, 
-          color: '#fff', 
-          fontSize: '0.95rem', 
-          fontWeight: 600,
-          fontFamily: 'Cormorant Garamond, serif'
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h4 style={{
+          margin: 0,
+          color: 'var(--text-primary)',
+          fontSize: 'var(--fs-base)',
+          fontWeight: 400,
+          fontFamily: 'var(--f-display)',
         }}>
           {title}
         </h4>
-        <p style={{ 
-          margin: '4px 0 0', 
-          color: 'rgba(255,255,255,0.6)', 
-          fontSize: '0.8rem',
-          lineHeight: 1.4
+        <p style={{
+          margin: 'var(--sp-1) 0 0',
+          color: 'var(--text-secondary)',
+          fontSize: 'var(--fs-sm)',
+          lineHeight: 1.5,
         }}>
           {message}
         </p>
       </div>
 
       <button
+        type="button"
         onClick={onClose}
+        aria-label="Dismiss notification"
         style={{
           background: 'none',
           border: 'none',
           padding: '4px',
-          color: 'rgba(255,255,255,0.4)',
+          color: 'var(--text-muted)',
           cursor: 'pointer',
-          transition: 'color 0.2s'
+          flexShrink: 0,
+          transition: 'color var(--t-fast) ease',
         }}
-        onMouseEnter={(e) => e.target.style.color = '#fff'}
-        onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.4)'}
+        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
       >
         <X size={18} />
       </button>

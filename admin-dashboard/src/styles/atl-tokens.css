@@ -1,0 +1,102 @@
+/* ============================================================
+   TOCA Admin — Atelier Obsidian Token Aliases
+   Maps --atl-* names (from the design spec) to canonical TOCA
+   tokens. Every value here is a var() pointing at an existing
+   token — no literal colours, no breakage to the Appearance
+   system. Adding aliases never changes existing token values.
+
+   Import order: design-tokens.css → atl-tokens.css → appearance.css
+   The Appearance overrides that follow will update both the
+   canonical tokens AND these aliases automatically.
+   ============================================================ */
+
+:root {
+  /* ── Surface aliases ────────────────────────────────────────── */
+  --atl-bg-page:      var(--bg-page);
+  --atl-bg-sidebar:   var(--bg-section);
+  --atl-bg-topbar:    var(--bg-page);
+  --atl-bg-card:      var(--bg-surface);
+  --atl-bg-elevated:  var(--bg-elevated);
+  --atl-bg-glass:     var(--bg-glass);
+  --atl-input-bg:     #0f0f0f; /* intentionally darker than --bg-elevated for input depth */
+
+  /* ── Accent (amber) aliases ─────────────────────────────────── */
+  --atl-amber:        var(--y-base);
+  --atl-amber-hover:  var(--y-hover);
+  --atl-amber-dim:    var(--y-muted);
+  --atl-amber-border: var(--y-dark);
+  --atl-amber-dark:   var(--y-dark);
+  --atl-amber-light:  var(--y-light);
+  --atl-amber-glow:   var(--y-glow);
+  --atl-amber-rgb:    var(--y-rgb);
+
+  /* ── Semantic status aliases ────────────────────────────────── */
+  --atl-sage:   var(--success);    /* #34d399 */
+  --atl-clay:   var(--error);      /* #f87171 */
+  --atl-blue:   var(--info);       /* #60a5fa */
+  --atl-orange: var(--warning);    /* #fbbf24 */
+
+  --atl-sage-rgb:   var(--ok-rgb);
+  --atl-clay-rgb:   var(--bad-rgb);
+  --atl-blue-rgb:   var(--info-rgb);
+  --atl-orange-rgb: var(--warn-rgb);
+
+  /* ── Text aliases ───────────────────────────────────────────── */
+  --atl-text-primary:     var(--text-primary);
+  --atl-text-secondary:   var(--text-secondary);
+  --atl-text-muted:       var(--text-muted);
+  --atl-text-placeholder: var(--text-muted);
+  --atl-text-inverse:     var(--text-inverse);
+
+  /* ── Border aliases ─────────────────────────────────────────── */
+  --atl-border-low:     var(--border-low);
+  --atl-border-default: var(--border-default);
+  --atl-border-strong:  var(--border-strong);
+  --atl-border-focus:   var(--y-base);
+  --atl-line:           var(--border-default);
+
+  /* ── Spacing aliases ────────────────────────────────────────── */
+  --atl-sp-sm: var(--sp-3);   /* 12px */
+  --atl-sp-md: var(--sp-5);   /* 24px */
+  --atl-sp-lg: var(--sp-6);   /* 32px */
+
+  /* ── Radius aliases ─────────────────────────────────────────── */
+  --atl-r-sm:   var(--r);        /* 8px */
+  --atl-r-md:   var(--r-md);     /* 10px */
+  --atl-r-lg:   var(--r-lg);     /* 14px */
+  --atl-r-xl:   20px;
+  --atl-r-pill: var(--r-pill);   /* 999px */
+
+  /* ── Transition aliases ─────────────────────────────────────── */
+  --atl-t-fast: var(--t-fast);  /* .18s */
+  --atl-t-base: var(--t);       /* .35s */
+  --atl-t-slow: .5s;
+
+  /* ── Component dimension tokens ─────────────────────────────── */
+  --atl-card-padding:         var(--sp-5);    /* 24px */
+  --atl-card-padding-compact: var(--sp-4);    /* 16px */
+  --atl-card-radius:          var(--r-md);    /* 10px */
+  --atl-button-height:        var(--tap);     /* 44px */
+  --atl-button-height-sm:     36px;
+  --atl-input-height:         var(--tap);     /* 44px */
+  --atl-input-height-sm:      36px;
+  --atl-modal-width:          560px;
+  --atl-modal-width-lg:       800px;
+  --atl-drawer-width:         var(--nav-w);   /* 270px */
+  --atl-topbar-height:        var(--top-h);   /* 68px */
+  --atl-sidebar-width:        var(--nav-w);   /* 270px */
+  --atl-sidebar-rail:         var(--nav-w-rail); /* 76px */
+
+  /* ── Z-index scale ───────────────────────────────────────────── */
+  --atl-z-dropdown: 70;
+  --atl-z-drawer:   80;
+  --atl-z-modal:    90;
+  --atl-z-toast:    100;
+}
+
+/* Per-finish overrides for --atl-input-bg ───────────────────────
+   The canonical --bg-elevated is too light for the input depth
+   effect on Ember and too dark on Ivory, so we adjust here rather
+   than touching design-tokens.css. */
+:root.finish-ember { --atl-input-bg: #0c0906; }
+:root.finish-ivory { --atl-input-bg: #f0ece4; }

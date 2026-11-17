@@ -7,8 +7,10 @@ import { Search, Menu, Palette, ChevronDown, Bell, CircleHelp, Sliders, UsersRou
 import { useAuth } from '../context/AuthContext';
 import { useAppearance } from '../context/AppearanceContext';
 import '../styles/design-tokens.css';
+import '../styles/atl-tokens.css';
 import '../styles/App.css';
 import '../styles/buttons.css';
+import '../styles/components.css';
 import '../styles/appearance.css';
 import '../styles/utilities.css';
 
