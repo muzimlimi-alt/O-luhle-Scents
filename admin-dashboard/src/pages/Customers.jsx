@@ -5,6 +5,7 @@ import { adminOpsApi } from '../services/api';
 import { DataTable } from '../components/DataTable';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
+import { KpiCard } from '../components/KpiCard';
 import { Users, Mail, Search, ShoppingBag, Gem, Crown, UserX, Download } from 'lucide-react';
 
 // Tiers are derived live from real lifetime spend — nobody is assigned one,
@@ -134,27 +135,31 @@ export default function Customers() {
         </div>
       </div>
 
-      <div className="grid kpi-row mb-6">
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Total customers</h2><span className="ic" aria-hidden="true"><Users size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{totalCustomers.toLocaleString()}</p>
-          <p className="kpi-foot"><span className="delta up">+{newThisMonth}</span> this month</p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Lifetime value</h2><span className="ic" aria-hidden="true"><Gem size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>R {avgLifetimeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-          <p className="kpi-foot">Average across all accounts</p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">Atelier tier</h2><span className="ic" aria-hidden="true"><Crown size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{atelierCount} <small>members</small></p>
-          <p className="kpi-foot">Spend above R {ATELIER_THRESHOLD.toLocaleString()}</p>
-        </article>
-        <article className="kpi">
-          <div className="kpi-top"><h2 className="kpi-label">At risk</h2><span className="ic" aria-hidden="true"><UserX size={16} /></span></div>
-          <p className="kpi-val" style={{ fontSize: '1.9rem' }}>{atRiskCount}</p>
-          <p className="kpi-foot"><span className={`delta ${atRiskCount > 0 ? 'down' : 'flat'}`}>No order in {AT_RISK_DAYS} days</span></p>
-        </article>
+      <div className="kpi-grid-responsive mb-6">
+        <KpiCard
+          label="Total customers"
+          value={totalCustomers.toLocaleString()}
+          icon={<Users size={16} />}
+          delta={{ direction: 'up', value: `+${newThisMonth} this month` }}
+        />
+        <KpiCard
+          label="Lifetime value"
+          value={`R ${avgLifetimeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+          icon={<Gem size={16} />}
+          footnote="Average across all accounts"
+        />
+        <KpiCard
+          label="Atelier tier"
+          value={`${atelierCount}`}
+          icon={<Crown size={16} />}
+          footnote={`Spend above R ${ATELIER_THRESHOLD.toLocaleString()}`}
+        />
+        <KpiCard
+          label="At risk"
+          value={String(atRiskCount)}
+          icon={<UserX size={16} />}
+          delta={{ direction: atRiskCount > 0 ? 'down' : 'flat', value: `No order in ${AT_RISK_DAYS} days` }}
+        />
       </div>
 
       <div className="grid g-83">
@@ -197,6 +202,25 @@ export default function Customers() {
                 columns={columns}
                 data={filteredCustomers}
                 emptyState={<EmptyState icon={<ShoppingBag size={40} />} title="No customers found" description="Registered storefront accounts will appear here." />}
+                caption="Customer directory"
+                mobileCardRenderer={(row) => (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+                      <div className="patron-avatar">{row.name?.charAt(0) || 'C'}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 600, margin: 0 }}>{row.name}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <Mail size={11} />{row.email}
+                        </div>
+                      </div>
+                      <span className={`pill ${TIER_PILL[row.tier]}`}>{row.tier}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.84rem', color: 'var(--text-secondary)' }}>
+                      <span>{row.city || '—'} · {row.orderCount || 0} order{(row.orderCount || 0) === 1 ? '' : 's'}</span>
+                      <span style={{ fontFamily: 'var(--f-mono)', color: 'var(--text-primary)', fontWeight: 600 }}>R{Number(row.lifetimeSpend || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
               />
             </div>
           )}
@@ -271,26 +295,8 @@ export default function Customers() {
         .btn-primary:focus-visible, .btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--y-glow); }
 
         .grid { display: grid; gap: var(--sp-5); }
-        .kpi-row { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         .g-83 { grid-template-columns: 2.1fr 1fr; }
         @media (max-width: 1180px) { .g-83 { grid-template-columns: 1fr; } }
-
-        .kpi {
-          position: relative; padding: var(--sp-5);
-          background: var(--bg-surface); border: 1px solid var(--border-low); border-radius: var(--r);
-          overflow: hidden; transition: border-color var(--t-fast) var(--ease), transform var(--t) var(--ease-out);
-        }
-        .kpi:hover { border-color: var(--y-dark); transform: translateY(-2px); }
-        .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-        .kpi-label { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; margin: 0; }
-        .kpi-top .ic { color: var(--y-base); opacity: .8; display: inline-flex; }
-        .kpi-val { font-family: var(--f-display); line-height: 1.05; margin: var(--sp-4) 0 var(--sp-2); letter-spacing: -.01em; color: var(--text-primary); }
-        .kpi-val small { font-size: .6em; color: var(--text-muted); font-family: var(--f-body); }
-        .kpi-foot { font-size: .78rem; color: var(--text-muted); margin: 0; }
-        .delta { font-family: var(--f-mono); font-weight: 500; }
-        .delta.up { color: var(--success); }
-        .delta.down { color: var(--error); }
-        .delta.flat { color: var(--text-muted); }
 
         .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-5) var(--sp-5) var(--sp-4); border-bottom: 1px solid var(--border-low); flex-wrap: wrap; }
         .card-head h3 { font-size: 1.15rem; }

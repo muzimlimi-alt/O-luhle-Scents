@@ -1,50 +1,54 @@
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from './layouts/DashboardLayout';
-import { Dashboard } from './pages/Dashboard';
-import { Products } from './pages/Products';
-import { Categories } from './pages/Categories';
-import { Collections } from './pages/Collections';
-import { CatalogueImports } from './pages/CatalogueImports';
-import { AttributeDefinitions } from './pages/AttributeDefinitions';
-import { Inventory } from './pages/Inventory';
-import { Orders } from './pages/Orders';
-import Customers from './pages/Customers';
-import { Coupons } from './pages/Coupons';
-import { Invoices } from './pages/Invoices';
-import { Suppliers } from './pages/Suppliers';
-import { Purchases } from './pages/Purchases';
-import { AdminUsers } from './pages/AdminUsers';
-import { AuditLogs } from './pages/AuditLogs';
-import { Privacy } from './pages/Privacy';
-import { VatReports } from './pages/VatReports';
-import { ComplianceDashboard } from './pages/ComplianceDashboard';
-import { Quotes } from './pages/Quotes';
-import { Reports } from './pages/Reports';
-import Payments from './pages/Payments';
-import Notifications from './pages/Notifications';
-
-import { Settings } from './pages/Settings';
-import { Preferences } from './pages/Preferences';
-import { Content } from './pages/Content';
 import { Login } from './pages/Login';
-import { Newsletters } from './pages/Newsletters';
-import Testimonials from './pages/Testimonials';
-import { ShippingMethods } from './pages/ShippingMethods';
-import { TaxRates } from './pages/TaxRates';
-import { GeneralLedger } from './pages/GeneralLedger';
-import { Journals } from './pages/Journals';
-import { FinancialStatements } from './pages/FinancialStatements';
-import { Banking } from './pages/Banking';
-import { Reconciliation } from './pages/Reconciliation';
-import { Expenses } from './pages/Expenses';
-import { AgedReports } from './pages/AgedReports';
-import { Campaigns } from './pages/Campaigns';
-import { Reviews } from './pages/Reviews';
-import { Wishlists } from './pages/Wishlists';
-import { LegalPolicies } from './pages/LegalPolicies';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
 import { AppearanceProvider } from './context/AppearanceProvider';
+import { MessagingProvider } from './context/MessagingContext.jsx';
+
+// Route-level code splitting — pages load only when first navigated to.
+const n = (mod, key) => mod.then(m => ({ default: m[key] }));
+const Dashboard          = lazy(() => n(import('./pages/Dashboard'),          'Dashboard'));
+const Products           = lazy(() => n(import('./pages/Products'),           'Products'));
+const Categories         = lazy(() => n(import('./pages/Categories'),         'Categories'));
+const Collections        = lazy(() => n(import('./pages/Collections'),        'Collections'));
+const CatalogueImports   = lazy(() => n(import('./pages/CatalogueImports'),   'CatalogueImports'));
+const AttributeDefinitions = lazy(() => n(import('./pages/AttributeDefinitions'), 'AttributeDefinitions'));
+const Inventory          = lazy(() => n(import('./pages/Inventory'),          'Inventory'));
+const Orders             = lazy(() => n(import('./pages/Orders'),             'Orders'));
+const Customers          = lazy(() => import('./pages/Customers'));
+const Coupons            = lazy(() => n(import('./pages/Coupons'),            'Coupons'));
+const Invoices           = lazy(() => n(import('./pages/Invoices'),           'Invoices'));
+const Suppliers          = lazy(() => n(import('./pages/Suppliers'),          'Suppliers'));
+const Purchases          = lazy(() => n(import('./pages/Purchases'),          'Purchases'));
+const AdminUsers         = lazy(() => n(import('./pages/AdminUsers'),         'AdminUsers'));
+const AuditLogs          = lazy(() => n(import('./pages/AuditLogs'),          'AuditLogs'));
+const Privacy            = lazy(() => n(import('./pages/Privacy'),            'Privacy'));
+const VatReports         = lazy(() => n(import('./pages/VatReports'),         'VatReports'));
+const ComplianceDashboard = lazy(() => n(import('./pages/ComplianceDashboard'), 'ComplianceDashboard'));
+const Quotes             = lazy(() => n(import('./pages/Quotes'),             'Quotes'));
+const Reports            = lazy(() => n(import('./pages/Reports'),            'Reports'));
+const Payments           = lazy(() => import('./pages/Payments'));
+const Notifications      = lazy(() => import('./pages/Notifications'));
+const Settings           = lazy(() => n(import('./pages/Settings'),           'Settings'));
+const Preferences        = lazy(() => n(import('./pages/Preferences'),        'Preferences'));
+const Content            = lazy(() => n(import('./pages/Content'),            'Content'));
+const Newsletters        = lazy(() => n(import('./pages/Newsletters'),        'Newsletters'));
+const Testimonials       = lazy(() => import('./pages/Testimonials'));
+const ShippingMethods    = lazy(() => n(import('./pages/ShippingMethods'),    'ShippingMethods'));
+const TaxRates           = lazy(() => n(import('./pages/TaxRates'),           'TaxRates'));
+const GeneralLedger      = lazy(() => n(import('./pages/GeneralLedger'),      'GeneralLedger'));
+const Journals           = lazy(() => n(import('./pages/Journals'),           'Journals'));
+const FinancialStatements = lazy(() => n(import('./pages/FinancialStatements'), 'FinancialStatements'));
+const Banking            = lazy(() => n(import('./pages/Banking'),            'Banking'));
+const Reconciliation     = lazy(() => n(import('./pages/Reconciliation'),     'Reconciliation'));
+const Expenses           = lazy(() => n(import('./pages/Expenses'),           'Expenses'));
+const AgedReports        = lazy(() => n(import('./pages/AgedReports'),        'AgedReports'));
+const Campaigns          = lazy(() => n(import('./pages/Campaigns'),          'Campaigns'));
+const Reviews            = lazy(() => n(import('./pages/Reviews'),            'Reviews'));
+const Wishlists          = lazy(() => n(import('./pages/Wishlists'),          'Wishlists'));
+const LegalPolicies      = lazy(() => n(import('./pages/LegalPolicies'),      'LegalPolicies'));
 
 // Protective Layer
 const ProtectedRoute = ({ children }) => {
@@ -74,8 +78,6 @@ const Placeholder = ({ title }) => (
     </p>
   </div>
 );
-
-import { MessagingProvider } from './context/MessagingContext.jsx';
 
 function App() {
   return (

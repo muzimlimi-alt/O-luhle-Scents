@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DateTime } from 'luxon';
+import { KpiCard } from '../components/KpiCard';
 import { productsApi, categoriesApi, testimonialsApi } from '../services/api';
 import {
   Plus, Search, Edit2, Trash2, Package,
@@ -502,13 +503,15 @@ export function Products() {
       {topLevelCategories.length > 0 && (
         <>
           <div className="section-title"><h2>Collections</h2></div>
-          <div className="grid kpi-row mb-6">
+          <div className="kpi-grid-responsive mb-6">
             {topLevelCategories.map((cat) => (
-              <article className="kpi" key={cat.id}>
-                <div className="kpi-top"><h3 className="kpi-label">{cat.name}</h3><span className="ic" aria-hidden="true"><Package size={16} /></span></div>
-                <p className="kpi-val" style={{ fontSize: '1.7rem' }}>{cat._count?.products ?? 0} <small>products</small></p>
-                {cat.description && <p className="kpi-foot">{cat.description}</p>}
-              </article>
+              <KpiCard
+                key={cat.id}
+                label={cat.name}
+                value={`${cat._count?.products ?? 0}`}
+                icon={<Package size={16} />}
+                footnote={cat.description || 'products in this collection'}
+              />
             ))}
           </div>
         </>
@@ -657,22 +660,6 @@ export function Products() {
 
         .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-4); margin: var(--sp-7) 0 var(--sp-4); flex-wrap: wrap; }
         .section-title h2 { font-size: 1.5rem; }
-
-        .grid { display: grid; gap: var(--sp-5); }
-        .kpi-row { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-
-        .kpi {
-          position: relative; padding: var(--sp-5);
-          background: var(--bg-surface); border: 1px solid var(--border-low); border-radius: var(--r);
-          overflow: hidden; transition: border-color var(--t-fast) var(--ease), transform var(--t) var(--ease-out);
-        }
-        .kpi:hover { border-color: var(--y-dark); transform: translateY(-2px); }
-        .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-        .kpi-label { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); font-weight: 400; margin: 0; }
-        .kpi-top .ic { color: var(--y-base); opacity: .8; display: inline-flex; }
-        .kpi-val { font-family: var(--f-display); line-height: 1.05; margin: var(--sp-4) 0 var(--sp-2); letter-spacing: -.01em; color: var(--text-primary); }
-        .kpi-val small { font-size: .75em; color: var(--text-muted); font-family: var(--f-body); }
-        .kpi-foot { font-size: .78rem; color: var(--text-muted); margin: 0; }
 
         .feed { list-style: none; margin: 0; padding: 0; }
         .feed li { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border-low); }

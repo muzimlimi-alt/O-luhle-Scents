@@ -196,6 +196,7 @@ export default function Payments() {
             columns={columns}
             data={filteredPayments}
             emptyState={<EmptyState icon={<HandCoins size={40} />} title="No payments found" description="Successful transactions will appear here." />}
+            caption="Transaction ledger"
             actions={(payment) => payment.paymentMethod === 'manual_eft' ? (
               <div style={{ display: 'flex', gap: '8px' }}>
                 {payment.proofOfPaymentUrl && (
@@ -224,6 +225,37 @@ export default function Payments() {
                 )}
               </div>
             ) : null}
+            mobileCardRenderer={(row, _cols, actions) => (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+                  <div>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '.82rem', color: 'var(--y-base)' }}>
+                      {row.transactionReference || row.order?.orderNumber || '—'}
+                    </span>
+                    <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{row.order?.customer?.name || 'Private Client'}</p>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+                      Order #{row.order?.orderNumber || row.orderId?.split('-')[0]?.toUpperCase()}
+                    </p>
+                  </div>
+                  {statusBadgeFor(row)}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-3)' }}>
+                  <span style={{ fontWeight: 700, fontSize: '1.05rem', fontFamily: 'var(--f-display)' }}>
+                    R{Number(row.amount).toLocaleString()}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '.82rem', color: 'var(--text-muted)' }}>
+                    <CreditCard size={13} />{METHOD_LABELS[row.paymentMethod] || row.paymentMethod}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '.76rem', color: 'var(--text-muted)' }}>
+                    <Clock size={12} />
+                    {row.paidAt ? DateTime.fromISO(row.paidAt).toFormat('dd LLL yyyy, HH:mm') : '—'}
+                  </span>
+                  {actions && <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>{actions(row)}</div>}
+                </div>
+              </div>
+            )}
           />
         </div>
       )}

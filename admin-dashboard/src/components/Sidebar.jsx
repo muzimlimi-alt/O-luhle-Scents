@@ -350,7 +350,7 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
           align-items: center;
           gap: var(--sp-3);
           width: 100%;
-          min-height: 40px;
+          min-height: var(--tap, 44px);
           padding: 8px var(--sp-3);
           text-align: left;
           color: var(--text-secondary);
@@ -396,7 +396,7 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
           align-items: center;
           justify-content: space-between;
           gap: var(--sp-2);
-          min-height: 34px;
+          min-height: var(--tap, 44px);
           padding: 5px var(--sp-3);
           color: var(--text-muted);
           font-size: .84rem;
@@ -463,7 +463,6 @@ export function Sidebar({ isOpen = false, onNavigate, isRail = false, onToggleRa
 
         @media (max-width: 480px) {
           .side { width: 100vw; }
-          .nav-sub a { min-height: var(--tap); padding: 8px var(--sp-3); }
         }
       `}} />
     </aside>

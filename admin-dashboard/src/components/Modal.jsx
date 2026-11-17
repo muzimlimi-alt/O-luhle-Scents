@@ -65,7 +65,7 @@ export function Modal({ isOpen, onClose, title, children, raw = false, maxWidth 
 
   if (!isOpen) return null;
 
-  const reduceMotion = prefersReducedMotion();
+  const reduceMotion = prefersReducedMotion() || document.documentElement.classList.contains('reduce-motion');
   const panelMotionProps = reduceMotion
     ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.01 } }
     : {

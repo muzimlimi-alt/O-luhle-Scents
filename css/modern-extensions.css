@@ -1825,3 +1825,17 @@
 
 .testimonial-form .btn { align-self: flex-start; }
 
+/* --- Bootstrap col wrapper: <a class="category-card"> is inline by default;
+   grid/flex containers auto-blockify children but a plain div does not. --- */
+.category-card { display: block; }
+
+/* --- Mobile: announcement bar wraps to 2 lines (~56px), increase header offset --- */
+@media (max-width: 767px) {
+  .header.has-announcement { top: 56px; }
+}
+
+/* --- Mobile: centre footer columns in single-column layout --- */
+@media (max-width: 767px) {
+  .footer__grid > * { text-align: center; }
+}
+

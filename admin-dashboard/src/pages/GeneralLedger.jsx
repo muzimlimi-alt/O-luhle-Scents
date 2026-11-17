@@ -108,10 +108,29 @@ export function GeneralLedger() {
                 <DataTable
                   columns={COLUMNS}
                   data={rows}
+                  caption={`${section.label} accounts`}
                   actions={(row) => (
                     <button className="icon-btn" title="View entries" onClick={() => openLedger(row)}>
                       <Eye size={14} />
                     </button>
+                  )}
+                  mobileCardRenderer={(row, _cols, actions) => (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--sp-2)' }}>
+                        <div>
+                          <span style={{ fontFamily: 'var(--f-mono)', fontSize: '.8rem', color: 'var(--y-base)' }}>{row.code}</span>
+                          <p style={{ fontWeight: 600, margin: '2px 0 0' }}>{row.name}</p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                          <strong style={{ fontFamily: 'var(--f-mono)', fontSize: '.9rem' }}>{fmt(row.balance)}</strong>
+                          {actions && actions(row)}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 'var(--sp-5)', fontSize: '.8rem', color: 'var(--text-muted)', fontFamily: 'var(--f-mono)' }}>
+                        <span>Dr {fmt(row.debit)}</span>
+                        <span>Cr {fmt(row.credit)}</span>
+                      </div>
+                    </div>
                   )}
                 />
               </div>
