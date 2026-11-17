@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -25,7 +25,9 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
   <!-- Apply saved theme before first paint to prevent flash -->
   <script>(function(){try{var t=JSON.parse(localStorage.getItem('toca_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
-  <link rel="stylesheet" href="css/style.css">
+      <link rel="stylesheet" href="css/bootstrap-grid.min.css">
+    <link rel="stylesheet" href="css/bootstrap-bridge.css">
+    <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/modern-extensions.css">
 
   <!-- Structured Data: Organization -->
@@ -103,29 +105,29 @@
   <!-- Features Strip -->
   <section class="features-strip">
     <div class="container">
-      <div class="features-strip__grid">
-        <div class="feature-item reveal">
+      <div class="row">
+        <div class="col-6 col-md-3 feature-item reveal">
           <div class="feature-item__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
           </div>
           <h4 class="feature-item__title" data-content="feature_1_title">Premium Packaging</h4>
           <p class="feature-item__desc" data-content="feature_1_text">Luxury gift-ready presentation</p>
         </div>
-        <div class="feature-item reveal reveal-delay-1">
+        <div class="col-6 col-md-3 feature-item reveal reveal-delay-1">
           <div class="feature-item__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </div>
           <h4 class="feature-item__title" data-content="feature_2_title">Nationwide Delivery</h4>
           <p class="feature-item__desc" data-content="feature_2_text">Free shipping over R1,500</p>
         </div>
-        <div class="feature-item reveal reveal-delay-2">
+        <div class="col-6 col-md-3 feature-item reveal reveal-delay-2">
           <div class="feature-item__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
           <h4 class="feature-item__title" data-content="feature_3_title">100% Authentic</h4>
           <p class="feature-item__desc" data-content="feature_3_text">Genuine extrait de parfum</p>
         </div>
-        <div class="feature-item reveal reveal-delay-3">
+        <div class="col-6 col-md-3 feature-item reveal reveal-delay-3">
           <div class="feature-item__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
           </div>
@@ -143,7 +145,8 @@
         <p class="section-label" data-content="collections_label">Our Collections</p>
         <h2 data-content="collections_heading">Find Your Signature</h2>
       </div>
-      <div class="categories__grid">
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
         <a href="shop.html?cat=perfume" class="category-card reveal">
           <div class="category-card__bg" style="background:linear-gradient(135deg, #2d2520, #1a1612);"></div>
           <img class="category-card__photo" data-collection-photo="1" alt="" loading="lazy" decoding="async">
@@ -153,6 +156,8 @@
             <span><span data-content="collection_1_price_hint">From R600</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
           </div>
         </a>
+        </div>
+        <div class="col-12 col-md-4">
         <a href="shop.html?cat=candles" class="category-card reveal reveal-delay-1">
           <div class="category-card__bg" style="background:linear-gradient(135deg, #4a2a2a, #2d1818);"></div>
           <img class="category-card__photo" data-collection-photo="2" alt="" loading="lazy" decoding="async">
@@ -162,6 +167,8 @@
             <span><span data-content="collection_2_price_hint">From R350</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
           </div>
         </a>
+        </div>
+        <div class="col-12 col-md-4">
         <a href="shop.html?cat=bath-salts" class="category-card reveal reveal-delay-2" role="group" aria-label="Shop Scented Bath Salts">
           <div class="category-card__bg" style="background:linear-gradient(135deg, #3d3242, #241c2a);"></div>
           <img class="category-card__photo" data-collection-photo="3" alt="" loading="lazy" decoding="async">
@@ -171,6 +178,7 @@
             <span><span data-content="collection_3_price_hint">From R280</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
           </div>
         </a>
+        </div>
       </div>
     </div>
   </section>
@@ -186,7 +194,7 @@
           <button type="button" role="tab" class="featured-tab" aria-selected="false" aria-controls="featured-products" data-featured-sort="newest" tabindex="-1">Recently Discovered</button>
         </div>
       </div>
-      <div class="products-grid" id="featured-products" role="tabpanel"></div>
+      <div class="row g-3" id="featured-products" role="tabpanel"></div>
       <div class="text-center mt-md reveal">
         <a href="shop.html" class="btn btn--dark js-featured-all">Explore the Collection</a>
       </div>

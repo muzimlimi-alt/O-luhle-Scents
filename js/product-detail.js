@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         product.variants.forEach((v, idx) => {
             const btn = document.createElement('button');
             btn.className = `size-option ${idx === 0 ? 'active' : ''}`;
-            btn.textContent = v.size;
+            btn.textContent = v.volume && v.uom ? `${v.volume}${v.uom}` : v.size;
             btn.dataset.variantId = v.id;
             
             const stock = v.inventory?.quantity || 0;
@@ -351,7 +351,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderRelated(related) {
         if (!related || related.length === 0) return;
         elements.relatedGrid.innerHTML = related.map(p => `
-            <div class="product-card reveal">
+            <div class="col-6 col-md-4">
+              <div class="product-card reveal">
                 <a href="product-detail.html?id=${p.id}" class="product-card__image">
                     <img src="${productImage(p)}" alt="${p.name}">
                 </a>
@@ -359,6 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h3 class="product-card__name"><a href="product-detail.html?id=${p.id}">${p.name}</a></h3>
                     <p class="product-card__price">${p.currency} ${parseFloat(p.price).toLocaleString()}</p>
                 </div>
+              </div>
             </div>
         `).join('');
     }

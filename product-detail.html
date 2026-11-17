@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -22,7 +22,9 @@
   <meta name="twitter:description" content="Explore premium extrait de parfum fragrances from TOCA.">
   <meta name="twitter:image" content="https://www.toca.co.za/images/Here_s_an_enhanced_Banana_2_pr_2.jpg">
 
-  <link rel="stylesheet" href="css/style.css">
+      <link rel="stylesheet" href="css/bootstrap-grid.min.css">
+    <link rel="stylesheet" href="css/bootstrap-bridge.css">
+    <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/modern-extensions.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
   <script>(function(){try{var t=JSON.parse(localStorage.getItem('toca_admin_prefs')||'{}').theme;if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()</script>
@@ -58,9 +60,9 @@
         <span class="product-breadcrumb-name">Product</span>
       </div>
 
-      <div class="product-detail__grid">
+      <div class="row align-items-start">
         <!-- Gallery -->
-        <div class="product-gallery reveal" style="position: relative;">
+        <div class="col-12 col-md-6 product-gallery reveal" style="position: relative;">
           <div id="detail-badge-container"></div>
           <div class="product-gallery__main">
             <img src="" alt="Product image">
@@ -68,7 +70,7 @@
         </div>
 
         <!-- Info -->
-        <div class="product-info reveal reveal-delay-1">
+        <div class="col-12 col-md-6 product-info reveal reveal-delay-1">
           <p class="product-info__brand">Officina Del Toca · Extrait de Parfum</p>
           <h1 class="product-info__name">Product Name</h1>
           <div class="product-info__price">R0</div>
@@ -94,7 +96,7 @@
           <!-- Actions -->
           <div class="product-actions" style="display:flex;gap:12px;align-items:center;">
             <button class="btn btn--primary btn--lg btn-add-cart" style="flex:1;">Add to Cart</button>
-            <button class="btn btn--outline-dark btn--lg js-pdp-wishlist" aria-label="Save to favourites" title="Save to favourites" style="padding:0 14px;">
+            <button class="btn btn--outline-dark btn--lg js-pdp-wishlist" aria-label="Save to favourites" title="Save to favourites" style="padding:0;width:52px;min-width:52px;display:inline-flex;align-items:center;justify-content:center;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
@@ -170,7 +172,7 @@
         <h2>Complete the Scent Experience</h2>
         <p class="pairing-section__intro">Kindred scents from across our perfumes, candles and bath rituals.</p>
       </div>
-      <div class="products-grid" id="pairing-products"></div>
+      <div class="row g-3" id="pairing-products"></div>
     </div>
   </section>
 
@@ -181,7 +183,7 @@
         <p class="section-label">You May Also Like</p>
         <h2>More to Discover</h2>
       </div>
-      <div class="products-grid" id="related-products"></div>
+      <div class="row g-3" id="related-products"></div>
     </div>
   </section>
 

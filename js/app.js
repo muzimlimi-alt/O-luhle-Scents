@@ -358,11 +358,11 @@ function renderProducts(containerId, products, limit) {
   if (!container) return;
 
   if (products.length === 0) {
-    container.innerHTML = `<div class="shop-empty">
+    container.innerHTML = `<div class="col-12"><div class="shop-empty">
       <h3>Nothing matches just yet</h3>
       <p>Try widening your price range or choosing a different collection.</p>
       <button type="button" class="btn btn--outline-dark btn--sm js-clear-filters">Clear all filters</button>
-    </div>`;
+    </div></div>`;
     return;
   }
 
@@ -370,6 +370,7 @@ function renderProducts(containerId, products, limit) {
     ? _parsePriceBuckets(shopState.price) : null;
   const items = limit ? products.slice(0, limit) : products;
 
+  const colClass = containerId === 'shop-products' ? 'col-6 col-md-4' : 'col-6 col-md-4 col-lg-3';
   container.innerHTML = items.map(product => {
     const variants = [...(product.variants || [])].sort((a, b) => Number(a.price) - Number(b.price));
     const inStock = variants.filter(isVariantAvailable);
@@ -383,7 +384,8 @@ function renderProducts(containerId, products, limit) {
     const brandType = product.type || familyLabel;
 
     return `
-    <div class="product-card reveal${soldOut ? ' product-card--soldout' : ''}">
+    <div class="${colClass}">
+      <div class="product-card reveal${soldOut ? ' product-card--soldout' : ''}">
       ${badgeHtml}
       ${soldOut ? '<span class="product-card__soldout">Sold out</span>' : ''}
       <div class="product-card__image">
@@ -409,6 +411,7 @@ function renderProducts(containerId, products, limit) {
         <h4 class="product-card__name"><a href="product-detail.html?id=${product.id}" style="color: inherit; text-decoration: none;">${product.name}</a></h4>
         <div class="product-card__price">From ${formatPrice(variant.price)}</div>
         ${sizes ? `<div class="product-card__sizes">${sizes}</div>` : ''}
+      </div>
       </div>
     </div>`;
   }).join('');
